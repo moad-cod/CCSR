@@ -135,7 +135,7 @@ export default function LoginPage() {
         ) : null}
 
         <Button
-          className="h-12 w-full rounded-xl bg-[#ebe0d1] text-base font-semibold text-[#111111] hover:bg-[#fff7ec] focus-visible:ring-[#c7b9a6] focus-visible:ring-offset-[#070707]"
+          className="h-12 w-full rounded-2xl border border-[#f2a65a]/35 bg-[#f5f1ea] text-base font-semibold text-[#111111] shadow-[0_16px_40px_rgba(232,93,158,0.16),inset_0_1px_0_rgba(255,255,255,0.55)] transition hover:-translate-y-0.5 hover:bg-[#fff7ec] hover:shadow-[0_20px_54px_rgba(242,166,90,0.18),inset_0_1px_0_rgba(255,255,255,0.65)] active:translate-y-0 focus-visible:ring-[#e85d9e] focus-visible:ring-offset-[#080808]"
           size="lg"
           type="submit"
           disabled={isSubmitting}
@@ -149,10 +149,10 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <p className="mt-7 text-center text-sm text-[#aaa39a]">
-        New to RAGForge?{" "}
+      <p className="mt-7 rounded-2xl border border-[#2a2a2a] bg-[#161616]/70 px-4 py-3 text-center text-sm text-[#b8b0a3]">
+        New to CCSR?{" "}
         <Link
-          className="font-semibold text-[#ebe0d1] underline-offset-4 hover:text-[#fff7ec] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7b9a6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0d0d]"
+          className="font-semibold text-[#f5b5d4] underline-offset-4 hover:text-[#ffd0e6] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d9e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
           href="/register"
         >
           Create an account
