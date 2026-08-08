@@ -1,93 +1,131 @@
-# RAGForge
+# CCSR
 
-> From document ingestion to grounded answers: build, trace, and evaluate the complete RAG lifecycle.
+> **Canonical Computer Science Research**
+
+**Research. Experiment. Evaluate. Reproduce.**
 
 [![Frontend](https://github.com/moad-cod/RAGForge/actions/workflows/frontend.yml/badge.svg)](https://github.com/moad-cod/RAGForge/actions/workflows/frontend.yml)
 [![Control Plane E2E](https://github.com/moad-cod/RAGForge/actions/workflows/control-plane-e2e.yml/badge.svg)](https://github.com/moad-cod/RAGForge/actions/workflows/control-plane-e2e.yml)
 
-RAGForge is a production-oriented RAG engineering platform for document ingestion, configurable chunking, retrieval, grounded AI chat, source tracing, and reproducible evaluation.
+CCSR is an open-source, local-first research engineering system for computer science and AI experimentation. It provides a reproducible environment for defining research questions, running experiments, tracking configurations and artifacts, evaluating results, comparing runs, and preserving findings.
 
-It is built for people who want to inspect the whole RAG system, not just demo a file upload and a chat box. The repository includes a FastAPI control plane, a Next.js UI, PostgreSQL metadata, MinIO Bronze/Silver/Gold artifacts, Qdrant vector search, Redis-backed realtime helpers, hosted LLM providers, and comparable Airflow/Celery ingestion paths.
+The project evolved from RAGForge. Its current implementation is strongest in Retrieval-Augmented Generation, with durable document ingestion, hybrid retrieval, tracing, benchmarking, and evaluation infrastructure. CCSR generalizes these foundations into a broader research system for NLP, Computer Vision, multimodal AI, machine learning, and related mathematical work.
 
-**Strongest verified capabilities**
+> CCSR is being built around one principle: research results are more useful when the experiment, configuration, evidence, metrics, artifacts, and environment that produced them can be inspected and reproduced.
 
-- Tenant-aware user and project isolation with JWT auth and project ownership checks.
-- Durable file ingestion through MinIO, PostgreSQL ingestion runs, and Airflow or Celery orchestration.
-- Configurable text chunking, dense embeddings, sparse BM25 vectors, and hybrid Qdrant retrieval.
-- Streaming RAG answers through Gemini or Groq, with persisted query history and retrieval traces.
-- Next.js control-plane UI for projects, sources, ingestion status, playground chat, observability, and settings.
-- Airflow-versus-Celery ingestion benchmarking with JSON and Markdown artifacts.
+**Quick links:** [Docker Quick Start](#docker-quick-start) | [Architecture](#architecture) | [RAG Research Domain](#rag-research-domain) | [Evaluation](#evaluation-and-experiments) | [Reproducibility](#reproducibility) | [Project Map](PROJECT_MAP.md) | [Backend Map](backend/BACKEND_MAP.md) | [Frontend Map](frontend/FRONTEND_MAP.md)
 
-**Quick links:** [Docker Quick Start](#docker-quick-start) | [Architecture](#architecture) | [Evaluation](#evaluation-and-experiments) | [Project Map](PROJECT_MAP.md) | [Backend Map](backend/BACKEND_MAP.md)
+## What Is CCSR?
+
+CCSR, Canonical Computer Science Research, is a local-first research control plane for computer-science and AI experiments. The long-term platform is intended to connect research questions, research projects, experiments, experiment runs, datasets, models, configurations, metrics, artifacts, papers, research notes, mathematical concepts, findings, and reproducibility metadata.
+
+Those broader research objects are the product direction, not a claim that all of them are implemented today. The current system is strongest in Retrieval/RAG: it can ingest documents, create versioned artifacts, index dense and sparse vectors, run grounded queries, stream answers, persist retrieval traces, and benchmark Airflow and Celery ingestion paths.
+
+## From RAGForge To CCSR
+
+RAGForge began as a platform for engineering and evaluating complete Retrieval-Augmented Generation systems. As the research scope expanded beyond retrieval into NLP experiments, model evaluation, fine-tuning, Computer Vision, multimodal AI, benchmarking, and mathematical foundations, the project evolved into CCSR.
+
+The existing RAG system is not being discarded. It becomes the first mature research domain inside CCSR and provides the implementation foundation for future experiment, evaluation, comparison, and reproducibility workflows.
+
+## Research Philosophy
+
+```text
+Research
+  -> Experiment
+  -> Evaluate
+  -> Compare
+  -> Finding
+  -> Reproduce
+```
+
+CCSR is intended to preserve both results and context: the dataset or source corpus, model and provider choices, retrieval or processing configuration, orchestration path, metrics, traces, generated artifacts, environment, and code state required to understand a result.
+
+Today, this philosophy is partially realized through the RAG control plane: document versions, ingestion runs, Bronze/Silver/Gold artifacts, query logs, retrieval logs, benchmark configurations, and generated benchmark reports. Future CCSR milestones will generalize that pattern into first-class experiment records and reproducibility manifests.
+
+## Current Capabilities
+
+This section describes the current implementation, not the full CCSR roadmap.
+
+- User registration, login, profile update, JWT-protected backend routes, and HttpOnly-cookie frontend sessions.
+- Owner-scoped project CRUD with per-project Qdrant collections.
+- Document listing, detail views, version history, soft deletion, and same-filename re-upload for new versions.
+- Durable file ingestion for PDF, DOCX, XLSX, PPTX, CSV, HTML/HTM, Markdown, and plain text.
+- MinIO Bronze/Silver/Gold artifact paths for durable file ingestion.
+- Configurable chunking through a backend registry: fixed-size, paragraph, sentence, semantic, hierarchical, late-chunking, and proposition strategies.
+- Dense FastEmbed vectors, sparse BM25 vectors, and hybrid Qdrant retrieval with project/document payload filters.
+- Gemini and Groq generation through OpenAI-compatible chat-completion clients.
+- Streaming query responses over SSE with stage and token events.
+- Query history, persisted answers, retrieval traces, ranked evidence records, and source inspection.
+- Redis-backed best-effort query cache and ingestion event replay, with PostgreSQL as the authoritative state store.
+- Airflow and Celery ingestion orchestration profiles that share the same durable ingestion stage boundaries.
+- Airflow-versus-Celery benchmark CLIs that write JSON and Markdown artifacts.
+- Next.js control-plane UI for projects, sources, ingestion status, playground chat, query history, observability, organization management, and settings.
+- Docker Compose runtime for the frontend, FastAPI, PostgreSQL, Qdrant, MinIO, Redis, and optional Airflow/Celery profiles.
+
+## Research Domains
+
+These domains describe the CCSR direction. Only the Retrieval/RAG domain is currently mature.
+
+### Retrieval And RAG
+
+Current strongest domain. The repository implements document ingestion, chunking, embedding, hybrid retrieval, grounded generation, source tracing, query history, ingestion observability, and Airflow/Celery orchestration benchmarks.
+
+### Natural Language Processing
+
+Planned generalized experimentation domain. Current NLP-related behavior exists through text parsing, chunking, embeddings, retrieval, and hosted generation, but there is not yet a generic NLP experiment engine.
+
+### Computer Vision
+
+Planned experimentation domain. The repository does not currently implement general Computer Vision experiment tracking, datasets, models, metrics, or artifact workflows.
+
+### Multimodal AI
+
+Experimental in the current codebase for PDF page ingestion/query using optional ColQwen2-style multimodal embeddings, Cloudflare R2 image storage, a separate Qdrant collection, and Gemini vision responses. The default runtime does not include the heavy multimodal dependencies.
+
+### ML And AI Systems
+
+Planned broader domain for model, fine-tuning, systems, and benchmarking experiments. Current system-level measurement exists mainly through ingestion orchestration benchmarks and operational RAG observability.
+
+### Mathematics
+
+Planned knowledge-linking domain for mathematical concepts and foundations related to ML/AI research. There is no implemented mathematical knowledge graph or note-linking model yet.
 
 ## Project Status
 
-RAGForge is an active engineering project. The default runtime focuses on text RAG. Some heavier paths are intentionally optional or incomplete so the core stack stays practical for local development.
+CCSR is an active engineering project. The default runtime remains text-RAG focused while the broader research-platform model is being introduced carefully.
 
 | Capability | Status | Notes |
 | --- | --- | --- |
 | Auth, projects, documents, query history | Implemented | JWT auth, ownership-scoped projects, soft deletes, durable query logs. |
-| Durable file ingestion | Implemented | File upload lands raw data in MinIO Bronze, then writes Silver/Gold artifacts and Qdrant indexes. |
+| Next.js control-plane UI | Implemented | Auth, projects, source management, ingestion progress, playground chat, history, observability, organization, and profile views. |
+| Durable file ingestion | Implemented | File upload lands raw data in MinIO Bronze, then writes Silver/Gold artifacts and Qdrant indexes when orchestration runs. |
 | Airflow ingestion orchestration | Implemented | Docker profile and DAG trigger the shared pipeline jobs. |
-| Celery ingestion orchestration | Implemented | Docker profile and worker tasks run the same shared pipeline stages. |
-| Dense and hybrid retrieval | Implemented | FastEmbed dense vectors plus BM25 sparse vectors in Qdrant. |
+| Celery ingestion orchestration | Implemented | Docker profile and worker tasks run the same shared pipeline stages. Celery has focused tests and benchmark validation; the full infrastructure E2E path is still Airflow-oriented. |
+| Dense, sparse, and hybrid retrieval | Implemented | FastEmbed dense vectors plus BM25 sparse vectors in Qdrant. |
 | Streaming answers | Implemented | SSE query stream emits stages and generated tokens. |
-| Source tracing | Implemented | Query logs store ranked retrieval records linked back to chunks and document versions. |
+| Source tracing | Implemented | Query logs store ranked retrieval records linked back to chunks and document versions when lineage exists. |
 | Redis query cache and ingestion events | Implemented | Best-effort cache and event replay; PostgreSQL remains authoritative. |
+| Airflow-versus-Celery benchmarking | Implemented | Benchmark CLIs drive real ingestion endpoints and write JSON/Markdown reports. |
 | Cross-encoder reranking | Experimental | Code path exists, but heavy reranker dependencies are not in the default backend requirements. |
-| Multimodal PDF ingestion/query | Experimental | Uses R2 image storage and a separate multimodal collection when configured. |
-| BEIR/SciFact retrieval evaluation | In progress | A SciFact config and legacy metrics exist; no verified BEIR runner command is currently documented. |
+| Multimodal PDF ingestion/query | Experimental | Uses R2 image storage and a separate multimodal collection when configured; heavy dependencies are optional. |
+| BEIR/SciFact retrieval evaluation | In Progress | A SciFact config and legacy metrics exist; no verified BEIR runner command is currently documented. |
+| First-class experiment records | Planned | Required before generic CCSR experiment lists, run details, and comparison workflows can be truthful. |
+| Dataset registry and versioning | Planned | Needed for cross-domain experiment provenance and compatibility checks. |
+| Model registry and versioning | Planned | Needed for reproducible model and provider comparisons. |
+| Research findings and notes | Planned | Intended to connect evaluated evidence to research conclusions. |
+| Paper and mathematical concept relationships | Planned | Directional knowledge layer; no implemented graph API exists yet. |
+| Reproducibility manifests | Planned | Target manifest fields are documented below, but no complete manifest model is implemented. |
 | Organization membership and roles | Planned | Organization records exist, but role/member enforcement is not complete. |
 | Local generation through Ollama | Planned | Hosted Gemini/Groq generation is implemented; Ollama is not wired into the current config. |
-
-## Screenshots And Demo
-
-No current UI screenshot or demo video is tracked in the repository. Architecture images are available under [`docs/architecture/`](docs/architecture/), including the system design, data model, and document lifecycle diagrams.
-
-## Why RAGForge?
-
-Many RAG examples stop after uploading a document and asking a question. RAGForge focuses on the engineering lifecycle around that interaction:
-
-- **Durable ingestion:** raw uploads, parsed chunks, embedded chunks, indexing state, and retries are represented as explicit records and artifacts.
-- **Configurable processing:** chunkers are exposed through a backend registry and selectable from the frontend.
-- **Traceable retrieval:** ranked evidence records persist query-to-chunk lineage, scores, retrieval strategy, document version, and source text.
-- **Observable operations:** ingestion runs stream progress through SSE and can recover state from PostgreSQL.
-- **Comparable orchestration:** Airflow and Celery use the same shared ingestion stages so their performance can be benchmarked fairly.
-
-## Core Capabilities
-
-### Implemented
-
-- User registration, login, profile update, and JWT-protected API routes.
-- Project CRUD with per-user ownership checks and one Qdrant collection per project.
-- Document listing, document details, version history, and soft deletion.
-- File ingestion for PDF, DOCX, XLSX, PPTX, CSV, HTML/HTM, Markdown, and text.
-- URL and Google Drive ingestion through synchronous paths.
-- Chunker registry with fixed-size, paragraph, sentence, semantic, hierarchical, late-chunking, and proposition strategies.
-- MinIO Bronze/Silver/Gold object storage for durable file ingestion artifacts.
-- Qdrant dense and sparse vector indexing with project/document payload filters.
-- Gemini and Groq chat-completion providers through OpenAI-compatible clients.
-- Query response caching, query history, retrieval trace inspection, and SSE streaming.
-- Docker Compose profiles for core services, Airflow, and Celery.
-
-### Experimental Or Optional
-
-- Cross-encoder reranking with `cross-encoder/ms-marco-MiniLM-L-6-v2`.
-- Multimodal PDF page ingestion and multimodal querying with Cloudflare R2 image storage.
-- Legacy RAGAS-style evaluation scripts in `backend/evaluation/legacy/`.
-
-### Planned Or In Progress
-
-- Full organization membership and role authorization.
-- BEIR/SciFact retrieval-quality runner for reproducible Recall, Precision, MRR, and NDCG metrics.
-- Local LLM generation through Ollama or another local runtime.
-- First-class experiment records exposed through the frontend.
+| Cross-domain NLP/CV/ML experiment support | Planned | The current mature implementation remains Retrieval/RAG. |
 
 ## Architecture
 
+This is the real current architecture.
+
 ```mermaid
 flowchart LR
-    UI[Next.js UI] --> API[FastAPI control plane]
+    UI[CCSR Next.js UI] --> API[FastAPI control plane]
     API --> PG[(PostgreSQL metadata)]
     API --> Redis[(Redis cache and events)]
     API --> Qdrant[(Qdrant vectors)]
@@ -110,13 +148,45 @@ flowchart LR
 
 **Control plane:** FastAPI owns authentication, project/document APIs, ingestion-run state, query history, retrieval logs, and internal pipeline callbacks.
 
-**Ingestion/data plane:** File uploads land in MinIO Bronze. Airflow or Celery then runs the shared Bronze-to-Silver, Silver-to-Gold, Qdrant upsert, and finalize stages. PostgreSQL remains the authoritative state machine.
+**Ingestion/data plane:** Durable file uploads land in MinIO Bronze. Airflow or Celery then runs shared Bronze-to-Silver, Silver-to-Gold, Qdrant upsert, and finalize stages. PostgreSQL remains the authoritative state machine.
 
-**Retrieval and generation path:** Interactive chat enters through FastAPI, embeds the question, retrieves from Qdrant with project/document filters, builds a grounded prompt, calls Gemini or Groq, streams answer tokens, and stores trace records.
+**Retrieval and generation path:** Interactive RAG queries enter through FastAPI, embed the question, retrieve from Qdrant with project/document filters, build a grounded prompt, call Gemini or Groq, stream answer tokens, and store trace records.
 
 **Evaluation path:** Benchmark CLIs drive public API workflows and write generated reports to `artifacts/benchmark-results/`.
 
-## Document Ingestion Lifecycle
+### CCSR Research Architecture - Direction
+
+The following diagram is a target architecture for the broader research platform. It is not fully implemented today.
+
+```mermaid
+flowchart TD
+    Project[Research Project]
+    Dataset[Dataset]
+    Model[Model]
+    Experiment[Experiment]
+    Run[Experiment Run]
+    Metrics[Metrics]
+    Artifacts[Artifacts]
+    Evaluation[Evaluation]
+    Finding[Finding]
+    Reproduction[Reproduction Metadata]
+
+    Project --> Dataset
+    Project --> Model
+    Project --> Experiment
+    Experiment --> Run
+    Run --> Metrics
+    Run --> Artifacts
+    Run --> Evaluation
+    Evaluation --> Finding
+    Evaluation --> Reproduction
+```
+
+## RAG Research Domain
+
+The current RAG domain is the implementation foundation for CCSR. It demonstrates how a research system can preserve inputs, transformations, traces, and evaluation artifacts rather than only returning a final answer.
+
+### Document Ingestion Lifecycle
 
 The complete durable path is `POST /ingest/file`.
 
@@ -125,7 +195,7 @@ Upload
   -> validate ownership, file type, size, and chunker
   -> write raw bytes to MinIO Bronze
   -> create DocumentVersion and IngestionRun in PostgreSQL
-  -> enqueue Airflow DAG or Celery chain
+  -> enqueue Airflow DAG or Celery chain when configured
   -> parse and chunk into Silver Parquet
   -> embed into Gold Parquet
   -> upsert deterministic points into Qdrant
@@ -133,9 +203,9 @@ Upload
   -> stream progress over SSE
 ```
 
-URL, Google Drive, and multimodal ingestion are also present, but they do not currently provide the same full Bronze/Silver/Gold lineage as durable file ingestion.
+URL, Google Drive, and multimodal ingestion are also present, but they do not currently provide the same full Bronze/Silver/Gold lineage as durable file ingestion. URL and Google Drive ingestion are synchronous. Multimodal ingestion is synchronous and requires optional heavy dependencies plus R2-compatible image storage.
 
-## Query And Answer Lifecycle
+### Query And Retrieval Lifecycle
 
 ```text
 Question
@@ -151,13 +221,13 @@ Question
   -> query log and retrieval trace persistence
 ```
 
-Retrieval traces include rank, Qdrant score, optional rerank score, retrieval strategy, chunk ID, document ID, document version ID, chunk text, and whether the evidence was used in the answer.
+Retrieval traces include rank, Qdrant score, optional rerank score, retrieval strategy, chunk ID, document ID, document version ID, chunk text, and whether the evidence was used in the answer. Fully linked traces are available when retrieved points have PostgreSQL `Chunk` lineage.
 
 ## Technology Stack
 
 | Layer | Technology | Responsibility |
 | --- | --- | --- |
-| Frontend | Next.js App Router, React, TypeScript | Auth pages, dashboard, project workspace, chat, history, observability. |
+| Frontend | Next.js App Router, React, TypeScript | Auth pages, project workspace, source management, playground chat, history, observability. |
 | Frontend data | TanStack Query, typed API helpers, SSE parser | Same-origin authenticated proxy, caching, streaming handling. |
 | API/control plane | FastAPI, Pydantic, SQLAlchemy async | HTTP routes, auth, orchestration boundary, query execution. |
 | Metadata database | PostgreSQL, Alembic | Users, projects, documents, versions, ingestion runs, chunks, query logs. |
@@ -298,6 +368,8 @@ Use `.env.example` as the source of truth. Important variables:
 | Pipeline | `PIPELINE_SERVICE_TOKEN` | Required for orchestrated ingestion | Internal bearer token for Airflow/Celery callbacks. |
 | Multimodal | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` | Optional | Required only for `/ingest/multimodal`. |
 
+Some internal environment variables still use the historical `RAGFORGE_` prefix, such as pipeline command templates. They are intentionally not renamed by this README update because they are runtime identifiers.
+
 ## Usage Example
 
 1. Start the Docker stack and run migrations.
@@ -320,6 +392,8 @@ The full authenticated API is easier to explore through `http://localhost:8000/d
 
 Protected user endpoints require `Authorization: Bearer <JWT>`. The frontend stores that token server-side in an HttpOnly cookie and proxies requests through same-origin routes.
 
+The current API primarily exposes the RAG/control-plane functionality inherited from RAGForge. First-class CCSR research APIs for generic experiments, datasets, models, findings, and reproducibility manifests are part of the roadmap.
+
 | Area | Routes |
 | --- | --- |
 | Health | `GET /health` |
@@ -336,7 +410,7 @@ Protected user endpoints require `Authorization: Bearer <JWT>`. The frontend sto
 
 ## Evaluation And Experiments
 
-RAGForge separates tests from experiments:
+CCSR separates tests, benchmarks, and research evaluation:
 
 ```text
 backend/tests/
@@ -348,6 +422,8 @@ backend/evaluation/
 artifacts/benchmark-results/
   stores generated benchmark reports
 ```
+
+Software tests verify correctness. Benchmarks measure system behavior such as orchestration latency, throughput, failure handling, and recovery. Retrieval evaluation measures retrieval quality. Future CCSR experiments will generalize this abstraction across research domains, but a generic experiment engine is not implemented yet.
 
 ### Airflow Versus Celery Benchmark
 
@@ -387,6 +463,39 @@ The benchmark config at [`backend/evaluation/configs/airflow_vs_celery.yaml`](ba
 [`backend/evaluation/configs/scifact.yaml`](backend/evaluation/configs/scifact.yaml) declares a BEIR/SciFact retrieval-evaluation target with Recall, Precision, MRR, and NDCG metrics. The repository does not currently include a verified BEIR runner command, so this is documented as in progress rather than a completed experiment workflow.
 
 Airflow/Celery benchmarks measure orchestration behavior. BEIR-style evaluation measures retrieval quality. Answer-generation evaluation is a separate concern.
+
+## Reproducibility
+
+Reproducibility is a central CCSR principle, but complete research manifests are not implemented yet.
+
+### Supported Today
+
+The current system partially supports reproducibility through:
+
+- Explicit document versions with content hashes and artifact paths.
+- Durable ingestion runs with statuses, timestamps, errors, and orchestration identifiers.
+- Bronze/Silver/Gold artifacts for durable file ingestion.
+- Deterministic chunk and Qdrant point identifiers for batch-indexed document versions.
+- Stored query logs, answers, provider/model metadata, latency, cache state, and retrieval traces.
+- Airflow/Celery benchmark configuration files and generated benchmark artifacts.
+- Docker Compose environments and documented local commands.
+
+### Target Manifest
+
+A future CCSR reproducibility manifest should capture:
+
+- Experiment ID.
+- Git commit.
+- Dataset version or content hash.
+- Model/provider version.
+- Full configuration snapshot.
+- Random seed where applicable.
+- Runtime environment and dependencies.
+- Hardware or worker profile.
+- Metrics and evaluation protocol.
+- Artifacts, logs, traces, and failure records.
+
+This complete manifest is a roadmap item, not a current persisted entity.
 
 ## Testing
 
@@ -483,37 +592,66 @@ Current limitation: organization CRUD and `organization_id` fields exist, but or
 
 ## Roadmap
 
+### Phase 1 - Foundation
+
+- Complete and document the BEIR/SciFact retrieval-quality runner.
+- Harden the existing RAG evaluation artifact format.
+- Add local model runtime support, such as Ollama, behind explicit configuration.
 - Enforce organization membership and role-based authorization.
-- Add a verified BEIR/SciFact retrieval runner and artifact format.
-- Expose experiment records and comparisons through backend APIs and the frontend.
-- Add local generation support, such as Ollama, behind explicit configuration.
-- Add current UI screenshots or a short demo video to the repository.
-- Package optional multimodal/reranker dependencies into separate install profiles or images.
+- Package optional multimodal and reranker dependencies into separate profiles or images.
 - Harden production deployment docs for TLS, secrets, backups, and object-store credentials.
+- Add current UI screenshots or a short demo video.
+
+### Phase 2 - Experiment Core
+
+- Add first-class Experiment and ExperimentRun records.
+- Define reusable metric definitions and evaluation protocols.
+- Preserve artifact lineage for experiment runs.
+- Add experiment comparison views backed by real metrics.
+- Add reproducibility manifest generation.
+
+### Phase 3 - Research Registry
+
+- Add dataset registry and versioning.
+- Add model registry and versioning.
+- Add research project records beyond the current RAG project model.
+- Add findings, research notes, and paper relationships.
+- Link research objects to experiment evidence.
+
+### Phase 4 - Multi-Domain Research
+
+- Add NLP experiment templates.
+- Add Computer Vision experiment artifacts and evaluation views.
+- Expand multimodal experiment workflows beyond the current optional PDF path.
+- Add general ML benchmark support.
+- Add domain-specific metric visualizations when backed by real data.
+
+### Phase 5 - Research Knowledge Layer
+
+- Add a research graph connecting papers, concepts, datasets, experiments, metrics, and findings.
+- Add mathematical concept linking.
+- Add paper-to-experiment and finding-to-evidence relationships.
+- Add reproducible public benchmark reports when supported by real artifacts.
 
 ## Contributing
 
 1. Read [`PROJECT_MAP.md`](PROJECT_MAP.md), [`backend/BACKEND_MAP.md`](backend/BACKEND_MAP.md), and [`frontend/FRONTEND_MAP.md`](frontend/FRONTEND_MAP.md) before making broad changes.
 2. Keep API, frontend, pipeline, and evaluation behavior aligned with the existing maps.
-3. Prefer focused tests for the code path you change.
-4. Do not commit generated benchmark outputs unless they are intentionally being preserved as reference artifacts.
+3. Clearly distinguish implemented behavior from planned research-platform capabilities.
+4. Prefer focused tests for the code path you change.
+5. Do not commit generated benchmark outputs unless they are intentionally being preserved as reference artifacts.
 
 ## License
 
 Copyright 2026 Mouad El Baz.
 
-RAGForge is licensed under the [Apache License 2.0](LICENSE).
+CCSR is licensed under the [Apache License 2.0](LICENSE).
 
-You may use, modify, and distribute this project in accordance with the
-terms of the Apache License 2.0. See the [LICENSE](LICENSE) file for the
-complete license text and the [NOTICE](NOTICE) file for project attribution
-information.
+You may use, modify, and distribute this project in accordance with the terms of the Apache License 2.0. See the [LICENSE](LICENSE) file for the complete license text and the [NOTICE](NOTICE) file for project attribution information.
 
 ### Third-Party Components
 
-RAGForge uses and integrates with third-party open-source software,
-models, APIs, and infrastructure services. Each third-party component
-remains subject to its own license and terms of use.
+CCSR uses and integrates with third-party open-source software, models, APIs, and infrastructure services. Each third-party component remains subject to its own license and terms of use.
 
 This includes, among others:
 
@@ -531,22 +669,14 @@ This includes, among others:
 - Groq and Gemini-compatible API integrations
 - Optional ColQwen2 and sentence-transformers components
 
-The Apache License 2.0 for RAGForge does not replace or override the
-licenses, usage restrictions, model licenses, API terms, or data licenses
-of these third-party components.
+The Apache License 2.0 for CCSR does not replace or override the licenses, usage restrictions, model licenses, API terms, or data licenses of these third-party components.
 
-### Data and Model Licensing
+### Data And Model Licensing
 
-RAGForge source code is licensed under Apache License 2.0. Datasets,
-documents uploaded by users, pretrained models, model weights, embedding
-models, and generated artifacts are not automatically covered by the
-RAGForge software license.
+CCSR source code is licensed under Apache License 2.0. Datasets, documents uploaded by users, pretrained models, model weights, embedding models, and generated artifacts are not automatically covered by the CCSR software license.
 
-Users are responsible for ensuring that they have the necessary rights
-and permissions to process, store, embed, distribute, or publish any data
-or model used with RAGForge.
+Users are responsible for ensuring that they have the necessary rights and permissions to process, store, embed, distribute, or publish any data or model used with CCSR.
 
 ### Disclaimer
 
-RAGForge is provided on an "AS IS" basis, without warranties or
-conditions of any kind, as described in the Apache License 2.0.
+CCSR is provided on an "AS IS" basis, without warranties or conditions of any kind, as described in the Apache License 2.0.
