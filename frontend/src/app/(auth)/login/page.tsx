@@ -43,13 +43,15 @@ export default function LoginPage() {
 
   return (
     <>
-      <p className="text-sm font-semibold text-[#ebe0d1]">Welcome back</p>
-      <h1 className="mt-2 text-[32px] font-semibold leading-tight text-[#f5f1eb]">
-        Sign in to RAGForge
+      <p className="inline-flex items-center gap-2 rounded-full border border-[#e85d9e]/25 bg-[#e85d9e]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#f5b5d4]">
+        Welcome back
+      </p>
+      <h1 className="mt-5 text-[34px] font-semibold leading-[1.05] tracking-[-0.02em] text-[#f5f1ea]">
+        Sign in to CCSR
       </h1>
-      <p className="mt-3 text-[15px] leading-6 text-[#aaa39a]">
-        Access your projects, documents, retrieval traces, and source-aware
-        answers.
+      <p className="mt-3 text-[15px] leading-6 text-[#b8b0a3]">
+        Access your research projects, source artifacts, retrieval traces, and
+        reproducible experiment workspace.
       </p>
 
       <form className="mt-8 space-y-5" onSubmit={submit} noValidate>
