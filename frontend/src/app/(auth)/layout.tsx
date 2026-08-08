@@ -20,8 +20,10 @@ export default function AuthLayout({children}: {children: React.ReactNode}) {
             <div className="mb-5 lg:hidden">
               <ProductMark compact />
             </div>
-            <div className="rounded-2xl border border-[#25221f] bg-[#0d0d0d] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.5)] sm:p-8 lg:p-11">
-              {children}
+            <div className="relative overflow-hidden rounded-[28px] border border-[#2a2a2a] bg-[#111111]/95 p-6 shadow-[0_24px_90px_rgba(0,0,0,0.62),0_0_0_1px_rgba(245,241,234,0.035)] backdrop-blur sm:p-8 lg:p-10">
+              <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#e85d9e]/70 to-transparent" />
+              <div className="pointer-events-none absolute -right-16 -top-20 size-48 rounded-full bg-[#8c6bdb]/10 blur-3xl" />
+              <div className="relative">{children}</div>
             </div>
           </div>
         </section>
