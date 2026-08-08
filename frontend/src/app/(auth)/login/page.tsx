@@ -57,7 +57,7 @@ export default function LoginPage() {
       <form className="mt-8 space-y-5" onSubmit={submit} noValidate>
         <div>
           <label
-            className="mb-2 block text-sm font-medium text-[#f5f1eb]"
+            className="mb-2 block text-sm font-semibold text-[#f5f1ea]"
             htmlFor="email"
           >
             Email address
@@ -69,12 +69,12 @@ export default function LoginPage() {
             placeholder="you@example.com"
             aria-invalid={Boolean(errors.email)}
             aria-describedby={errors.email ? "email-error" : undefined}
-            className="h-12 rounded-xl border-[#2a2825] bg-[#181715] px-4 text-base placeholder:text-[#777169] focus:border-[#c7b9a6] focus:ring-[#ebe0d1]/15"
+            className="h-12 rounded-2xl border-[#2a2a2a] bg-[#161616] px-4 text-[15px] text-[#f5f1ea] shadow-[inset_0_1px_0_rgba(245,241,234,0.035)] placeholder:text-[#77716a] transition hover:border-[#403c36] focus:border-[#e85d9e]/70 focus:ring-[#e85d9e]/15"
             {...register("email")}
           />
           {errors.email ? (
             <span
-              className="mt-2 block text-sm text-[#e36d65]"
+              className="mt-2 block text-sm text-[#f2aaa5]"
               id="email-error"
             >
               {errors.email.message}
@@ -84,7 +84,7 @@ export default function LoginPage() {
 
         <div>
           <label
-            className="mb-2 block text-sm font-medium text-[#f5f1eb]"
+            className="mb-2 block text-sm font-semibold text-[#f5f1ea]"
             htmlFor="password"
           >
             Password
@@ -97,12 +97,12 @@ export default function LoginPage() {
               placeholder="Your password"
               aria-invalid={Boolean(errors.password)}
               aria-describedby={errors.password ? "password-error" : undefined}
-              className="h-12 rounded-xl border-[#2a2825] bg-[#181715] px-4 pr-12 text-base placeholder:text-[#777169] focus:border-[#c7b9a6] focus:ring-[#ebe0d1]/15"
+              className="h-12 rounded-2xl border-[#2a2a2a] bg-[#161616] px-4 pr-12 text-[15px] text-[#f5f1ea] shadow-[inset_0_1px_0_rgba(245,241,234,0.035)] placeholder:text-[#77716a] transition hover:border-[#403c36] focus:border-[#8c6bdb]/75 focus:ring-[#8c6bdb]/18"
               {...register("password")}
             />
             <button
               type="button"
-              className="absolute right-1.5 top-1.5 flex size-9 items-center justify-center rounded-lg text-[#aaa39a] transition hover:bg-[#25221f] hover:text-[#f5f1eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7b9a6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#181715]"
+              className="absolute right-1.5 top-1.5 flex size-9 items-center justify-center rounded-xl text-[#b8b0a3] transition hover:bg-[#242424] hover:text-[#f5f1ea] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8c6bdb] focus-visible:ring-offset-2 focus-visible:ring-offset-[#161616]"
               aria-label={showPassword ? "Hide password" : "Show password"}
               onClick={() => setShowPassword((value) => !value)}
             >
@@ -115,7 +115,7 @@ export default function LoginPage() {
           </div>
           {errors.password ? (
             <span
-              className="mt-2 block text-sm text-[#e36d65]"
+              className="mt-2 block text-sm text-[#f2aaa5]"
               id="password-error"
             >
               {errors.password.message}
@@ -125,7 +125,7 @@ export default function LoginPage() {
 
         {formError ? (
           <div
-            className="flex gap-2 rounded-xl border border-[#e36d65]/30 bg-[#e36d65]/10 px-3 py-2.5 text-sm leading-5 text-[#f2aaa5]"
+            className="flex gap-2 rounded-2xl border border-[#d76c6c]/35 bg-[#d76c6c]/10 px-3 py-2.5 text-sm leading-5 text-[#f2aaa5]"
             role="alert"
             aria-live="assertive"
           >
