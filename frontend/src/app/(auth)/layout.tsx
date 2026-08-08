@@ -180,22 +180,34 @@ function RAGWorkflow() {
               <h2 className="mt-5 text-sm font-semibold uppercase tracking-[0.12em] text-[#f5f1ea]">
                 {step.title}
               </h2>
-              <p className="mt-2 min-h-10 text-[13px] leading-5 text-[#aaa39a]">
+              <p className="mt-2 min-h-16 text-[13px] leading-5 text-[#b8b0a3]">
                 {step.description}
               </p>
             </div>
           );
         })}
       </div>
-      <div className="mt-3 rounded-xl border border-[#2a2825] bg-[#0d0d0d] p-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-[#f5f1eb]">
-          <MessagesSquare className="size-4 text-[#ebe0d1]" />
-          Document-to-answer workflow
+      <div className="mt-3 rounded-2xl border border-[#2a2a2a] bg-[#080808]/72 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-[#f5f1ea]">
+            <span className="flex size-8 items-center justify-center rounded-lg border border-[#6fa8dc]/30 bg-[#6fa8dc]/10 text-[#9cc6ea]">
+              <MessagesSquare className="size-4" />
+            </span>
+            Document-to-answer workflow
+          </div>
+          <BrainCircuit className="hidden size-4 text-[#8c6bdb] sm:block" />
         </div>
-        <div className="mt-3 grid gap-2 font-mono text-[12px] text-[#aaa39a] sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-          <span>Documents → Chunking → Retrieval</span>
-          <span className="hidden h-px w-8 bg-[#2a2825] sm:block" />
-          <span>Grounded answer + trace</span>
+        <div className="mt-4 grid gap-2 font-mono text-[12px] text-[#b8b0a3] sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+          <span>
+            <span className="text-[#6fa8dc]">Documents</span> {"->"}{" "}
+            <span className="text-[#f2a65a]">Chunking</span> {"->"}{" "}
+            <span className="text-[#8c6bdb]">Retrieval</span>
+          </span>
+          <span className="hidden h-px w-10 bg-gradient-to-r from-[#f2a65a] via-[#8c6bdb] to-[#8ccb6b] sm:block" />
+          <span>
+            <span className="text-[#f5f1ea]">Grounded answer</span> +{" "}
+            <span className="text-[#8ccb6b]">trace</span>
+          </span>
         </div>
       </div>
     </div>
