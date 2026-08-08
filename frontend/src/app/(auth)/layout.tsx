@@ -8,6 +8,36 @@ import {
   Search,
 } from "lucide-react";
 
+const featureSteps = [
+  {
+    number: "01",
+    title: "Ingest",
+    description: "Documents, datasets, and source material become structured research artifacts.",
+    icon: FileText,
+    accent: "#F2A65A",
+    tint: "rgba(242,166,90,0.12)",
+    border: "rgba(242,166,90,0.32)",
+  },
+  {
+    number: "02",
+    title: "Retrieve",
+    description: "Hybrid search connects questions to grounded context and evidence.",
+    icon: Search,
+    accent: "#8C6BDB",
+    tint: "rgba(140,107,219,0.13)",
+    border: "rgba(140,107,219,0.34)",
+  },
+  {
+    number: "03",
+    title: "Observe",
+    description: "Traces, metrics, and run history preserve how each answer was produced.",
+    icon: Route,
+    accent: "#8CCB6B",
+    tint: "rgba(140,203,107,0.12)",
+    border: "rgba(140,203,107,0.32)",
+  },
+];
+
 export default function AuthLayout({children}: {children: React.ReactNode}) {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#080808] text-[#f5f1ea]">
@@ -111,44 +141,43 @@ function ProductMark({compact = false}: {compact?: boolean}) {
 }
 
 function RAGWorkflow() {
-  const steps = [
-    {
-      number: "01",
-      title: "Ingest",
-      description: "Documents → extraction → chunks",
-      icon: FileText,
-    },
-    {
-      number: "02",
-      title: "Retrieve",
-      description: "Query → relevant sources → context",
-      icon: Search,
-    },
-    {
-      number: "03",
-      title: "Observe",
-      description: "Citations → latency → retrieval trace",
-      icon: Route,
-    },
-  ];
-
   return (
-    <div className="mt-12 max-w-[640px] rounded-2xl border border-[#2a2825] bg-[#111111]/80 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
+    <div className="mt-12 max-w-[680px] rounded-[24px] border border-[#2a2a2a] bg-[#111111]/82 p-4 shadow-[0_22px_70px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(245,241,234,0.04)] backdrop-blur">
       <div className="grid gap-3 xl:grid-cols-3">
-        {steps.map((step, index) => {
+        {featureSteps.map((step, index) => {
           const Icon = step.icon;
           return (
-            <div key={step.title} className="relative rounded-xl bg-[#181715] p-4">
-              {index < steps.length - 1 ? (
-                <span className="absolute left-[calc(100%+0.25rem)] top-1/2 hidden h-px w-2 bg-[#2a2825] xl:block" />
+            <div
+              key={step.title}
+              className="group relative overflow-hidden rounded-2xl border bg-[#161616] p-4 transition duration-200 hover:-translate-y-0.5 hover:bg-[#191919] hover:shadow-[0_18px_42px_rgba(0,0,0,0.28)]"
+              style={{borderColor: step.border}}
+            >
+              <span
+                className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-80"
+                style={{
+                  background: `linear-gradient(90deg, transparent, ${step.accent}, transparent)`,
+                }}
+              />
+              {index < featureSteps.length - 1 ? (
+                <span
+                  className="absolute left-[calc(100%+0.25rem)] top-1/2 hidden h-px w-2 xl:block"
+                  style={{backgroundColor: step.border}}
+                />
               ) : null}
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-xs text-[#777169]">{step.number}</span>
-                <span className="flex size-8 items-center justify-center rounded-lg border border-[#2a2825] bg-[#111111] text-[#ebe0d1]">
-                  <Icon className="size-4" />
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-mono text-xs text-[#77716a]">{step.number}</span>
+                <span
+                  className="flex size-10 items-center justify-center rounded-xl border transition group-hover:scale-[1.03]"
+                  style={{
+                    borderColor: step.border,
+                    backgroundColor: step.tint,
+                    color: step.accent,
+                  }}
+                >
+                  <Icon className="size-5" strokeWidth={1.9} />
                 </span>
               </div>
-              <h2 className="mt-4 text-sm font-semibold uppercase text-[#f5f1eb]">
+              <h2 className="mt-5 text-sm font-semibold uppercase tracking-[0.12em] text-[#f5f1ea]">
                 {step.title}
               </h2>
               <p className="mt-2 min-h-10 text-[13px] leading-5 text-[#aaa39a]">
