@@ -1,4 +1,6 @@
 import {
+  Atom,
+  BrainCircuit,
   DatabaseZap,
   FileText,
   MessagesSquare,
@@ -35,38 +37,48 @@ export default function AuthLayout({children}: {children: React.ReactNode}) {
 function ProductIntroduction() {
   return (
     <section className="relative hidden overflow-hidden py-12 lg:flex lg:min-h-screen lg:flex-col">
-      <div className="pointer-events-none absolute inset-y-16 left-0 right-8 opacity-70 [background-image:linear-gradient(rgba(235,224,209,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(235,224,209,0.018)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(circle_at_36%_34%,black,transparent_68%)]" />
-      <div className="pointer-events-none absolute left-[12%] top-[28%] h-72 w-72 rounded-full bg-[#ebe0d1]/[0.045] blur-3xl" />
-
       <div className="relative z-10">
         <ProductMark />
       </div>
 
-      <div className="relative z-10 my-auto max-w-[720px]">
-        <p className="font-mono text-[12px] font-medium uppercase text-[#c7b9a6]">
-          RAG Engineering Control Plane
+      <div className="relative z-10 my-auto max-w-[760px]">
+        <p className="inline-flex items-center gap-2 rounded-full border border-[#e85d9e]/25 bg-[#e85d9e]/10 px-3 py-1.5 font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-[#f5b5d4]">
+          <Atom className="size-3.5" aria-hidden="true" />
+          Canonical computer science research
         </p>
-        <h1 className="mt-5 max-w-[700px] text-[clamp(40px,5vw,60px)] font-semibold leading-[1.05]">
-          Build reliable RAG systems, not black-box demos.
+        <h1 className="mt-6 max-w-[720px] text-[44px] font-semibold leading-[1.04] tracking-[-0.02em] text-[#f5f1ea] xl:text-[58px]">
+          Research systems that are{" "}
+          <span className="text-[#e85d9e]">traceable</span>,{" "}
+          <span className="text-[#f2a65a]">measurable</span>, and{" "}
+          <span className="text-[#8ccb6b]">reproducible</span>.
         </h1>
-        <p className="mt-6 max-w-[560px] text-[17px] leading-8 text-[#aaa39a]">
-          Ingest documents, inspect retrieval, trace citations, and evaluate
-          every stage from one workspace.
+        <p className="mt-6 max-w-[590px] text-[17px] leading-8 text-[#b8b0a3]">
+          Define research questions, run experiments, track configurations and
+          artifacts, evaluate results, compare runs, and preserve findings in a
+          local-first workspace.
         </p>
         <RAGWorkflow />
       </div>
 
-      <div className="relative z-10 mt-10 flex flex-wrap gap-3 font-mono text-[12px] uppercase text-[#aaa39a]">
+      <div className="relative z-10 mt-10 flex flex-wrap gap-3 font-mono text-[12px] uppercase tracking-[0.08em] text-[#b8b0a3]">
         {[
-          "Project-scoped retrieval",
-          "Source-aware answers",
-          "Traceable pipeline",
+          {label: "Research questions", color: "#E85D9E"},
+          {label: "Artifact lineage", color: "#6FA8DC"},
+          {label: "Evaluation traces", color: "#8CCB6B"},
         ].map((item) => (
           <span
-            key={item}
-            className="rounded-full border border-[#2a2825] bg-[#111111] px-3 py-1.5"
+            key={item.label}
+            className="rounded-full border bg-[#111111]/80 px-3 py-1.5 shadow-[0_10px_34px_rgba(0,0,0,0.24)]"
+            style={{
+              borderColor: `${item.color}52`,
+              color: "#d8d0c5",
+            }}
           >
-            {item}
+            <span
+              className="mr-2 inline-block size-1.5 rounded-full align-middle"
+              style={{backgroundColor: item.color}}
+            />
+            {item.label}
           </span>
         ))}
       </div>
@@ -79,18 +91,19 @@ function ProductMark({compact = false}: {compact?: boolean}) {
     <div className="flex items-center gap-3">
       <span
         className={[
-          "flex items-center justify-center rounded-xl border border-[#2a2825] bg-[#111111] text-[#ebe0d1]",
-          compact ? "size-9" : "size-10",
+          "relative flex items-center justify-center rounded-2xl border border-[#2a2a2a] bg-[#111111] text-[#f5f1ea] shadow-[0_12px_38px_rgba(0,0,0,0.32)]",
+          compact ? "size-10" : "size-11",
         ].join(" ")}
       >
-        <DatabaseZap className={compact ? "size-4" : "size-5"} />
+        <span className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_28%_18%,rgba(232,93,158,0.38),transparent_34%),radial-gradient(circle_at_70%_80%,rgba(111,168,220,0.30),transparent_38%)]" />
+        <DatabaseZap className={compact ? "relative size-4" : "relative size-5"} />
       </span>
       <div>
         <div className={compact ? "text-lg font-semibold" : "text-xl font-semibold"}>
-          RAGForge
+          CCSR
         </div>
-        <div className="font-mono text-[11px] uppercase text-[#777169]">
-          Control plane
+        <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#b8b0a3]">
+          Research control plane
         </div>
       </div>
     </div>
