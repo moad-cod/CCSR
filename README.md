@@ -500,4 +500,53 @@ Current limitation: organization CRUD and `organization_id` fields exist, but or
 
 ## License
 
-No license file is currently present in the repository. Add a license before publishing, distributing, or reusing this project outside its current owner-controlled context.
+Copyright 2026 Mouad El Baz.
+
+RAGForge is licensed under the [Apache License 2.0](LICENSE).
+
+You may use, modify, and distribute this project in accordance with the
+terms of the Apache License 2.0. See the [LICENSE](LICENSE) file for the
+complete license text and the [NOTICE](NOTICE) file for project attribution
+information.
+
+### Third-Party Components
+
+RAGForge uses and integrates with third-party open-source software,
+models, APIs, and infrastructure services. Each third-party component
+remains subject to its own license and terms of use.
+
+This includes, among others:
+
+- FastAPI
+- Next.js
+- PostgreSQL
+- Qdrant
+- MinIO
+- Redis
+- Apache Airflow
+- Celery
+- SQLAlchemy
+- FastEmbed
+- PyArrow
+- Groq and Gemini-compatible API integrations
+- Optional ColQwen2 and sentence-transformers components
+
+The Apache License 2.0 for RAGForge does not replace or override the
+licenses, usage restrictions, model licenses, API terms, or data licenses
+of these third-party components.
+
+### Data and Model Licensing
+
+RAGForge source code is licensed under Apache License 2.0. Datasets,
+documents uploaded by users, pretrained models, model weights, embedding
+models, and generated artifacts are not automatically covered by the
+RAGForge software license.
+
+Users are responsible for ensuring that they have the necessary rights
+and permissions to process, store, embed, distribute, or publish any data
+or model used with RAGForge.
+
+### Disclaimer
+
+RAGForge is provided on an "AS IS" basis, without warranties or
+conditions of any kind, as described in the Apache License 2.0.
