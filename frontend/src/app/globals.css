@@ -129,6 +129,13 @@
   --danger-soft: rgba(215, 108, 108, 0.1);
   --danger-border: rgba(215, 108, 108, 0.25);
 
+  /* CCSR auth accent system */
+  --ccsr-pink: #e85d9e;
+  --ccsr-purple: #8c6bdb;
+  --ccsr-orange: #f2a65a;
+  --ccsr-green: #8ccb6b;
+  --ccsr-blue: #6fa8dc;
+
   /* =====================================================
      SHADOWS
   ====================================================== */
@@ -259,6 +266,171 @@ button:disabled {
     );
 
   background-size: 24px 24px;
+}
+
+/* Auth landing ambience */
+
+.auth-shell {
+  background: #080808;
+}
+
+.auth-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: paint;
+  background: #080808;
+}
+
+.auth-gradient-field {
+  position: absolute;
+  inset: -8%;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(232, 93, 158, 0.16), transparent 28%),
+    radial-gradient(circle at 68% 22%, rgba(140, 107, 219, 0.13), transparent 29%),
+    radial-gradient(circle at 78% 52%, rgba(111, 168, 220, 0.11), transparent 30%),
+    radial-gradient(circle at 54% 86%, rgba(242, 166, 90, 0.11), transparent 31%),
+    radial-gradient(circle at 20% 78%, rgba(140, 203, 107, 0.08), transparent 28%);
+  opacity: 0.86;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: auth-gradient-drift 24s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.auth-grid-field {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(245, 241, 234, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 241, 234, 0.026) 1px, transparent 1px);
+  background-position: 0 0;
+  background-size: 32px 32px;
+  opacity: 0.72;
+  mask-image: radial-gradient(circle at 42% 34%, black, transparent 72%);
+  animation: auth-grid-drift 28s linear infinite;
+}
+
+.auth-aurora {
+  position: absolute;
+  width: min(48vw, 680px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  filter: blur(78px);
+  opacity: 0.12;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: auth-aurora-float 30s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.auth-aurora-one {
+  left: -9%;
+  top: 7%;
+  background:
+    radial-gradient(circle, rgba(232, 93, 158, 0.58), transparent 56%),
+    radial-gradient(circle at 70% 60%, rgba(242, 166, 90, 0.28), transparent 54%);
+}
+
+.auth-aurora-two {
+  right: -8%;
+  bottom: -14%;
+  background:
+    radial-gradient(circle, rgba(111, 168, 220, 0.44), transparent 56%),
+    radial-gradient(circle at 35% 45%, rgba(140, 107, 219, 0.38), transparent 58%),
+    radial-gradient(circle at 65% 36%, rgba(140, 203, 107, 0.2), transparent 50%);
+  animation-duration: 34s;
+  animation-delay: -8s;
+}
+
+.auth-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 42%, rgba(0, 0, 0, 0.76) 100%);
+}
+
+.auth-flow-line {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.auth-flow-line::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--ccsr-pink);
+  box-shadow:
+    0 0 10px rgba(232, 93, 158, 0.65),
+    0 0 16px rgba(242, 166, 90, 0.25);
+  transform: translate3d(-8px, -50%, 0);
+  animation: auth-flow-pulse 4.8s ease-in-out infinite;
+}
+
+@keyframes auth-gradient-drift {
+  0% {
+    opacity: 0.78;
+    transform: translate3d(-1.4%, -1%, 0) scale(1);
+  }
+
+  100% {
+    opacity: 0.92;
+    transform: translate3d(1.2%, 1.4%, 0) scale(1.035);
+  }
+}
+
+@keyframes auth-grid-drift {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 32px 18px;
+  }
+}
+
+@keyframes auth-aurora-float {
+  0% {
+    opacity: 0.08;
+    transform: translate3d(-1.5%, 0, 0) scale(0.98);
+  }
+
+  100% {
+    opacity: 0.14;
+    transform: translate3d(2%, -1.8%, 0) scale(1.04);
+  }
+}
+
+@keyframes auth-flow-pulse {
+  0%,
+  18% {
+    opacity: 0;
+    transform: translate3d(-8px, -50%, 0) scale(0.8);
+  }
+
+  38%,
+  62% {
+    opacity: 1;
+  }
+
+  82%,
+  100% {
+    opacity: 0;
+    transform: translate3d(58px, -50%, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-gradient-field,
+  .auth-grid-field,
+  .auth-aurora,
+  .auth-flow-line::after {
+    animation: none;
+  }
 }
 
 /* Markdown content */

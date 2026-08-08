@@ -40,19 +40,23 @@ const featureSteps = [
 
 export default function AuthLayout({children}: {children: React.ReactNode}) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#080808] text-[#f5f1ea]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(232,93,158,0.13),transparent_28%),radial-gradient(circle_at_72%_18%,rgba(111,168,220,0.12),transparent_28%),radial-gradient(circle_at_64%_82%,rgba(242,166,90,0.10),transparent_30%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(245,241,234,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(245,241,234,0.025)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(circle_at_42%_34%,black,transparent_72%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_42%,rgba(0,0,0,0.72)_100%)]" />
+    <main className="auth-shell relative isolate min-h-[100svh] overflow-x-hidden bg-[#080808] text-[#f5f1ea]">
+      <div className="auth-background" aria-hidden="true">
+        <div className="auth-gradient-field" />
+        <div className="auth-aurora auth-aurora-one" />
+        <div className="auth-aurora auth-aurora-two" />
+        <div className="auth-grid-field" />
+        <div className="auth-vignette" />
+      </div>
 
-      <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-[1440px] gap-8 px-5 py-6 sm:px-8 md:px-12 lg:grid-cols-[minmax(0,1.38fr)_minmax(420px,1fr)] lg:px-16">
+      <div className="relative z-10 mx-auto grid min-h-[100svh] w-full max-w-[1400px] items-center gap-6 px-5 py-[clamp(1rem,2.4svh,2rem)] sm:px-8 md:px-10 lg:px-[clamp(2rem,4vw,4rem)] xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
         <ProductIntroduction />
-        <section className="flex min-h-[calc(100vh-3rem)] items-start justify-center py-2 sm:py-6 lg:min-h-0 lg:items-center lg:py-12">
+        <section className="flex items-start justify-center py-2 sm:py-4 xl:items-center xl:py-0">
           <div className="w-full max-w-[460px]">
-            <div className="mb-5 lg:hidden">
+            <div className="mb-4 lg:hidden">
               <ProductMark compact />
             </div>
-            <div className="relative overflow-hidden rounded-[28px] border border-[#2a2a2a] bg-[#111111]/95 p-6 shadow-[0_24px_90px_rgba(0,0,0,0.62),0_0_0_1px_rgba(245,241,234,0.035)] backdrop-blur sm:p-8 lg:p-10">
+            <div className="relative overflow-hidden rounded-[26px] border border-[#2a2a2a] bg-[#111111]/95 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.62),0_0_0_1px_rgba(245,241,234,0.035)] backdrop-blur sm:p-6 lg:p-7">
               <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#e85d9e]/70 to-transparent" />
               <div className="pointer-events-none absolute -right-16 -top-20 size-48 rounded-full bg-[#8c6bdb]/10 blur-3xl" />
               <div className="relative">{children}</div>
@@ -66,23 +70,23 @@ export default function AuthLayout({children}: {children: React.ReactNode}) {
 
 function ProductIntroduction() {
   return (
-    <section className="relative hidden overflow-hidden py-12 lg:flex lg:min-h-screen lg:flex-col">
+    <section className="relative hidden overflow-hidden xl:flex xl:flex-col xl:justify-center">
       <div className="relative z-10">
         <ProductMark />
       </div>
 
-      <div className="relative z-10 my-auto max-w-[760px]">
-        <p className="inline-flex items-center gap-2 rounded-full border border-[#e85d9e]/25 bg-[#e85d9e]/10 px-3 py-1.5 font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-[#f5b5d4]">
+      <div className="relative z-10 mt-[clamp(0.85rem,1.8svh,1.1rem)] max-w-[720px]">
+        <p className="inline-flex items-center gap-2 rounded-full border border-[#e85d9e]/25 bg-[#e85d9e]/10 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f5b5d4]">
           <Atom className="size-3.5" aria-hidden="true" />
           Canonical computer science research
         </p>
-        <h1 className="mt-6 max-w-[720px] text-[44px] font-semibold leading-[1.04] tracking-[-0.02em] text-[#f5f1ea] xl:text-[58px]">
+        <h1 className="mt-[clamp(1.1rem,2.4svh,1.5rem)] max-w-[690px] text-[clamp(2.45rem,3.9vw,4.15rem)] font-semibold leading-[1.01] tracking-[-0.02em] text-[#f5f1ea]">
           Research systems that are{" "}
           <span className="text-[#e85d9e]">traceable</span>,{" "}
           <span className="text-[#f2a65a]">measurable</span>, and{" "}
           <span className="text-[#8ccb6b]">reproducible</span>.
         </h1>
-        <p className="mt-6 max-w-[590px] text-[17px] leading-8 text-[#b8b0a3]">
+        <p className="mt-[clamp(1rem,2svh,1.35rem)] max-w-[570px] text-[16px] leading-7 text-[#c7bfb4]">
           Define research questions, run experiments, track configurations and
           artifacts, evaluate results, compare runs, and preserve findings in a
           local-first workspace.
@@ -90,7 +94,7 @@ function ProductIntroduction() {
         <RAGWorkflow />
       </div>
 
-      <div className="relative z-10 mt-10 flex flex-wrap gap-3 font-mono text-[12px] uppercase tracking-[0.08em] text-[#b8b0a3]">
+      <div className="relative z-10 mt-[clamp(1rem,2.4svh,1.5rem)] flex flex-wrap gap-2.5 font-mono text-[11px] uppercase tracking-[0.08em] text-[#b8b0a3]">
         {[
           {label: "Research questions", color: "#E85D9E"},
           {label: "Artifact lineage", color: "#6FA8DC"},
@@ -98,7 +102,7 @@ function ProductIntroduction() {
         ].map((item) => (
           <span
             key={item.label}
-            className="rounded-full border bg-[#111111]/80 px-3 py-1.5 shadow-[0_10px_34px_rgba(0,0,0,0.24)]"
+            className="rounded-full border bg-[#111111]/80 px-3 py-1 shadow-[0_10px_34px_rgba(0,0,0,0.24)]"
             style={{
               borderColor: `${item.color}52`,
               color: "#d8d0c5",
@@ -142,14 +146,14 @@ function ProductMark({compact = false}: {compact?: boolean}) {
 
 function RAGWorkflow() {
   return (
-    <div className="mt-12 max-w-[680px] rounded-[24px] border border-[#2a2a2a] bg-[#111111]/82 p-4 shadow-[0_22px_70px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(245,241,234,0.04)] backdrop-blur">
-      <div className="grid gap-3 xl:grid-cols-3">
+    <div className="mt-[clamp(1.45rem,3svh,2rem)] max-w-[660px] rounded-[22px] border border-[#2a2a2a] bg-[#111111]/82 p-3.5 shadow-[0_22px_70px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(245,241,234,0.04)] backdrop-blur">
+      <div className="grid items-stretch gap-2.5 xl:grid-cols-3">
         {featureSteps.map((step, index) => {
           const Icon = step.icon;
           return (
             <div
               key={step.title}
-              className="group relative overflow-hidden rounded-2xl border bg-[#161616] p-4 transition duration-200 hover:-translate-y-0.5 hover:bg-[#191919] hover:shadow-[0_18px_42px_rgba(0,0,0,0.28)]"
+              className="group relative flex min-h-[150px] flex-col overflow-hidden rounded-2xl border bg-[#161616] p-3.5 transition duration-200 hover:-translate-y-0.5 hover:bg-[#191919] hover:shadow-[0_18px_42px_rgba(0,0,0,0.28)]"
               style={{borderColor: step.border}}
             >
               <span
@@ -167,43 +171,43 @@ function RAGWorkflow() {
               <div className="flex items-center justify-between gap-3">
                 <span className="font-mono text-xs text-[#77716a]">{step.number}</span>
                 <span
-                  className="flex size-10 items-center justify-center rounded-xl border transition group-hover:scale-[1.03]"
+                  className="flex size-9 items-center justify-center rounded-xl border transition group-hover:scale-[1.03]"
                   style={{
                     borderColor: step.border,
                     backgroundColor: step.tint,
                     color: step.accent,
                   }}
                 >
-                  <Icon className="size-5" strokeWidth={1.9} />
+                  <Icon className="size-[18px]" strokeWidth={1.9} />
                 </span>
               </div>
-              <h2 className="mt-5 text-sm font-semibold uppercase tracking-[0.12em] text-[#f5f1ea]">
+              <h2 className="mt-4 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#f5f1ea]">
                 {step.title}
               </h2>
-              <p className="mt-2 min-h-16 text-[13px] leading-5 text-[#b8b0a3]">
+              <p className="mt-1.5 text-[12.5px] leading-[1.45] text-[#c0b8ae]">
                 {step.description}
               </p>
             </div>
           );
         })}
       </div>
-      <div className="mt-3 rounded-2xl border border-[#2a2a2a] bg-[#080808]/72 p-4">
-        <div className="flex items-center justify-between gap-3">
+      <div className="mt-2.5 rounded-2xl border border-[#2a2a2a] bg-[#080808]/72 p-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-[#f5f1ea]">
-            <span className="flex size-8 items-center justify-center rounded-lg border border-[#6fa8dc]/30 bg-[#6fa8dc]/10 text-[#9cc6ea]">
+            <span className="flex size-7 items-center justify-center rounded-lg border border-[#6fa8dc]/30 bg-[#6fa8dc]/10 text-[#9cc6ea]">
               <MessagesSquare className="size-4" />
             </span>
             Document-to-answer workflow
           </div>
           <BrainCircuit className="hidden size-4 text-[#8c6bdb] sm:block" />
         </div>
-        <div className="mt-4 grid gap-2 font-mono text-[12px] text-[#b8b0a3] sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+        <div className="mt-3 grid gap-2 font-mono text-[11.5px] text-[#c0b8ae] xl:grid-cols-[1fr_auto_1fr] xl:items-center">
           <span>
             <span className="text-[#6fa8dc]">Documents</span> {"->"}{" "}
             <span className="text-[#f2a65a]">Chunking</span> {"->"}{" "}
             <span className="text-[#8c6bdb]">Retrieval</span>
           </span>
-          <span className="hidden h-px w-10 bg-gradient-to-r from-[#f2a65a] via-[#8c6bdb] to-[#8ccb6b] sm:block" />
+          <span className="auth-flow-line hidden h-px w-14 bg-gradient-to-r from-[#f2a65a] via-[#8c6bdb] to-[#8ccb6b] xl:block" />
           <span>
             <span className="text-[#f5f1ea]">Grounded answer</span> +{" "}
             <span className="text-[#8ccb6b]">trace</span>
