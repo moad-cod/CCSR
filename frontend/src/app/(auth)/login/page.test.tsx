@@ -33,7 +33,7 @@ describe("LoginPage", () => {
   it("renders the sign-in form and only valid auth links", () => {
     render(<LoginPage />);
 
-    expect(screen.getByRole("heading", {name: "Sign in to RAGForge"}))
+    expect(screen.getByRole("heading", {name: "Sign in to CCSR"}))
       .toBeInTheDocument();
     expect(screen.getByLabelText("Email address")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
