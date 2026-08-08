@@ -8,8 +8,12 @@ import {
 
 export default function AuthLayout({children}: {children: React.ReactNode}) {
   return (
-    <main className="min-h-screen bg-[#070707] text-[#f5f1eb]">
-      <div className="mx-auto grid min-h-screen w-full max-w-[1440px] gap-8 px-5 py-6 sm:px-8 md:px-12 lg:grid-cols-[minmax(0,1.38fr)_minmax(420px,1fr)] lg:px-16">
+    <main className="relative min-h-screen overflow-hidden bg-[#080808] text-[#f5f1ea]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(232,93,158,0.13),transparent_28%),radial-gradient(circle_at_72%_18%,rgba(111,168,220,0.12),transparent_28%),radial-gradient(circle_at_64%_82%,rgba(242,166,90,0.10),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(245,241,234,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(245,241,234,0.025)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(circle_at_42%_34%,black,transparent_72%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_42%,rgba(0,0,0,0.72)_100%)]" />
+
+      <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-[1440px] gap-8 px-5 py-6 sm:px-8 md:px-12 lg:grid-cols-[minmax(0,1.38fr)_minmax(420px,1fr)] lg:px-16">
         <ProductIntroduction />
         <section className="flex min-h-[calc(100vh-3rem)] items-start justify-center py-2 sm:py-6 lg:min-h-0 lg:items-center lg:py-12">
           <div className="w-full max-w-[460px]">
