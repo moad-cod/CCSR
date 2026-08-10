@@ -323,7 +323,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
             description={
               search
                 ? "Try a different document name."
-                : "Upload your first source document to begin building this project's knowledge base."
+                : "Upload your first source document to begin building this project's research workspace."
             }
             action={search ? undefined : "Choose a document"}
             onAction={search ? undefined : () => fileInput.current?.click()}
