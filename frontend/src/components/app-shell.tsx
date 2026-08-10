@@ -198,10 +198,10 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const sidebar = (mobile = false) => (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-3 border-b border-white/[0.08] px-3">
-        <Link href="/projects" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--ink-inverse)]" aria-label="RAGForge home">
+        <Link href="/projects" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--ink-inverse)]" aria-label="CCSR home">
           <Sparkles className="size-5" />
         </Link>
-        {(!collapsed || mobile) ? <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight">RAGForge</span> : null}
+        {(!collapsed || mobile) ? <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight">CCSR</span> : null}
         {mobile ? <button className="icon-button" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X className="size-4" /></button> : null}
       </div>
       <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Primary navigation">
@@ -253,13 +253,13 @@ export function AppShell({children}: {children: React.ReactNode}) {
         <div className="flex min-w-0 items-center gap-2">
           <button className="icon-button md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu className="size-5" /></button>
           <nav className="hidden min-w-0 items-center gap-1.5 sm:flex" aria-label="Breadcrumbs">
-            <Link href="/projects" className="text-[11px] text-[#8f877f] hover:text-white">RAGForge</Link>
+            <Link href="/projects" className="text-[11px] text-[#8f877f] hover:text-white">CCSR</Link>
             {breadcrumbs.slice(-3).map((label, index, shown) => <span key={`${label}-${index}`} className="flex min-w-0 items-center gap-1.5">
               <ChevronRight className="size-3 shrink-0 text-[#403c36]" />
               <span className={cn("max-w-40 truncate text-[11px] capitalize", index === shown.length - 1 ? "text-[#f4efe7]" : "text-[#8f877f]")}>{label}</span>
             </span>)}
           </nav>
-          <span className="truncate text-sm font-medium sm:hidden">{breadcrumbs.at(-1) ?? "RAGForge"}</span>
+          <span className="truncate text-sm font-medium sm:hidden">{breadcrumbs.at(-1) ?? "CCSR"}</span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -304,7 +304,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
               <ChevronDown className="hidden size-3 text-[#77716a] sm:block" />
             </button>
             {userMenuOpen ? <div className="popover right-0 top-11 w-56 p-1.5">
-              <div className="border-b border-white/[0.08] px-2.5 py-2"><p className="truncate text-[11px] font-medium">{user?.full_name || "RAGForge user"}</p><p className="mt-0.5 truncate text-[9px] text-[#77716a]">{user?.email}</p></div>
+              <div className="border-b border-white/[0.08] px-2.5 py-2"><p className="truncate text-[11px] font-medium">{user?.full_name || "CCSR user"}</p><p className="mt-0.5 truncate text-[9px] text-[#77716a]">{user?.email}</p></div>
               <Link href="/settings/profile" onClick={() => setUserMenuOpen(false)} className="menu-item"><UserRound className="size-3.5" />Profile settings</Link>
               <button onClick={logout} className="menu-item w-full"><LogOut className="size-3.5" />Sign out</button>
             </div> : null}
