@@ -103,7 +103,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
     const value = question.trim();
     if (!value || streaming) return;
     if (!indexedDocuments.length) {
-      toast.error("Index at least one document before asking a question");
+      toast.error("Index at least one source before asking a question");
       return;
     }
 
@@ -196,8 +196,8 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
     <div className="flex min-h-[calc(100vh-5rem)] flex-col gap-6">
       <PageHeader
         eyebrow={project?.name ?? "Project"}
-        title="Ask RAGForge"
-        description="Answers stream from the selected project's indexed knowledge, with durable query and retrieval traces."
+        title="Playground"
+        description="Answers stream from the selected project's indexed sources, with durable query and retrieval traces."
       />
 
       <Card className="flex min-h-[650px] flex-1 flex-col overflow-hidden">
@@ -207,7 +207,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
               <span className="size-2 rounded-full bg-[var(--success)]" />
               <span className="font-medium">{indexedDocuments.length} indexed</span>
               <span className="text-[var(--ink-muted)]">
-                {indexedDocuments.length === 1 ? "document" : "documents"}
+                {indexedDocuments.length === 1 ? "source" : "sources"}
               </span>
             </div>
             <button
@@ -236,15 +236,13 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
                 </select>
               </label>
               <label>
-                <span className="mb-1.5 block text-xs font-semibold">
-                  Search scope
-                </span>
+                <span className="mb-1.5 block text-xs font-semibold">Search scope</span>
                 <select
                   className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm"
                   value={documentId}
                   onChange={(event) => setDocumentId(event.target.value)}
                 >
-                  <option value="">All indexed documents</option>
+                  <option value="">All indexed sources</option>
                   {indexedDocuments.map((document) => (
                     <option key={document.document_id} value={document.document_id}>
                       {document.filename}
@@ -263,10 +261,10 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
                 <Sparkles className="size-7" />
               </div>
               <h2 className="mt-5 text-xl font-semibold">
-                Ask your knowledge base
+                Ask your indexed sources
               </h2>
               <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--ink-muted)]">
-                RAGForge searches indexed evidence, ranks the strongest sections,
+                CCSR searches indexed evidence, ranks the strongest sections,
                 and streams a grounded answer with inspectable sources.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -385,8 +383,8 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
               className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm leading-6 outline-none placeholder:text-[var(--ink-faint)]"
               placeholder={
                 indexedDocuments.length
-                  ? "Ask something about your documents..."
-                  : "Index a document before asking a question"
+                  ? "Ask something about your indexed sources..."
+                  : "Index a source before asking a question"
               }
               value={question}
               disabled={!indexedDocuments.length}
@@ -419,7 +417,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
             )}
           </div>
           <p className="mt-2 text-center text-[10px] text-[var(--ink-faint)]">
-            Answers are grounded in retrieved project documents. Verify critical information.
+            Answers are grounded in retrieved project sources. Verify critical information.
           </p>
         </div>
       </Card>
