@@ -91,7 +91,7 @@ function ProductIntroduction() {
           artifacts, evaluate results, compare runs, and preserve findings in a
           local-first workspace.
         </p>
-        <RAGWorkflow />
+        <ResearchWorkflow />
       </div>
 
       <div className="relative z-10 mt-[clamp(1rem,2.4svh,1.5rem)] flex flex-wrap gap-2.5 font-mono text-[11px] uppercase tracking-[0.08em] text-[#b8b0a3]">
@@ -144,7 +144,7 @@ function ProductMark({compact = false}: {compact?: boolean}) {
   );
 }
 
-function RAGWorkflow() {
+function ResearchWorkflow() {
   return (
     <div className="mt-[clamp(1.45rem,3svh,2rem)] max-w-[660px] rounded-[22px] border border-[#2a2a2a] bg-[#111111]/82 p-3.5 shadow-[0_22px_70px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(245,241,234,0.04)] backdrop-blur">
       <div className="grid items-stretch gap-2.5 xl:grid-cols-3">
@@ -203,7 +203,7 @@ function RAGWorkflow() {
         </div>
         <div className="mt-3 grid gap-2 font-mono text-[11.5px] text-[#c0b8ae] xl:grid-cols-[1fr_auto_1fr] xl:items-center">
           <span>
-            <span className="text-[#6fa8dc]">Documents</span> {"->"}{" "}
+            <span className="text-[#6fa8dc]">Sources</span> {"->"}{" "}
             <span className="text-[#f2a65a]">Chunking</span> {"->"}{" "}
             <span className="text-[#8c6bdb]">Retrieval</span>
           </span>
