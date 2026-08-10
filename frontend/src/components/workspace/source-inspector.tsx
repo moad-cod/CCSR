@@ -8,7 +8,6 @@ import {
   FileSearch,
   FileText,
   Focus,
-  Network,
   X,
 } from "lucide-react";
 import {useQuery} from "@tanstack/react-query";
@@ -20,7 +19,7 @@ import {relativeTime} from "@/lib/utils";
 import {cn} from "@/lib/utils";
 import type {WorkspaceDocument} from "@/components/workspace/workspace-data";
 
-export type InspectorTab = "Content" | "Versions" | "Knowledge Graph" | "Retrieval Trace" | "Metadata";
+export type InspectorTab = "Content" | "Versions" | "Retrieval Trace" | "Metadata";
 
 function EmptyInspectorState({icon: Icon, title, description}: {
   icon: typeof FileText;
@@ -39,7 +38,7 @@ function ContentView({document, citation}: {document: WorkspaceDocument; citatio
     return <EmptyInspectorState
       icon={FileSearch}
       title="No document preview available"
-      description={`RAGForge has not returned extracted content for ${document.filename ?? "this document"}. Select a citation after a completed query to inspect its retrieved text.`}
+      description={`CCSR has not returned extracted content for ${document.filename ?? "this document"}. Select a citation after a completed query to inspect its retrieved text.`}
     />;
   }
 
@@ -101,10 +100,10 @@ export function SourceInspector({document, citation, activeTab, onTabChange, onC
   onTabChange: (tab: InspectorTab) => void;
   onClose?: () => void;
 }) {
-  const tabs: {label: InspectorTab; icon: typeof FileText}[] = [{label:"Content",icon:FileText},{label:"Versions",icon:History},{label:"Knowledge Graph",icon:Network},{label:"Retrieval Trace",icon:Focus},{label:"Metadata",icon:Box}];
+  const tabs: {label: InspectorTab; icon: typeof FileText}[] = [{label:"Content",icon:FileText},{label:"Versions",icon:History},{label:"Retrieval Trace",icon:Focus},{label:"Metadata",icon:Box}];
   return <section className="flex h-full min-w-0 flex-col bg-[var(--surface)]">
     <div className="flex h-[49px] shrink-0 items-center justify-between border-b border-white/[0.08] px-3"><div className="flex min-w-0 items-center gap-2"><span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-red-400/10 text-red-300"><FileText className="size-3.5" /></span><div className="min-w-0"><h2 className="truncate text-[10px] font-medium">{document.filename ?? "Untitled document"}</h2><p className="mt-0.5 text-[8px] text-[#77716a]">{document.extension?.replace(".", "").toUpperCase() || document.source_type || "Document"}<span className="ml-1 capitalize text-[var(--accent)]">● {document.status}</span></p></div></div><div className="flex items-center">{onClose ? <button onClick={onClose} className="flex h-7 items-center gap-1 rounded-lg border border-white/[0.08] px-2 text-xs text-[var(--ink-muted)] hover:bg-white/5 hover:text-white" aria-label="Back to Assistant">Back to Assistant<X className="size-3" /></button> : null}</div></div>
     <div className="flex h-9 shrink-0 items-end gap-0.5 overflow-x-auto border-b border-white/[0.08] px-2">{tabs.map(({label,icon:Icon}) => <button key={label} onClick={() => onTabChange(label)} className={cn("flex h-9 shrink-0 items-center gap-1 px-2 text-[8px]", activeTab === label ? "border-b border-[var(--accent)] text-[var(--accent-hover)]" : "text-[#77716a] hover:text-[#b7b0a7]")}><Icon className="size-2.5" />{label}</button>)}</div>
-    {activeTab === "Content" ? <ContentView document={document} citation={citation} /> : activeTab === "Versions" ? <VersionsView document={document} /> : activeTab === "Knowledge Graph" ? <EmptyInspectorState icon={Network} title="Knowledge graph unavailable" description="The current backend has no knowledge-graph endpoint, so no graph data is synthesized here." /> : activeTab === "Retrieval Trace" ? <RetrievalView selected={citation} /> : <MetadataView document={document} />}
+    {activeTab === "Content" ? <ContentView document={document} citation={citation} /> : activeTab === "Versions" ? <VersionsView document={document} /> : activeTab === "Retrieval Trace" ? <RetrievalView selected={citation} /> : <MetadataView document={document} />}
   </section>;
 }
