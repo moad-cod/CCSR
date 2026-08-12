@@ -166,7 +166,7 @@ export function KnowledgeWorkspace({projectId}: {projectId: string}) {
       <button disabled={!activeDocument} onClick={() => setWorkspaceTab("document")} className="absolute bottom-24 right-3 z-30 flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--surface-raised)] px-2.5 text-xs text-[#b7b0a7] shadow-lg disabled:hidden xl:hidden"><PanelRightOpen className="size-3" />Source</button>
     </main>
 
-    {leftOpen ? <div role="separator" aria-label="Resize knowledge panel" aria-orientation="vertical" onPointerDown={startResize} className="relative z-30 hidden w-px shrink-0 cursor-col-resize bg-white/[0.08] transition hover:bg-[var(--accent-muted)] xl:block"><span className="absolute inset-y-0 -left-1.5 w-3" /></div> : null}
+    {leftOpen ? <div role="separator" aria-label="Resize source panel" aria-orientation="vertical" onPointerDown={startResize} className="relative z-30 hidden w-px shrink-0 cursor-col-resize bg-white/[0.08] transition hover:bg-[var(--accent-muted)] xl:block"><span className="absolute inset-y-0 -left-1.5 w-3" /></div> : null}
     <div className="knowledge-panel hidden h-full min-h-0 shrink-0 border-l border-white/[0.08] xl:block" style={{width: leftOpen ? `clamp(320px, 22vw, ${leftWidth}px)` : 0}}>
       {leftOpen ? <DocumentPanel projectId={projectId} projectName={projectName} documents={documents} runs={runs} chunkers={chunkers} selectedIds={effectiveSelectedIds} selectedDocumentId={activeDocument?.document_id ?? ""} onSelectDocument={(id) => {setSelectedDocumentId(id); setCitation(undefined);}} onOpenDocument={openDocument} onToggleSelected={toggleSelected} onUpload={upload} onUrl={addUrl} onGDrive={addGDrive} onDelete={setDeleting} onRetry={(run) => retryRun.mutate(run)} /> : null}
     </div>
