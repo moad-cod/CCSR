@@ -4,7 +4,7 @@ const user = {
   user_id: "10000000-0000-0000-0000-000000000001",
   organization_id: null,
   email: "user@example.com",
-  full_name: "RAGForge User",
+  full_name: "CCSR User",
   created_at: "2026-07-16T00:00:00Z",
   updated_at: "2026-07-16T00:00:00Z",
 };
@@ -70,9 +70,9 @@ test("renders a project returned by the control-plane API", async ({page}) => {
   await page.getByRole("button", {name: "Sign in"}).click();
 
   await expect(page.getByText("Product knowledge")).toBeVisible();
-  await expect(page.getByRole("link", {name: "Open workspace"})).toHaveAttribute(
+  await expect(page.getByRole("link", {name: "Open project"})).toHaveAttribute(
     "href",
-    "/projects/20000000-0000-0000-0000-000000000001/documents",
+    "/projects/20000000-0000-0000-0000-000000000001/overview",
   );
 });
 
@@ -90,6 +90,6 @@ test("surfaces backend authentication failures", async ({page}) => {
 
   await page.getByRole("button", {name: "Sign in"}).click();
 
-  await expect(page.getByText("Invalid credentials")).toBeVisible();
+  await expect(page.getByRole("main").getByText("Invalid credentials")).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
 });

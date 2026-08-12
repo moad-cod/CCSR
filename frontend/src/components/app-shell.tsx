@@ -128,6 +128,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectedResultIndex, setSelectedResultIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const {data: user} = useQuery({queryKey: ["me"], queryFn: () => apiFetch<User>("/auth/me")});
   const {data: projects = []} = useQuery({queryKey: ["projects"], queryFn: () => apiFetch<Project[]>("/projects/")});
@@ -155,7 +156,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
     const listener = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setPaletteOpen(true);
+        openPalette();
       }
       if (event.key === "Escape") {
         setPaletteOpen(false);
@@ -187,6 +188,38 @@ export function AppShell({children}: {children: React.ReactNode}) {
     router.refresh();
   }
 
+  function openPalette() {
+    setSelectedResultIndex(0);
+    setPaletteOpen(true);
+  }
+
+  function openProjectResult(projectResult: Project) {
+    router.push(`/projects/${projectResult.project_id}/overview`);
+    setPaletteOpen(false);
+    setSearch("");
+  }
+
+  function handlePaletteKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelectedResultIndex((index) =>
+        searchResults.length ? (index + 1) % searchResults.length : 0,
+      );
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelectedResultIndex((index) =>
+        searchResults.length ? (index - 1 + searchResults.length) % searchResults.length : 0,
+      );
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const result = searchResults[selectedResultIndex];
+      if (result) openProjectResult(result);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setPaletteOpen(false);
+    }
+  }
+
   function active(item: NavItem) {
     if (item.label === "Projects") return pathname === "/projects";
     if (item.href.endsWith("/playground") && pathname.includes("/history")) return true;
@@ -198,7 +231,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const sidebar = (mobile = false) => (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-3 border-b border-white/[0.08] px-3">
-        <Link href="/projects" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--ink-inverse)]" aria-label="CCSR home">
+        <Link href="/home" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--ink-inverse)]" aria-label="CCSR home">
           <Sparkles className="size-5" />
         </Link>
         {(!collapsed || mobile) ? <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight">CCSR</span> : null}
@@ -246,14 +279,14 @@ export function AppShell({children}: {children: React.ReactNode}) {
   );
 
   return <div className="min-h-dvh bg-[var(--background)] text-[var(--ink)]">
-    <aside className={cn("fixed inset-y-0 left-0 z-50 hidden border-r border-[var(--border)] bg-[#090909] transition-[width] duration-200 md:block", collapsed ? "w-[68px]" : "w-[214px]")}>{sidebar()}</aside>
+    <aside className={cn("fixed inset-y-0 left-0 z-50 hidden border-r border-[var(--border)] bg-[#090909] transition-[width] duration-200 md:block", collapsed ? "w-[72px]" : "w-[248px]")}>{sidebar()}</aside>
 
-    <div className={cn("min-h-dvh transition-[padding] duration-200", collapsed ? "md:pl-[68px]" : "md:pl-[214px]")}>
+    <div className={cn("min-h-dvh transition-[padding] duration-200", collapsed ? "md:pl-[72px]" : "md:pl-[248px]")}>
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-[#090909]/95 px-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-2">
           <button className="icon-button md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu className="size-5" /></button>
           <nav className="hidden min-w-0 items-center gap-1.5 sm:flex" aria-label="Breadcrumbs">
-            <Link href="/projects" className="text-[11px] text-[#8f877f] hover:text-white">CCSR</Link>
+            <Link href="/home" className="text-[11px] text-[#8f877f] hover:text-white">CCSR</Link>
             {breadcrumbs.slice(-3).map((label, index, shown) => <span key={`${label}-${index}`} className="flex min-w-0 items-center gap-1.5">
               <ChevronRight className="size-3 shrink-0 text-[#403c36]" />
               <span className={cn("max-w-40 truncate text-[11px] capitalize", index === shown.length - 1 ? "text-[#f4efe7]" : "text-[#8f877f]")}>{label}</span>
@@ -290,10 +323,10 @@ export function AppShell({children}: {children: React.ReactNode}) {
             </select>
             <ChevronDown className="size-3 text-[#5c5751]" />
           </label> : null}
-          <button onClick={() => setPaletteOpen(true)} className="hidden h-9 w-52 items-center gap-2 rounded-[10px] border border-white/[0.08] bg-white/[0.025] px-3 text-left text-[10px] text-[#77716a] hover:border-white/[0.15] lg:flex" aria-label="Open global search">
+          <button onClick={openPalette} className="hidden h-9 w-52 items-center gap-2 rounded-[10px] border border-white/[0.08] bg-white/[0.025] px-3 text-left text-[10px] text-[#77716a] hover:border-white/[0.15] lg:flex" aria-label="Open global search">
             <Search className="size-3.5" /><span className="flex-1">Search projects</span><kbd className="rounded border border-white/10 px-1.5 py-0.5 text-[8px]">⌘ K</kbd>
           </button>
-          <button className="icon-button lg:hidden" onClick={() => setPaletteOpen(true)} aria-label="Open global search"><Search className="size-4" /></button>
+          <button className="icon-button lg:hidden" onClick={openPalette} aria-label="Open global search"><Search className="size-4" /></button>
           <div className="relative">
             <button className="icon-button" onClick={() => {setNotificationsOpen((value) => !value); setUserMenuOpen(false);}} aria-label="Notifications" aria-expanded={notificationsOpen}><Bell className="size-4" /></button>
             {notificationsOpen ? <div className="popover right-0 top-11 w-72 p-4"><p className="text-xs font-semibold">Notifications</p><div className="mt-4 rounded-lg bg-white/[0.025] p-4 text-center"><Bell className="mx-auto size-4 text-[#5f5952]" /><p className="mt-2 text-[10px] text-[#aaa39a]">No new notifications</p><p className="mt-1 text-[8px] text-[#5f5952]">Pipeline failures remain visible in ingestion runs.</p></div></div> : null}
@@ -321,10 +354,10 @@ export function AppShell({children}: {children: React.ReactNode}) {
 
     {paletteOpen ? <div className="fixed inset-0 z-[110] flex items-start justify-center bg-black/70 px-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label="Global search" onMouseDown={(event) => {if (event.target === event.currentTarget) setPaletteOpen(false);}}>
       <div className="w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-[var(--surface-muted)] shadow-2xl">
-        <label className="flex h-13 items-center gap-3 border-b border-white/[0.08] px-4"><Search className="size-4 text-[#77716a]" /><span className="sr-only">Search projects</span><input ref={searchRef} value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#5f5952]" placeholder="Search projects…" /><button onClick={() => setPaletteOpen(false)} className="rounded border border-white/10 px-1.5 py-1 text-[8px] text-[#77716a]">ESC</button></label>
+        <label className="flex h-13 items-center gap-3 border-b border-white/[0.08] px-4"><Search className="size-4 text-[#77716a]" /><span className="sr-only">Search projects</span><input ref={searchRef} value={search} onChange={(event) => {setSearch(event.target.value); setSelectedResultIndex(0);}} onKeyDown={handlePaletteKeyDown} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#5f5952]" placeholder="Search projects…" /><button onClick={() => setPaletteOpen(false)} className="rounded border border-white/10 px-1.5 py-1 text-[8px] text-[#77716a]">ESC</button></label>
         <div className="max-h-80 overflow-y-auto p-2">
           <p className="px-2 py-1.5 text-[8px] font-semibold uppercase tracking-[.14em] text-[#5f5952]">Projects</p>
-          {searchResults.map((item) => <button key={item.project_id} onClick={() => {router.push(`/projects/${item.project_id}/overview`); setPaletteOpen(false);}} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-white/[0.04]"><span className="flex size-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><FolderKanban className="size-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-medium">{item.name}</span><span className="font-mono text-[8px] text-[#5f5952]">{item.project_id}</span></span><ChevronRight className="size-3 text-[#5f5952]" /></button>)}
+          {searchResults.map((item, index) => <button key={item.project_id} onClick={() => openProjectResult(item)} onMouseEnter={() => setSelectedResultIndex(index)} data-selected={selectedResultIndex === index} className={cn("flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]", selectedResultIndex === index ? "bg-[var(--surface-active)] text-[var(--accent-strong)]" : "hover:bg-white/[0.04]")}><span className="flex size-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><FolderKanban className="size-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-medium">{item.name}</span><span className="font-mono text-[8px] text-[#5f5952]">{item.project_id}</span></span><ChevronRight className="size-3 text-[#5f5952]" /></button>)}
           {!searchResults.length ? <p className="px-3 py-8 text-center text-[10px] text-[#77716a]">No projects match “{search}”.</p> : null}
         </div>
         <div className="flex items-center gap-4 border-t border-white/[0.08] px-4 py-2 text-[8px] text-[#5f5952]"><span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span className="ml-auto flex items-center gap-1"><Command className="size-2.5" />K anywhere</span></div>

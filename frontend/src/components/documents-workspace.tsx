@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import {useMemo, useRef, useState} from "react";
 import {toast} from "sonner";
+import {ConfirmDeleteDialog} from "@/components/confirm-delete-dialog";
 import {IngestionCard} from "@/components/ingestion-card";
 import {PageHeader} from "@/components/page-header";
 import {Badge} from "@/components/ui/badge";
@@ -36,6 +37,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
   const [chunkerId, setChunkerId] = useState("paragraph");
   const [dragging, setDragging] = useState(false);
   const [search, setSearch] = useState("");
+  const [deleting, setDeleting] = useState<Document | null>(null);
   const {data: project} = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => apiFetch<Project>(`/projects/${projectId}`),
@@ -68,7 +70,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
 
   const upload = useMutation({
     mutationFn: async () => {
-      if (!file) throw new Error("Choose a document first");
+      if (!file) throw new Error("Choose a source first");
       const form = new FormData();
       form.set("project_id", projectId);
       form.set("chunker", chunkerId);
@@ -89,7 +91,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
         queryClient.invalidateQueries({queryKey: ["documents", projectId]}),
         queryClient.invalidateQueries({queryKey: ["ingestion-runs", projectId]}),
       ]);
-      toast.success("Document accepted. Ingestion is now running.");
+      toast.success("Source accepted. Ingestion is now running.");
     },
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : "Upload failed"),
@@ -99,7 +101,8 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
       apiFetch(`/documents/${documentId}`, {method: "DELETE"}),
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: ["documents", projectId]});
-      toast.success("Document removed");
+      setDeleting(null);
+      toast.success("Source removed");
     },
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : "Unable to remove document"),
@@ -111,14 +114,14 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
     <div className="space-y-8">
       <PageHeader
         eyebrow={project?.name ?? "Project"}
-        title="Documents"
+        title="Sources"
         description="Upload source material and follow the durable ingestion pipeline from Bronze storage to the searchable index."
       />
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="p-5 sm:p-6">
           <div className="mb-5">
-            <h2 className="text-lg font-semibold">Add knowledge</h2>
+            <h2 className="text-lg font-semibold">Add source</h2>
             <p className="mt-1 text-sm text-[var(--ink-muted)]">
               Files are accepted immediately, then processed asynchronously.
             </p>
@@ -128,7 +131,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
               "flex min-h-48 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 text-center transition",
               dragging
                 ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                : "border-[var(--border-strong)] bg-[var(--surface-muted)] hover:border-indigo-300",
+                : "border-[var(--border-strong)] bg-[var(--surface-muted)] hover:border-[var(--border-hover)]",
             )}
             onClick={() => fileInput.current?.click()}
             onDragEnter={(event) => {
@@ -143,11 +146,11 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
               setFile(event.dataTransfer.files[0] ?? null);
             }}
           >
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-white text-[var(--accent)] shadow-sm">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]">
               <UploadCloud className="size-6" />
             </div>
             <p className="mt-4 text-sm font-semibold">
-              {file ? file.name : "Drop a document here or browse"}
+              {file ? file.name : "Drop a source here or browse"}
             </p>
             <p className="mt-1 text-xs text-[var(--ink-muted)]">
               PDF, DOCX, XLSX, PPTX, CSV, HTML, Markdown, or text · max 25 MB
@@ -167,7 +170,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
                 Chunking strategy
               </span>
               <select
-                className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent-soft)]"
+                className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent-soft)]"
                 value={chunkerId}
                 onChange={(event) => setChunkerId(event.target.value)}
               >
@@ -182,7 +185,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
               </select>
               <p className="mt-1.5 text-xs text-[var(--ink-faint)]">
                 {chunkers.find((chunker) => chunker.id === chunkerId)
-                  ?.short_description ?? "Choose how document text is divided."}
+                  ?.short_description ?? "Choose how source text is divided."}
               </p>
             </label>
             <Button
@@ -195,7 +198,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
               ) : (
                 <UploadCloud className="size-4" />
               )}
-              Upload document
+              Add source
             </Button>
           </div>
         </Card>
@@ -231,9 +234,9 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
       <section>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Knowledge base</h2>
+            <h2 className="text-lg font-semibold">Research sources</h2>
             <p className="mt-1 text-sm text-[var(--ink-muted)]">
-              {documents.length} {documents.length === 1 ? "document" : "documents"}
+              {documents.length} {documents.length === 1 ? "source" : "sources"}
             </p>
           </div>
           <div className="relative w-full sm:w-72">
@@ -242,20 +245,20 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
               className="pl-9"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search documents"
+              placeholder="Search sources"
             />
           </div>
         </div>
 
         {isLoading ? (
-          <div className="h-64 animate-pulse rounded-2xl bg-white" />
+          <div className="h-64 animate-pulse rounded-2xl bg-white/[0.025]" />
         ) : filteredDocuments.length ? (
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs uppercase tracking-wider text-[var(--ink-faint)]">
                   <tr>
-                    <th className="px-5 py-3.5 font-semibold">Document</th>
+                    <th className="px-5 py-3.5 font-semibold">Source</th>
                     <th className="px-5 py-3.5 font-semibold">Type</th>
                     <th className="px-5 py-3.5 font-semibold">Status</th>
                     <th className="px-5 py-3.5 font-semibold">Updated</th>
@@ -264,15 +267,15 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
                   {filteredDocuments.map((document) => (
-                    <tr key={document.document_id} className="hover:bg-slate-50/70">
+                    <tr key={document.document_id} className="hover:bg-white/[0.025]">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                          <div className="flex size-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
                             <FileText className="size-4" />
                           </div>
                           <div className="min-w-0">
                             <p className="max-w-sm truncate font-medium">
-                              {document.filename || "Untitled document"}
+                              {document.filename || "Untitled source"}
                             </p>
                             <p className="mt-0.5 truncate font-mono text-[10px] text-[var(--ink-faint)]">
                               {document.document_id}
@@ -297,15 +300,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
                           size="icon"
                           aria-label={`Delete ${document.filename}`}
                           disabled={removeDocument.isPending}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Delete ${document.filename ?? "this document"} and its indexed chunks?`,
-                              )
-                            ) {
-                              removeDocument.mutate(document.document_id);
-                            }
-                          }}
+                          onClick={() => setDeleting(document)}
                         >
                           <Trash2 className="size-4 text-[var(--danger)]" />
                         </Button>
@@ -319,17 +314,28 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
         ) : (
           <EmptyState
             icon={FileText}
-            title={search ? "No matching documents" : "No documents yet"}
+            title={search ? "No matching sources" : "No sources yet"}
             description={
               search
-                ? "Try a different document name."
+                ? "Try a different source name."
                 : "Upload your first source document to begin building this project's research workspace."
             }
-            action={search ? undefined : "Choose a document"}
+            action={search ? undefined : "Choose a source"}
             onAction={search ? undefined : () => fileInput.current?.click()}
           />
         )}
       </section>
+      {deleting ? (
+        <ConfirmDeleteDialog
+          open
+          name={deleting.filename ?? deleting.document_id}
+          title={`Delete ${deleting.filename ?? "source"}?`}
+          consequences="The source, its indexed chunks, and its version lineage will no longer be available. Query audit metadata may remain."
+          isPending={removeDocument.isPending}
+          onClose={() => setDeleting(null)}
+          onConfirm={() => removeDocument.mutate(deleting.document_id)}
+        />
+      ) : null}
     </div>
   );
 }

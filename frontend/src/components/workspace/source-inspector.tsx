@@ -38,7 +38,7 @@ function ContentView({document, citation}: {document: WorkspaceDocument; citatio
     return <EmptyInspectorState
       icon={FileSearch}
       title="No document preview available"
-      description={`CCSR has not returned extracted content for ${document.filename ?? "this document"}. Select a citation after a completed query to inspect its retrieved text.`}
+      description={`CCSR has not returned extracted content for ${document.filename ?? "this source"}. Select a citation after a completed query to inspect its retrieved text.`}
     />;
   }
 
