@@ -142,9 +142,9 @@ describe("LoginPage", () => {
     const password = screen.getByLabelText("Password") as HTMLInputElement;
 
     expect(password.type).toBe("password");
-    await user.click(screen.getByRole("button", {name: "Show password"}));
+    await user.click(screen.getByRole("button", {name: "Show secret"}));
     expect(password.type).toBe("text");
-    await user.click(screen.getByRole("button", {name: "Hide password"}));
+    await user.click(screen.getByRole("button", {name: "Hide secret"}));
     expect(password.type).toBe("password");
   });
 });
