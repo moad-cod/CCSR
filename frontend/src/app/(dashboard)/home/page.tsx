@@ -20,10 +20,10 @@ import {useState} from "react";
 
 const experimentSteps = [
   "Create a project",
-  "Add documents or a BEIR evaluation dataset",
-  "Choose a RAG strategy",
+  "Add sources or an evaluation dataset",
+  "Choose a retrieval strategy",
   "Select Airflow or Celery",
-  "Run, evaluate, and compare the experiment",
+  "Run, evaluate, compare, and preserve findings",
 ];
 
 function SectionEmpty({title, description}: {title: string; description: string}) {
@@ -61,13 +61,13 @@ export default function HomePage() {
   const createAction = <Button className="w-full sm:w-auto" disabled={create.isPending} onClick={() => setCreateOpen(true)}>{create.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}Create project</Button>;
 
   return <div className="mx-auto max-w-6xl space-y-6">
-    <PageHeader eyebrow="Workspace" title="Home" description="A focused starting point for project-scoped RAG experiments, source readiness, pipeline health, and comparison work." actions={createAction} />
+    <PageHeader eyebrow="Workspace" title="Home" description="A focused starting point for project-scoped research questions, source readiness, pipeline health, and reproducible evaluation work." actions={createAction} />
 
     {isEmptyWorkspace ? <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
       <div className="max-w-2xl">
         <p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--accent)]">Guided workflow</p>
-        <h2 className="mt-2 text-xl font-semibold text-[var(--ink)]">Create your first RAG experiment</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--ink-secondary)]">Build and evaluate a retrieval pipeline through one guided workflow.</p>
+        <h2 className="mt-2 text-xl font-semibold text-[var(--ink)]">Create your first research workspace</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--ink-secondary)]">Start with the mature retrieval workflow, then preserve sources, runs, traces, and evaluation context.</p>
       </div>
       <ol className="mt-5 grid gap-2 md:grid-cols-5">
         {experimentSteps.map((step, index) => <li key={step} className="rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-3">
