@@ -21,7 +21,7 @@ export function ProjectCard({project, documentCount, activeRuns, view, onRename,
     <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]"><FolderKanban className="size-5" /></span>
     <div className={cn("min-w-0 flex-1", view === "grid" && "mt-4")}>
       <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="truncate text-sm font-semibold">{project.name}</h2><p className="mt-1 text-[10px] text-[#77716a]">Updated {relativeTime(project.updated_at)}</p></div><StatusBadge status={status} /></div>
-      <p className={cn("text-[11px] leading-5 text-[#aaa39a]", view === "grid" ? "mt-3 line-clamp-2 min-h-10" : "mt-1 line-clamp-1")}>An isolated RAG experiment workspace for sources, playground queries, pipeline runs, and reproducible evaluations.</p>
+      <p className={cn("text-[11px] leading-5 text-[#aaa39a]", view === "grid" ? "mt-3 line-clamp-2 min-h-10" : "mt-1 line-clamp-1")}>An isolated research workspace for sources, playground queries, pipeline runs, traces, and reproducible evaluations.</p>
       <div className="mt-4 flex flex-wrap items-center gap-4 text-[10px] text-[#8f877f]"><span className="flex items-center gap-1.5"><FileStack className="size-3" />{documentCount === null ? "…" : documentCount} sources</span><span className="flex items-center gap-1.5"><Activity className="size-3" />{activeRuns === null ? "…" : activeRuns ? `${activeRuns} active` : "No active runs"}</span></div>
     </div>
     <div className={cn("flex items-center gap-2", view === "grid" ? "mt-5 border-t border-white/[0.07] pt-4" : "shrink-0")}>
