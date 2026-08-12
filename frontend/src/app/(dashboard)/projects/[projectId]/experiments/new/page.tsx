@@ -21,7 +21,7 @@ export default async function NewExperimentPage({
     planned={[
       "Dataset selector and workload manifest.",
       "Airflow versus Celery orchestrator selection.",
-      "RAG configuration snapshot and validation gates.",
+      "Retrieval configuration snapshot and validation gates.",
       "Submission to benchmark worker when backend support exists.",
     ]}
   />;
