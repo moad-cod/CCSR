@@ -14,7 +14,7 @@ export function Brand({inverse = false}: {inverse?: boolean}) {
             inverse ? "text-white" : "text-[var(--ink)]",
           )}
         >
-          RAGForge
+          CCSR
         </div>
         <div
           className={cn(

@@ -5,8 +5,8 @@ import {Providers} from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RAGForge",
-  description: "Build, inspect, and query durable RAG knowledge bases.",
+  title: "CCSR",
+  description: "Define, run, evaluate, and reproduce computer science research workflows.",
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
