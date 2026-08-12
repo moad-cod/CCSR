@@ -54,7 +54,7 @@ export default function RegisterPage() {
     <>
       <p className="text-sm font-semibold text-[var(--accent)]">Get started</p>
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-        Create your RAGForge workspace
+        Create your CCSR workspace
       </h1>
       <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
         No organization ID is needed. You can organize projects after sign-up.
