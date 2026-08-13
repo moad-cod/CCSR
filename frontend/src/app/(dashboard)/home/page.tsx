@@ -121,7 +121,7 @@ export default function HomePage() {
 
     <Dialog open={createOpen} onClose={() => setCreateOpen(false)} title="Create project" description="Create an isolated workspace and choose the initial upload preference.">
       <ProjectForm organizations={organizationsQuery.data ?? []} chunkers={chunkersQuery.data ?? []} isPending={create.isPending} onCancel={() => setCreateOpen(false)} onSubmit={(values) => create.mutate(values)} />
-      {create.isError ? <p className="mt-3 rounded-lg border border-[var(--danger-border)] bg-[var(--danger-soft)] p-3 text-sm text-red-200">{create.error instanceof Error ? create.error.message : "Unable to create project"}</p> : null}
+      {create.isError ? <p className="mt-3 rounded-lg border border-[var(--danger-border)] bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger-soft-text)]">{create.error instanceof Error ? create.error.message : "Unable to create project"}</p> : null}
     </Dialog>
   </div>;
 }
