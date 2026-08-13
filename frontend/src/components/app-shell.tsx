@@ -136,6 +136,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const project = projects.find((item) => item.project_id === projectId);
   const nav = navigation(projectId);
   const breadcrumbs = pathname.split("/").filter(Boolean).map((segment) => routeLabel(segment, project));
+  const currentLabel = breadcrumbs.at(-1) ?? "CCSR";
   const searchResults = useMemo(() => {
     const value = search.trim().toLowerCase();
     if (!value) return projects.slice(0, 5);
@@ -230,22 +231,22 @@ export function AppShell({children}: {children: React.ReactNode}) {
 
   const sidebar = (mobile = false) => (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-3 border-b border-[var(--border)] px-3">
-        <Link href="/home" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--ink-inverse)]" aria-label="CCSR home">
-          <Sparkles className="size-5" />
+      <div className="flex h-[68px] items-center gap-3 border-b border-[var(--border)] px-3">
+        <Link href="/home" className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--accent)] transition hover:bg-[var(--surface-hover)]" aria-label="CCSR home">
+          <Sparkles className="size-4.5" />
         </Link>
-        {(!collapsed || mobile) ? <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight">CCSR</span> : null}
+        {(!collapsed || mobile) ? <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold leading-5 tracking-tight text-[var(--ink)]">CCSR</span><span className="block truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Research control</span></span> : null}
         {mobile ? <button className="icon-button" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X className="size-4" /></button> : null}
       </div>
-      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Primary navigation">
-        {projectId && project ? <div className={cn("mb-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3", collapsed && !mobile && "hidden")}>
-          <Link href="/projects" onClick={() => setMobileOpen(false)} className="text-[9px] text-[var(--ink-muted)] hover:text-[var(--ink)]">Back to all projects</Link>
-          <p className="mt-2 truncate text-xs font-semibold text-[var(--ink)]">{project.name}</p>
+      <nav className="flex-1 overflow-y-auto px-2.5 py-3.5" aria-label="Primary navigation">
+        {projectId && project ? <div className={cn("mb-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3", collapsed && !mobile && "hidden")}>
+          <Link href="/projects" onClick={() => setMobileOpen(false)} className="inline-flex items-center gap-1 text-[9px] font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]"><ChevronRight className="size-3 rotate-180" />All projects</Link>
+          <p className="mt-2 truncate text-[12px] font-semibold leading-5 text-[var(--ink)]">{project.name}</p>
           <p className="mono mt-1 truncate text-[8px] text-[var(--ink-disabled)]">{project.project_id}</p>
         </div> : null}
-        <div className="space-y-4">
+        <div className="space-y-5">
           {nav.map((group) => <div key={group.label}>
-            {(!collapsed || mobile) ? <p className="mb-1.5 px-3 text-[8px] font-semibold uppercase tracking-[.16em] text-[var(--ink-disabled)]">{group.label}</p> : null}
+            {(!collapsed || mobile) ? <p className="mb-2 px-2.5 text-[8px] font-semibold uppercase tracking-[.16em] text-[var(--ink-disabled)]">{group.label}</p> : null}
             <div className="space-y-1">
               {group.items.map((item) => {
                 const Icon = item.icon;
@@ -257,12 +258,12 @@ export function AppShell({children}: {children: React.ReactNode}) {
                   aria-current={selected ? "page" : undefined}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    "group flex h-10 items-center gap-3 rounded-[10px] border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
-                    selected ? "border-[var(--accent-border)] bg-[var(--surface-active)] text-[var(--ink)] shadow-[var(--shadow-accent)]" : "border-transparent text-[var(--ink-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]",
+                    "group flex h-9 items-center gap-3 rounded-lg border px-2.5 text-[13px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
+                    selected ? "border-[var(--accent-border)] bg-[var(--surface-active)] text-[var(--ink)]" : "border-transparent text-[var(--ink-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]",
                     collapsed && !mobile && "justify-center px-0",
                   )}
                 >
-                  <Icon className="size-[17px] shrink-0" strokeWidth={1.8} />
+                  <Icon className={cn("size-[16px] shrink-0", selected ? "text-[var(--accent)]" : "text-[var(--ink-muted)] group-hover:text-[var(--ink-secondary)]")} strokeWidth={1.8} />
                   {(!collapsed || mobile) ? <span>{item.label}</span> : <span className="sr-only">{item.label}</span>}
                 </Link>;
               })}
@@ -270,8 +271,8 @@ export function AppShell({children}: {children: React.ReactNode}) {
           </div>)}
         </div>
       </nav>
-      <div className="border-t border-[var(--border)] p-2">
-        <button onClick={toggleCollapsed} className={cn("hidden h-10 w-full items-center gap-3 rounded-[10px] px-3 text-[11px] text-[var(--ink-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] md:flex", collapsed && "justify-center px-0")} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+      <div className="border-t border-[var(--border)] p-2.5">
+        <button onClick={toggleCollapsed} className={cn("hidden h-9 w-full items-center gap-3 rounded-lg px-2.5 text-[11px] text-[var(--ink-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] md:flex", collapsed && "justify-center px-0")} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
           {collapsed ? <PanelLeftOpen className="size-4" /> : <><PanelLeftClose className="size-4" /><span>Collapse sidebar</span></>}
         </button>
       </div>
@@ -279,12 +280,16 @@ export function AppShell({children}: {children: React.ReactNode}) {
   );
 
   return <div className="min-h-dvh bg-[var(--background)] text-[var(--ink)]">
-    <aside className={cn("fixed inset-y-0 left-0 z-50 hidden border-r border-[var(--border)] bg-[var(--sidebar)] transition-[width] duration-200 md:block", collapsed ? "w-[72px]" : "w-[248px]")}>{sidebar()}</aside>
+    <aside className={cn("fixed inset-y-0 left-0 z-50 hidden border-r border-[var(--border)] bg-[var(--sidebar)] transition-[width] duration-200 md:block", collapsed ? "w-[72px]" : "w-[264px]")}>{sidebar()}</aside>
 
-    <div className={cn("min-h-dvh transition-[padding] duration-200", collapsed ? "md:pl-[72px]" : "md:pl-[248px]")}>
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-[var(--background)] px-3 sm:px-5">
+    <div className={cn("min-h-dvh transition-[padding] duration-200", collapsed ? "md:pl-[72px]" : "md:pl-[264px]")}>
+      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-[var(--background-chrome)] px-3 backdrop-blur sm:px-5">
         <div className="flex min-w-0 items-center gap-2">
           <button className="icon-button md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu className="size-5" /></button>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold leading-5 text-[var(--ink)] sm:hidden">{currentLabel}</p>
+            <p className="mt-0.5 truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[var(--ink-disabled)] sm:hidden">Control plane</p>
+          </div>
           <nav className="hidden min-w-0 items-center gap-1.5 sm:flex" aria-label="Breadcrumbs">
             <Link href="/home" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">CCSR</Link>
             {breadcrumbs.slice(-3).map((label, index, shown) => <span key={`${label}-${index}`} className="flex min-w-0 items-center gap-1.5">
@@ -292,10 +297,9 @@ export function AppShell({children}: {children: React.ReactNode}) {
               <span className={cn("max-w-40 truncate text-[11px] capitalize", index === shown.length - 1 ? "text-[var(--ink)]" : "text-[var(--ink-muted)]")}>{label}</span>
             </span>)}
           </nav>
-          <span className="truncate text-sm font-medium sm:hidden">{breadcrumbs.at(-1) ?? "CCSR"}</span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 items-center gap-1.5">
           <label className="hidden h-9 items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-2.5 lg:flex">
             <Building2 className="size-3.5 text-[var(--ink-muted)]" />
             <span className="sr-only">Organization</span>
@@ -323,7 +327,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
             </select>
             <ChevronDown className="size-3 text-[var(--ink-disabled)]" />
           </label> : null}
-          <button onClick={openPalette} className="hidden h-9 w-52 items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-left text-[10px] text-[var(--ink-muted)] hover:border-[var(--border-strong)] lg:flex" aria-label="Open global search">
+          <button onClick={openPalette} className="hidden h-9 w-56 items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-left text-[10px] text-[var(--ink-muted)] hover:border-[var(--border-strong)] lg:flex" aria-label="Open global search">
             <Search className="size-3.5" /><span className="flex-1">Search projects</span><kbd className="rounded border border-[var(--border)] px-1.5 py-0.5 text-[8px]">⌘ K</kbd>
           </button>
           <button className="icon-button lg:hidden" onClick={openPalette} aria-label="Open global search"><Search className="size-4" /></button>
@@ -344,12 +348,12 @@ export function AppShell({children}: {children: React.ReactNode}) {
           </div>
         </div>
       </header>
-      <main className={cn("min-h-[calc(100dvh-4rem)]", isWorkspaceRoute ? "h-[calc(100dvh-4rem)] overflow-hidden" : "px-4 py-6 sm:px-6 lg:px-8 lg:py-8")}>{children}</main>
+      <main className={cn(isWorkspaceRoute ? "h-[calc(100dvh-4rem)] overflow-hidden" : "app-page-container")}>{children}</main>
     </div>
 
     {mobileOpen ? <div className="fixed inset-0 z-[100] md:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
       <button className="absolute inset-0 bg-[var(--background-overlay)]" onClick={() => setMobileOpen(false)} aria-label="Close navigation" />
-      <aside className="relative h-full w-[min(19rem,88vw)] border-r border-[var(--border)] bg-[var(--sidebar)] shadow-[var(--shadow-lg)]">{sidebar(true)}</aside>
+      <aside className="relative h-full w-[min(20rem,88vw)] border-r border-[var(--border)] bg-[var(--sidebar)] shadow-[var(--shadow-lg)]">{sidebar(true)}</aside>
     </div> : null}
 
     {paletteOpen ? <div className="fixed inset-0 z-[110] flex items-start justify-center bg-[var(--background-overlay)] px-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label="Global search" onMouseDown={(event) => {if (event.target === event.currentTarget) setPaletteOpen(false);}}>
