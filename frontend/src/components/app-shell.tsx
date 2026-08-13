@@ -10,6 +10,7 @@ import {
   Clock3,
   Command,
   FileStack,
+  FlaskConical,
   FolderKanban,
   Home,
   LogOut,
@@ -68,6 +69,7 @@ function navigation(projectId: string | null): NavGroup[] {
       label: "Workspace",
       items: [
         {label: "Home", href: "/home", icon: Home},
+        {label: "Labs", href: "/labs", icon: FlaskConical},
         {label: "Projects", href: "/projects", icon: FolderKanban},
       ],
     },
@@ -99,6 +101,7 @@ function routeLabel(segment: string, project?: Project) {
   if (segment === project?.project_id) return project.name;
   const labels: Record<string, string> = {
     projects: "Projects",
+    labs: "Labs",
     sources: "Sources",
     documents: "Sources",
     playground: "Playground",
@@ -223,6 +226,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
 
   function active(item: NavItem) {
     if (item.label === "Projects") return pathname === "/projects";
+    if (item.label === "Labs") return pathname === "/labs";
     if (item.href.endsWith("/playground") && pathname.includes("/history")) return true;
     if (item.href.endsWith("/pipelines") && pathname.includes("/runs")) return true;
     if (item.href.endsWith("/sources") && pathname.includes("/documents")) return true;
