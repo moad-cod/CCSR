@@ -251,7 +251,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
         </div>
 
         {isLoading ? (
-          <div className="h-64 animate-pulse rounded-2xl bg-white/[0.025]" />
+          <div className="h-64 animate-pulse rounded-2xl bg-[var(--surface-elevated)]" />
         ) : filteredDocuments.length ? (
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
@@ -267,7 +267,7 @@ export function DocumentsWorkspace({projectId}: {projectId: string}) {
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
                   {filteredDocuments.map((document) => (
-                    <tr key={document.document_id} className="hover:bg-white/[0.025]">
+                    <tr key={document.document_id} className="hover:bg-[var(--surface-elevated)]">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex size-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">

@@ -19,13 +19,13 @@ export function Button({
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2",
         variant === "primary" &&
-          "bg-[var(--accent)] text-[var(--ink-inverse)] shadow-sm hover:bg-[var(--accent-strong)]",
+          "bg-[var(--primary)] text-[var(--ink-inverse)] shadow-sm hover:bg-[var(--primary-hover)]",
         variant === "secondary" &&
-          "border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--ink)] hover:bg-[var(--surface-hover)]",
+          "border border-[var(--border-strong)] bg-[var(--surface-elevated)] text-[var(--ink)] hover:bg-[var(--surface-hover)]",
         variant === "ghost" &&
-          "text-[var(--ink-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]",
+          "text-[var(--ink-muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--ink)]",
         variant === "danger" &&
-          "border border-red-400/20 bg-[var(--danger-soft)] text-red-300 hover:bg-red-400/15",
+          "border border-[var(--danger-border)] bg-[var(--danger-soft)] text-[var(--danger)] hover:bg-[var(--danger-soft-hover)]",
         size === "sm" && "h-9 px-3 text-sm",
         size === "md" && "h-10 px-4 text-sm",
         size === "lg" && "h-11 px-5 text-sm",

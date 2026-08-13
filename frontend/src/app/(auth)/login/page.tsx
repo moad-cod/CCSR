@@ -43,13 +43,13 @@ export default function LoginPage() {
 
   return (
     <>
-      <p className="inline-flex items-center gap-2 rounded-full border border-[#e85d9e]/25 bg-[#e85d9e]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f5b5d4]">
+      <p className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-soft-border)] bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-hover)]">
         Welcome back
       </p>
-      <h1 className="mt-4 text-[31px] font-semibold leading-[1.04] tracking-[-0.02em] text-[#f5f1ea]">
+      <h1 className="mt-4 text-[31px] font-semibold leading-[1.04] tracking-[-0.02em] text-[var(--ink)]">
         Sign in to CCSR
       </h1>
-      <p className="mt-2.5 text-[14px] leading-6 text-[#c0b8ae]">
+      <p className="mt-2.5 text-[14px] leading-6 text-[var(--ink-secondary)]">
         Access your research projects, source artifacts, retrieval traces, and
         reproducible experiment workspace.
       </p>
@@ -57,7 +57,7 @@ export default function LoginPage() {
       <form className="mt-6 space-y-4" onSubmit={submit} noValidate>
         <div>
           <label
-            className="mb-1.5 block text-[13px] font-semibold text-[#f5f1ea]"
+            className="mb-1.5 block text-[13px] font-semibold text-[var(--ink)]"
             htmlFor="email"
           >
             Email address
@@ -69,12 +69,12 @@ export default function LoginPage() {
             placeholder="you@example.com"
             aria-invalid={Boolean(errors.email)}
             aria-describedby={errors.email ? "email-error" : undefined}
-            className="h-11 rounded-xl border-[#2a2a2a] bg-[#161616] px-4 text-[15px] text-[#f5f1ea] shadow-[inset_0_1px_0_rgba(245,241,234,0.035)] placeholder:text-[#817a72] transition hover:border-[#403c36] focus:border-[#e85d9e]/70 focus:ring-[#e85d9e]/15"
+            className="h-11 rounded-xl border-[var(--border-strong)] bg-[var(--surface-muted)] px-4 text-[15px] text-[var(--ink)] shadow-[var(--shadow-input)] placeholder:text-[var(--ink-muted)] transition hover:border-[var(--border-strong)] focus:border-[var(--accent)] focus:ring-[var(--accent-soft)]"
             {...register("email")}
           />
           {errors.email ? (
             <span
-              className="mt-2 block text-sm text-[#f2aaa5]"
+              className="mt-2 block text-sm text-[var(--danger-soft-text)]"
               id="email-error"
             >
               {errors.email.message}
@@ -84,7 +84,7 @@ export default function LoginPage() {
 
         <div>
           <label
-            className="mb-1.5 block text-[13px] font-semibold text-[#f5f1ea]"
+            className="mb-1.5 block text-[13px] font-semibold text-[var(--ink)]"
             htmlFor="password"
           >
             Password
@@ -97,12 +97,12 @@ export default function LoginPage() {
               placeholder="Your password"
               aria-invalid={Boolean(errors.password)}
               aria-describedby={errors.password ? "password-error" : undefined}
-              className="h-11 rounded-xl border-[#2a2a2a] bg-[#161616] px-4 pr-12 text-[15px] text-[#f5f1ea] shadow-[inset_0_1px_0_rgba(245,241,234,0.035)] placeholder:text-[#817a72] transition hover:border-[#403c36] focus:border-[#8c6bdb]/75 focus:ring-[#8c6bdb]/18"
+              className="h-11 rounded-xl border-[var(--border-strong)] bg-[var(--surface-muted)] px-4 pr-12 text-[15px] text-[var(--ink)] shadow-[var(--shadow-input)] placeholder:text-[var(--ink-muted)] transition hover:border-[var(--border-strong)] focus:border-[var(--research-violet)] focus:ring-[var(--tertiary-soft)]"
               {...register("password")}
             />
             <button
               type="button"
-              className="absolute right-1 top-1 flex size-9 items-center justify-center rounded-xl text-[#b8b0a3] transition hover:bg-[#242424] hover:text-[#f5f1ea] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8c6bdb] focus-visible:ring-offset-2 focus-visible:ring-offset-[#161616]"
+              className="absolute right-1 top-1 flex size-9 items-center justify-center rounded-xl text-[var(--ink-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--research-violet)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-muted)]"
               aria-label={showPassword ? "Hide secret" : "Show secret"}
               onClick={() => setShowPassword((value) => !value)}
             >
@@ -115,7 +115,7 @@ export default function LoginPage() {
           </div>
           {errors.password ? (
             <span
-              className="mt-2 block text-sm text-[#f2aaa5]"
+              className="mt-2 block text-sm text-[var(--danger-soft-text)]"
               id="password-error"
             >
               {errors.password.message}
@@ -125,7 +125,7 @@ export default function LoginPage() {
 
         {formError ? (
           <div
-            className="flex gap-2 rounded-2xl border border-[#d76c6c]/35 bg-[#d76c6c]/10 px-3 py-2.5 text-sm leading-5 text-[#f2aaa5]"
+            className="flex gap-2 rounded-2xl border border-[var(--danger-soft-border)] bg-[var(--danger-soft)] px-3 py-2.5 text-sm leading-5 text-[var(--danger-soft-text)]"
             role="alert"
             aria-live="assertive"
           >
@@ -135,7 +135,7 @@ export default function LoginPage() {
         ) : null}
 
         <Button
-          className="h-11 w-full rounded-xl border border-[#f2a65a]/35 bg-[#f5f1ea] text-[15px] font-semibold text-[#111111] shadow-[0_14px_34px_rgba(232,93,158,0.15),inset_0_1px_0_rgba(255,255,255,0.55)] transition hover:-translate-y-0.5 hover:bg-[#fff7ec] hover:shadow-[0_18px_44px_rgba(242,166,90,0.17),inset_0_1px_0_rgba(255,255,255,0.65)] active:translate-y-0 focus-visible:ring-[#e85d9e] focus-visible:ring-offset-[#080808]"
+          className="h-11 w-full rounded-xl border border-[var(--accent)] bg-[var(--accent)] text-[15px] font-semibold text-[var(--ink-inverse)] shadow-[var(--shadow-accent)] transition hover:-translate-y-0.5 hover:bg-[var(--accent-hover)] active:translate-y-0 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-[var(--background)]"
           size="lg"
           type="submit"
           disabled={isSubmitting}
@@ -149,10 +149,10 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <p className="mt-5 rounded-xl border border-[#2a2a2a] bg-[#161616]/70 px-4 py-2.5 text-center text-sm text-[#c0b8ae]">
+      <p className="mt-5 rounded-xl border border-[var(--border-strong)] bg-[var(--surface-elevated-glass)] px-4 py-2.5 text-center text-sm text-[var(--ink-secondary)]">
         New to CCSR?{" "}
         <Link
-          className="font-semibold text-[#f5b5d4] underline-offset-4 hover:text-[#ffd0e6] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e85d9e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]"
+          className="font-semibold text-[var(--accent-hover)] underline-offset-4 hover:text-[var(--accent-hover)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
           href="/register"
         >
           Create an account

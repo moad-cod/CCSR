@@ -54,3 +54,6 @@ frontend/playwright-report/
 # Logs
 *.log
 logs/
+
+optimization_task.md
+tasks-evaluation.txt

@@ -74,6 +74,7 @@ The global sidebar is workflow-oriented:
 ```text
 Workspace
   Home
+  Labs
   Projects
 
 Research
@@ -125,6 +126,7 @@ matching backend contracts exist.
 | `/login` | CCSR sign-in page |
 | `/register` | CCSR registration page |
 | `/home` | Cross-project home and next-work guidance |
+| `/labs` | Premium lab discovery across implemented project workspaces, with domain filters and real readiness data |
 | `/projects` | Project list, create, rename, delete |
 | `/projects/[projectId]/overview` | Real project readiness, next action, recent runs, latest query |
 | `/projects/[projectId]/sources` | Unified source manager and playground workspace entry |
@@ -216,6 +218,14 @@ metrics.
 `/projects` shows projects as research workspaces. Cards link primarily to the
 project overview. Rename and delete are kept in an overflow menu. Counts are
 loaded from current document and ingestion endpoints.
+
+### Labs
+
+`/labs` is the premium discovery surface for project-backed research labs. It
+groups existing project workspaces by frontend-inferred research domains such
+as Retrieval/RAG, NLP, Computer Vision, Machine Learning, Multimodal, AI
+Systems, and Mathematics. Lab cards use real project, source, and ingestion run
+data; they do not invent unsupported experiment records or synthetic metrics.
 
 ### Sources
 

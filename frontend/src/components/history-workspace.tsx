@@ -65,14 +65,14 @@ export function HistoryWorkspace({projectId}: {projectId: string}) {
             />
           </div>
           {isLoading ? (
-            <div className="h-96 animate-pulse rounded-2xl bg-white" />
+            <div className="h-96 animate-pulse rounded-2xl bg-[var(--surface)]" />
           ) : filtered.length ? (
             <Card className="max-h-[720px] divide-y divide-[var(--border)] overflow-y-auto">
               {filtered.map((item) => (
                 <button
                   key={item.query_log_id}
-                  className={`w-full p-4 text-left transition hover:bg-slate-50 ${
-                    selectedId === item.query_log_id ? "bg-indigo-50/60" : ""
+                  className={`w-full p-4 text-left transition hover:bg-[var(--surface-hover)] ${
+                    selectedId === item.query_log_id ? "bg-[var(--surface-active)]" : ""
                   }`}
                   onClick={() => setSelectedId(item.query_log_id)}
                 >
@@ -83,7 +83,7 @@ export function HistoryWorkspace({projectId}: {projectId: string}) {
                     {item.answer ? (
                       <CheckCircle2 className="size-4 shrink-0 text-[var(--success)]" />
                     ) : (
-                      <XCircle className="size-4 shrink-0 text-red-500" />
+                      <XCircle className="size-4 shrink-0 text-[var(--danger)]" />
                     )}
                   </div>
                   <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--ink-muted)]">
@@ -128,12 +128,12 @@ export function HistoryWorkspace({projectId}: {projectId: string}) {
               </p>
             </Card>
           ) : traceLoading || !trace ? (
-            <div className="h-[620px] animate-pulse rounded-2xl bg-white" />
+            <div className="h-[620px] animate-pulse rounded-2xl bg-[var(--surface)]" />
           ) : (
             <Card className="overflow-hidden">
               <div className="border-b border-[var(--border)] p-5">
                 <div className="flex items-start gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-elevated)] text-[var(--ink-muted)]">
                     <Bot className="size-4" />
                   </div>
                   <div>
@@ -186,7 +186,7 @@ export function HistoryWorkspace({projectId}: {projectId: string}) {
                   {trace.retrievals.map((retrieval) => (
                     <div
                       key={retrieval.retrieval_log_id}
-                      className="rounded-xl border border-[var(--border)] bg-white p-4"
+                      className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>

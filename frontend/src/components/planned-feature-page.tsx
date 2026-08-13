@@ -48,9 +48,9 @@ export function PlannedFeaturePage({
       actions={<Link href={nextHref}><Button><ArrowRight className="size-4" />{primaryLabel}</Button></Link>}
     />
     {projectName ? <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-      <p className="text-[9px] font-semibold uppercase tracking-[.14em] text-[#817a72]">Project context</p>
+      <p className="text-[9px] font-semibold uppercase tracking-[.14em] text-[var(--ink-muted)]">Project context</p>
       <h2 className="mt-2 text-sm font-semibold">{projectName}</h2>
-      <p className="mono mt-1 text-[8px] text-[#5c5751]">{projectId}</p>
+      <p className="mono mt-1 text-[8px] text-[var(--ink-disabled)]">{projectId}</p>
     </section> : null}
     <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
       <section className="rounded-xl border border-[var(--warning-border)] bg-[var(--warning-soft)] p-5">
@@ -68,7 +68,7 @@ export function PlannedFeaturePage({
           <h2 className="text-sm font-semibold">What you can do now</h2>
         </div>
         <div className="mt-4 grid gap-2">
-          {contextLinks.map(([label, href, Icon]) => <Link key={label} href={href} className="flex items-center gap-3 rounded-lg border border-white/[0.07] bg-white/[0.018] p-3 text-xs text-[var(--ink-muted)] hover:border-[var(--accent-border)] hover:text-white">
+          {contextLinks.map(([label, href, Icon]) => <Link key={label} href={href} className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-3 text-xs text-[var(--ink-muted)] hover:border-[var(--accent-border)] hover:text-[var(--ink)]">
             <Icon className="size-4 text-[var(--accent)]" />
             <span>{label}</span>
             <ArrowRight className="ml-auto size-3" />
