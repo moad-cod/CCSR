@@ -225,7 +225,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
               <label>
                 <span className="mb-1.5 block text-xs font-semibold">Provider</span>
                 <select
-                  className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm"
+                  className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm"
                   value={provider}
                   onChange={(event) =>
                     setProvider(event.target.value as "gemini" | "groq")
@@ -240,7 +240,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
                   Search scope
                 </span>
                 <select
-                  className="h-10 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm"
+                  className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm"
                   value={documentId}
                   onChange={(event) => setDocumentId(event.target.value)}
                 >
@@ -277,7 +277,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
                 ].map((prompt) => (
                   <button
                     key={prompt}
-                    className="rounded-full border border-[var(--border)] bg-white px-3.5 py-2 text-xs font-medium text-[var(--ink-muted)] hover:border-indigo-200 hover:text-[var(--accent)]"
+                    className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-xs font-medium text-[var(--ink-muted)] hover:border-[var(--accent-border)] hover:text-[var(--accent)]"
                     onClick={() => setQuestion(prompt)}
                   >
                     {prompt}
@@ -295,7 +295,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
                 )}
               >
                 {message.role === "assistant" ? (
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-white">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--ink)]">
                     <Bot className="size-4.5" />
                   </div>
                 ) : null}
@@ -303,7 +303,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
                   className={cn(
                     "max-w-3xl",
                     message.role === "user" &&
-                      "rounded-2xl rounded-br-md bg-[var(--surface-dark)] px-4 py-3 text-sm leading-6 text-white",
+                      "rounded-2xl rounded-br-md bg-[var(--surface-dark)] px-4 py-3 text-sm leading-6 text-[var(--ink)]",
                     message.role === "assistant" && "min-w-0 flex-1",
                   )}
                 >
@@ -351,7 +351,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
                       </summary>
                       <div className="space-y-3 border-t border-[var(--border)] p-3">
                         {message.sources.map((source) => (
-                          <div key={source.retrieval_log_id} className="rounded-lg bg-white p-3">
+                          <div key={source.retrieval_log_id} className="rounded-lg bg-[var(--surface)] p-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="text-xs font-semibold">
                                 #{source.rank} · {source.document_name || "Indexed document"}
@@ -370,7 +370,7 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
                   ) : null}
                 </div>
                 {message.role === "user" ? (
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-600">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-elevated)] text-[var(--ink-muted)]">
                     <UserRound className="size-4.5" />
                   </div>
                 ) : null}
@@ -379,8 +379,8 @@ export function ChatWorkspace({projectId}: {projectId: string}) {
           )}
         </div>
 
-        <div className="border-t border-[var(--border)] bg-white p-4 sm:p-5">
-          <div className="flex items-end gap-3 rounded-2xl border border-[var(--border-strong)] bg-white p-2 shadow-lg shadow-slate-900/5 focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-[var(--accent-soft)]">
+        <div className="border-t border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5">
+          <div className="flex items-end gap-3 rounded-2xl border border-[var(--border-strong)] bg-[var(--surface)] p-2 shadow-[var(--shadow-md)]  focus-within:border-[var(--accent)] focus-within:ring-4 focus-within:ring-[var(--accent-soft)]">
             <textarea
               className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm leading-6 outline-none placeholder:text-[var(--ink-faint)]"
               placeholder={
