@@ -2,14 +2,15 @@
 
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {
+  Archive,
   BarChart3,
+  Beaker,
   Bell,
+  BookOpenText,
   Building2,
   ChevronDown,
   ChevronRight,
-  Clock3,
   Command,
-  FileStack,
   FlaskConical,
   FolderKanban,
   Home,
@@ -17,6 +18,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  RotateCcw,
   Search,
   Settings,
   Sparkles,
@@ -43,21 +45,23 @@ function navigation(projectId: string | null): NavGroup[] {
   if (projectId) {
     return [
       {
-        label: "Project",
+        label: "Lab",
         items: [
           {label: "Overview", href: `/projects/${projectId}/overview`, icon: Home},
-          {label: "Sources", href: `/projects/${projectId}/sources`, icon: FileStack},
-          {label: "Playground", href: `/projects/${projectId}/playground`, icon: Sparkles},
-          {label: "Pipelines", href: `/projects/${projectId}/pipelines`, icon: Workflow},
-          {label: "Experiments", href: `/projects/${projectId}/experiments`, icon: Clock3},
-          {label: "Evaluation", href: `/projects/${projectId}/evaluation`, icon: BarChart3},
-          {label: "Settings", href: `/projects/${projectId}/settings`, icon: Settings},
+          {label: "Research", href: `/projects/${projectId}/research`, icon: BookOpenText},
+          {label: "Experiments", href: `/projects/${projectId}/experiments`, icon: FlaskConical},
+          {label: "Results", href: `/projects/${projectId}/results`, icon: BarChart3},
+          {label: "Artifacts", href: `/projects/${projectId}/artifacts`, icon: Archive},
+          {label: "Test", href: `/projects/${projectId}/test`, icon: Beaker},
+          {label: "Reproduce", href: `/projects/${projectId}/reproduce`, icon: RotateCcw},
         ],
       },
       {
         label: "Manage",
         items: [
+          {label: "All labs", href: "/labs", icon: FlaskConical},
           {label: "All projects", href: "/projects", icon: FolderKanban},
+          {label: "Settings", href: `/projects/${projectId}/settings`, icon: Settings},
           {label: "Organization", href: "/organization", icon: Building2},
           {label: "Profile", href: "/settings/profile", icon: UserRound},
         ],
@@ -102,14 +106,19 @@ function routeLabel(segment: string, project?: Project) {
   const labels: Record<string, string> = {
     projects: "Projects",
     labs: "Labs",
+    research: "Research",
     sources: "Sources",
     documents: "Sources",
+    test: "Test",
     playground: "Playground",
     pipelines: "Pipelines",
+    artifacts: "Artifacts",
     runs: "Runs",
     history: "Playground history",
     experiments: "Experiments",
+    results: "Results",
     evaluation: "Evaluation",
+    reproduce: "Reproduce",
     comparisons: "Comparisons",
     overview: "Overview",
     observability: "Observability",
@@ -227,9 +236,10 @@ export function AppShell({children}: {children: React.ReactNode}) {
   function active(item: NavItem) {
     if (item.label === "Projects") return pathname === "/projects";
     if (item.label === "Labs") return pathname === "/labs";
-    if (item.href.endsWith("/playground") && pathname.includes("/history")) return true;
-    if (item.href.endsWith("/pipelines") && pathname.includes("/runs")) return true;
-    if (item.href.endsWith("/sources") && pathname.includes("/documents")) return true;
+    if (item.label === "Research") return pathname.includes("/research") || pathname.includes("/sources") || pathname.includes("/documents");
+    if (item.label === "Artifacts") return pathname.includes("/artifacts") || pathname.includes("/pipelines") || pathname.includes("/runs/");
+    if (item.label === "Results") return pathname.includes("/results") || pathname.includes("/evaluation");
+    if (item.label === "Test") return pathname.includes("/test") || pathname.includes("/playground") || pathname.includes("/history");
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   }
 

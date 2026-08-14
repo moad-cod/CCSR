@@ -31,17 +31,17 @@ export function ProjectOverview({projectId}: {projectId: string}) {
   const failedRuns = runItems.filter((run) => run.status === "failed");
   const lastQuery = queries[0];
   const nextAction = !docs.length
-    ? {label: "Add sources", href: `/projects/${projectId}/sources`, Icon: FileStack, description: "Upload files, URLs, or drive sources before running retrieval tests."}
+    ? {label: "Prepare research", href: `/projects/${projectId}/research`, Icon: FileStack, description: "Add papers, datasets, notes, or source documents before running retrieval tests."}
     : indexed === 0
-      ? {label: "Watch pipelines", href: `/projects/${projectId}/pipelines`, Icon: Workflow, description: "Sources exist but are not indexed yet. Track the pipeline to completion."}
-      : {label: "Open playground", href: `/projects/${projectId}/playground`, Icon: MessageSquareText, description: "Ask grounded questions and inspect retrieval evidence."};
+      ? {label: "Review artifacts", href: `/projects/${projectId}/artifacts`, Icon: Workflow, description: "Sources exist but are not indexed yet. Track ingestion artifacts to completion."}
+      : {label: "Run test", href: `/projects/${projectId}/test`, Icon: MessageSquareText, description: "Ask grounded questions and inspect retrieval evidence."};
   const NextIcon = nextAction.Icon;
 
   return <div className="mx-auto max-w-7xl space-y-6">
     <PageHeader
       eyebrow="Project overview"
       title={project.data.name}
-      description="Project-first control center for sources, playground queries, pipeline state, and the next experiment/evaluation surfaces."
+      description="Lab-first control center for research sources, interactive tests, pipeline evidence, artifacts, and reproducibility readiness."
       actions={<Link href={nextAction.href}><Button><ArrowRight className="size-4" />{nextAction.label}</Button></Link>}
     />
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -65,11 +65,11 @@ export function ProjectOverview({projectId}: {projectId: string}) {
     </section>
     <div className="grid gap-5 xl:grid-cols-2">
       <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-        <div className="flex items-center justify-between border-b border-[var(--border)] p-4"><div><h2 className="text-sm font-semibold">Recent pipeline runs</h2><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Operational state for this project</p></div><Link href={`/projects/${projectId}/pipelines`} className="text-[10px] text-[var(--accent)]">View runs</Link></div>
+        <div className="flex items-center justify-between border-b border-[var(--border)] p-4"><div><h2 className="text-sm font-semibold">Recent pipeline runs</h2><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Operational state for this Lab</p></div><Link href={`/projects/${projectId}/artifacts`} className="text-[10px] text-[var(--accent)]">View artifacts</Link></div>
         <div className="divide-y divide-[var(--border)]">{runItems.slice(0, 5).map((run) => <Link key={run.ingestion_run_id} href={`/projects/${projectId}/runs/${run.ingestion_run_id}`} className="flex items-center gap-3 p-4 hover:bg-[var(--surface-elevated)]"><span className="min-w-0 flex-1"><span className="mono block truncate text-[9px] text-[var(--ink-secondary)]">{run.ingestion_run_id}</span><span className="mt-1 block text-[8px] text-[var(--ink-disabled)]">{relativeTime(run.created_at)}</span></span><StatusBadge status={run.status} /></Link>)}{!runItems.length ? <p className="p-8 text-center text-[10px] text-[var(--ink-muted)]">No runs yet. Add sources to start ingestion.</p> : null}</div>
       </section>
       <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-        <div className="flex items-center justify-between border-b border-[var(--border)] p-4"><div><h2 className="text-sm font-semibold">Latest playground result</h2><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Question, latency, and answer status</p></div><Link href={`/projects/${projectId}/playground`} className="text-[10px] text-[var(--accent)]">Open playground</Link></div>
+        <div className="flex items-center justify-between border-b border-[var(--border)] p-4"><div><h2 className="text-sm font-semibold">Latest test result</h2><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Question, latency, and answer status</p></div><Link href={`/projects/${projectId}/test`} className="text-[10px] text-[var(--accent)]">Open test</Link></div>
         {lastQuery ? <Link href={`/projects/${projectId}/history/${lastQuery.query_log_id}`} className="block p-4 hover:bg-[var(--surface-elevated)]"><p className="line-clamp-2 text-xs font-medium leading-5">{lastQuery.question}</p><p className="mt-2 line-clamp-2 text-[10px] leading-5 text-[var(--ink-muted)]">{lastQuery.answer ?? "No answer was persisted."}</p><div className="mt-3 flex flex-wrap gap-2 text-[9px] text-[var(--ink-disabled)]"><span>{formatLatency(lastQuery.latency_ms)}</span><span>{lastQuery.cache_hit ? "cached" : "generated"}</span><span>{lastQuery.model ?? "model unavailable"}</span></div></Link> : <p className="p-8 text-center text-[10px] text-[var(--ink-muted)]">No playground queries yet. Ask a question after indexing sources.</p>}
       </section>
     </div>

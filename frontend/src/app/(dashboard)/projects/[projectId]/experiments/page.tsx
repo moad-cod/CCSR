@@ -1,3 +1,4 @@
+import {LabShell} from "@/components/labs/lab-shell";
 import {ProjectPlannedFeaturePage} from "@/components/project-planned-feature-page";
 
 export default async function ProjectExperimentsPage({
@@ -6,13 +7,13 @@ export default async function ProjectExperimentsPage({
   params: Promise<{projectId: string}>;
 }) {
   const {projectId} = await params;
-  return <ProjectPlannedFeaturePage
+  return <LabShell projectId={projectId}><ProjectPlannedFeaturePage
     projectId={projectId}
     eyebrow="Research"
     title="Experiments"
     description="Experiment runs will compare orchestrators, datasets, retrieval settings, latency, reliability, and cost from one project-scoped research surface."
-    primaryHref={`/projects/${projectId}/sources`}
-    primaryLabel="Prepare sources"
+    primaryHref={`/projects/${projectId}/research`}
+    primaryLabel="Review research"
     available={[
       "Use project sources as the corpus for future experiments.",
       "Use the playground to test retrieval settings and inspect evidence.",
@@ -23,5 +24,5 @@ export default async function ProjectExperimentsPage({
       "Run lifecycle, logs, resource metrics, and exported artifacts.",
       "Quality, latency, reliability, and cost summaries once backend evaluation endpoints exist.",
     ]}
-  />;
+  /></LabShell>;
 }
