@@ -26,13 +26,13 @@ export function PlannedFeaturePage({
   available = [],
   planned = [],
 }: PlannedFeaturePageProps) {
-  const fallbackHref = projectId ? `/projects/${projectId}/sources` : "/projects";
+  const fallbackHref = projectId ? `/projects/${projectId}/research` : "/projects";
   const nextHref = primaryHref ?? fallbackHref;
   const contextLinks = projectId
     ? [
-        ["Sources", `/projects/${projectId}/sources`, FileStack],
-        ["Playground", `/projects/${projectId}/playground`, Database],
-        ["Pipelines", `/projects/${projectId}/pipelines`, Workflow],
+        ["Research", `/projects/${projectId}/research`, FileStack],
+        ["Test", `/projects/${projectId}/test`, Database],
+        ["Artifacts", `/projects/${projectId}/artifacts`, Workflow],
       ] as const
     : [
         ["Projects", "/projects", FolderKanban],
