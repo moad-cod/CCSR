@@ -1,3 +1,4 @@
+import {LabShell} from "@/components/labs/lab-shell";
 import {ProjectPlannedFeaturePage} from "@/components/project-planned-feature-page";
 
 export default async function ExperimentDetailPage({
@@ -6,7 +7,7 @@ export default async function ExperimentDetailPage({
   params: Promise<{projectId: string; experimentId: string}>;
 }) {
   const {projectId, experimentId} = await params;
-  return <ProjectPlannedFeaturePage
+  return <LabShell projectId={projectId}><ProjectPlannedFeaturePage
     projectId={projectId}
     eyebrow="Experiment detail"
     title={`Experiment ${experimentId}`}
@@ -22,5 +23,5 @@ export default async function ExperimentDetailPage({
       "Run status, logs, and output artifacts.",
       "Evaluation metrics and comparison eligibility.",
     ]}
-  />;
+  /></LabShell>;
 }
