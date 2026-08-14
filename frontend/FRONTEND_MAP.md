@@ -96,25 +96,28 @@ show fake experiment records, fake metrics, or comparison results.
 Global `Documents` and global `Query History` are not primary navigation
 items. Source management and query history belong inside project workflows.
 
-### Project Navigation
+### Lab Navigation
 
-Inside a project, the sidebar switches to project context:
+Inside a project-backed Lab, the sidebar switches to Lab context:
 
 ```text
-Back to all projects
+Back to all labs / projects
 
 <Project Name>
   Overview
-  Sources
-  Playground
-  Pipelines
+  Research
   Experiments
-  Evaluation
-  Settings
+  Results
+  Artifacts
+  Test
+  Reproduce
 ```
 
-`Experiments` and `Evaluation` are project-scoped planned-feature pages until
-matching backend contracts exist.
+The common Lab shell also exposes the same sequence as a compact tab row inside
+individual Lab pages. `Experiments` remains a planned-feature surface until
+matching backend contracts exist. `Results`, `Artifacts`, and `Reproduce` use
+real source, ingestion-run, query-history, and collection evidence that already
+exists in the backend.
 
 ## Routes
 
@@ -129,10 +132,16 @@ matching backend contracts exist.
 | `/labs` | Premium lab discovery across implemented project workspaces, with domain filters and real readiness data |
 | `/projects` | Project list, create, rename, delete |
 | `/projects/[projectId]/overview` | Real project readiness, next action, recent runs, latest query |
+| `/projects/[projectId]/research` | Lab research corpus and methodology evidence from real sources and runs |
+| `/projects/[projectId]/experiments` | Project-scoped planned experiment surface |
+| `/projects/[projectId]/results` | Real playground result evidence and run completion signals |
+| `/projects/[projectId]/artifacts` | Source, run, and collection artifact registry backed by current endpoints |
+| `/projects/[projectId]/test` | Lab test surface embedding the implemented RAG playground |
+| `/projects/[projectId]/reproduce` | Reproducibility checklist from current source, run, and query evidence |
 | `/projects/[projectId]/sources` | Unified source manager and playground workspace entry |
 | `/projects/[projectId]/playground` | Unified playground workspace entry |
 | `/projects/[projectId]/pipelines` | Pipeline configuration notes and project run list |
-| `/projects/[projectId]/settings` | Project settings and destructive delete action |
+| `/projects/[projectId]/settings` | Lab/project settings and destructive delete action |
 | `/projects/[projectId]/runs/[runId]` | Run detail with durable ingestion status |
 | `/projects/[projectId]/history/[queryId]` | Persisted query detail and retrieval evidence |
 | `/runs` | Cross-project ingestion run index |
@@ -149,6 +158,7 @@ matching backend contracts exist.
 | `/projects/[projectId]/history` | Redirects to `/projects/[projectId]/playground?view=history` |
 | `/projects/[projectId]/runs` | Redirects to `/projects/[projectId]/pipelines?view=runs` |
 | `/projects/[projectId]/documents` | Supported as workspace compatibility for Sources |
+| `/projects/[projectId]/evaluation` | Redirects to `/projects/[projectId]/results` |
 
 ## Main Frontend Directories
 
@@ -176,6 +186,12 @@ frontend/
 | Component | Role |
 | --- | --- |
 | `AppShell` | Authenticated shell, sidebar, top bar, project switcher, command palette |
+| `LabShell` | Common Lab identity header and tabs: Overview, Research, Experiments, Results, Artifacts, Test, Reproduce |
+| `LabResearchPage` | Project-backed research corpus and methodology evidence |
+| `LabResultsPage` | Real query-history result evidence and run completion signals |
+| `LabArtifactsPage` | Source, ingestion-run, and collection artifacts |
+| `LabReproducePage` | Reproducibility readiness checklist |
+| `LabTestPage` | Lab wrapper around the implemented workspace playground |
 | `ProjectOverview` | Project readiness and next meaningful action using real data |
 | `ProjectPipelinesPage` | Project pipeline information plus reusable run index |
 | `IngestionRunsPage` | Global or project-scoped durable run list |
