@@ -1,7 +1,7 @@
 "use client";
 
 import {useQuery} from "@tanstack/react-query";
-import {ArrowRight, BarChart3, Database, FileStack, MessageSquareText, Sparkles, Workflow} from "lucide-react";
+import {ArrowRight, BarChart3, BookOpenText, Database, FileStack, MessageSquareText, Sparkles, Workflow} from "lucide-react";
 import Link from "next/link";
 import {MetricCard} from "@/components/metric-card";
 import {PageHeader} from "@/components/page-header";
@@ -30,6 +30,7 @@ export function ProjectOverview({projectId}: {projectId: string}) {
   const activeRuns = runItems.filter((run) => !["indexed", "failed", "cancelled"].includes(run.status));
   const failedRuns = runItems.filter((run) => run.status === "failed");
   const lastQuery = queries[0];
+  const primarySource = docs[0];
   const nextAction = !docs.length
     ? {label: "Prepare research", href: `/projects/${projectId}/research`, Icon: FileStack, description: "Add papers, datasets, notes, or source documents before running retrieval tests."}
     : indexed === 0
@@ -50,6 +51,29 @@ export function ProjectOverview({projectId}: {projectId: string}) {
       <MetricCard label="Failed runs" value={failedRuns.length} detail="Retry from durable Bronze when available" icon={BarChart3} />
       <MetricCard label="Playground queries" value={queries.length} detail="Persisted in query history" icon={Sparkles} />
     </div>
+    <section className="grid gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 lg:grid-cols-[1.1fr_0.9fr]">
+      <div>
+        <div className="flex items-center gap-2">
+          <BookOpenText className="size-4 text-[var(--research-violet)]" />
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--research-violet)]">Research paper draft</p>
+        </div>
+        <h2 className="mt-3 text-lg font-semibold leading-7">How can {project.data.name} produce grounded, inspectable research answers?</h2>
+        <p className="mt-3 text-sm leading-6 text-[var(--ink-secondary)]">
+          This working abstract is derived from the current Lab state: {docs.length} source records, {indexed} indexed sources, {runItems.length} ingestion runs, and {queries.length} persisted tests. Add papers and run tests to turn this draft into stronger evidence.
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Hypothesis</p>
+          <p className="mt-2 text-xs leading-5 text-[var(--ink-secondary)]">Indexed source evidence should improve answer traceability compared with ungrounded generation, especially when citations and retrieval traces are inspected after each test.</p>
+        </div>
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Primary paper</p>
+          <p className="mt-2 truncate text-xs font-medium text-[var(--ink)]">{primarySource?.filename ?? "No source selected yet"}</p>
+          <p className="mt-1 text-[9px] text-[var(--ink-muted)]">{primarySource ? `${primarySource.status} · ${relativeTime(primarySource.updated_at)}` : "Add a source in Research to begin."}</p>
+        </div>
+      </div>
+    </section>
     <section className="rounded-xl border border-[var(--accent-border)] bg-[var(--surface)] p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
