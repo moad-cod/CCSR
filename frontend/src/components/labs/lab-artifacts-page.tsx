@@ -133,5 +133,29 @@ export function LabArtifactsPage({projectId}: {projectId: string}) {
         <ArtifactCard type="Notebook" title="Notebook registry unavailable" detail="The current backend does not expose notebook artifacts yet." icon={NotebookTabs} tone="warning" />
       </div> : <EmptyState icon={Archive} title="No artifacts yet" description="Add and process sources to create source records, run evidence, model references, and vector artifacts." action="Add sources" onAction={() => location.assign(`/projects/${projectId}/sources`)} />}
     </section>
+
+    <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <div className="flex items-center gap-2"><BarChart3 className="size-4 text-[var(--accent)]" /><h2 className="text-sm font-semibold">Plots</h2></div>
+        <div className="mt-5 space-y-4">
+          <StagePlot label="Bronze landed" value={bronze} total={runItems.length} color="var(--domain-baseline)" />
+          <StagePlot label="Silver parsed" value={silver} total={runItems.length} color="var(--domain-cv)" />
+          <StagePlot label="Gold chunked" value={gold} total={runItems.length} color="var(--research-violet)" />
+          <StagePlot label="Qdrant indexed" value={qdrant} total={runItems.length} color="var(--accent)" />
+        </div>
+      </section>
+      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <div className="flex items-center gap-2"><Code2 className="size-4 text-[var(--research-violet)]" /><h2 className="text-sm font-semibold">Code references</h2></div>
+        <div className="mt-4 grid gap-2">
+          {codeReferences.map(({label, path, icon: Component}) => {
+            return <div key={path as string} className="grid grid-cols-[22px_120px_1fr] items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2">
+              <Component className="size-3.5 text-[var(--ink-muted)]" />
+              <span className="text-[10px] font-medium text-[var(--ink)]">{label}</span>
+              <code className="mono truncate text-[9px] text-[var(--ink-muted)]">{path}</code>
+            </div>;
+          })}
+        </div>
+      </section>
+    </div>
   </div>;
 }
