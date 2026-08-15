@@ -94,24 +94,31 @@ export function LabArtifactsPage({projectId}: {projectId: string}) {
   ];
 
   return <div className="space-y-6">
-    <PageHeader eyebrow={project.data?.name ?? "Artifacts"} title="Artifacts" description="Source, pipeline, and vector collection artifacts available through the current CCSR control plane." actions={<Link href={`/projects/${projectId}/pipelines`}><Button><Workflow className="size-4" />View runs</Button></Link>} />
-    <div className="grid gap-4 lg:grid-cols-3">
+    <PageHeader eyebrow={project.data?.name ?? "Artifacts"} title="Artifacts" description="Models, datasets, configurations, reports, plots, and code references tied to real CCSR control-plane evidence." actions={<Link href={`/projects/${projectId}/pipelines`}><Button><Workflow className="size-4" />View runs</Button></Link>} />
+
+    <div className="grid gap-4 lg:grid-cols-4">
       <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--research-violet)]">Collection</p>
-        <h2 className="mt-3 text-sm font-semibold">Vector store</h2>
-        <p className="mono mt-2 break-all text-[10px] leading-5 text-[var(--ink-muted)]">{project.data?.qdrant_collection}</p>
+        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--research-violet)]">Datasets</p>
+        <h2 className="mt-3 text-sm font-semibold">{docs.length} source objects</h2>
+        <p className="mt-2 text-xs leading-5 text-[var(--ink-muted)]">{indexed.length} indexed sources are ready for retrieval-backed tests.</p>
       </section>
       <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--accent)]">Sources</p>
-        <h2 className="mt-3 text-sm font-semibold">{docs.length} source artifacts</h2>
-        <p className="mt-2 text-xs leading-5 text-[var(--ink-muted)]">Documents and source metadata registered for this Lab.</p>
+        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--accent)]">Models</p>
+        <h2 className="mt-3 text-sm font-semibold">{modelNames.length || "No"} model references</h2>
+        <p className="mt-2 text-xs leading-5 text-[var(--ink-muted)]">Embedding and generation model names from versions and query history.</p>
       </section>
       <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--info)]">Runs</p>
-        <h2 className="mt-3 text-sm font-semibold">{runItems.length} pipeline artifacts</h2>
-        <p className="mt-2 text-xs leading-5 text-[var(--ink-muted)]">Durable ingestion attempts and stage progress records.</p>
+        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--info)]">Reports</p>
+        <h2 className="mt-3 text-sm font-semibold">{queries.length + runItems.length} evidence records</h2>
+        <p className="mt-2 text-xs leading-5 text-[var(--ink-muted)]">Query results and pipeline runs act as current report evidence.</p>
+      </section>
+      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--domain-ai-systems)]">Configs</p>
+        <h2 className="mt-3 text-sm font-semibold">{chunkers.length + providers.length + 1} configuration signals</h2>
+        <p className="mono mt-2 truncate text-[10px] leading-5 text-[var(--ink-muted)]">{project.data?.qdrant_collection}</p>
       </section>
     </div>
+
     <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
       <div className="border-b border-[var(--border)] p-4"><h2 className="text-sm font-semibold">Artifact registry</h2><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Real source and run objects, not synthetic research assets</p></div>
       {docs.length || runItems.length ? <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
