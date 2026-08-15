@@ -114,10 +114,11 @@ Back to all labs / projects
 ```
 
 The common Lab shell also exposes the same sequence as a compact tab row inside
-individual Lab pages. `Experiments` remains a planned-feature surface until
-matching backend contracts exist. `Results`, `Artifacts`, and `Reproduce` use
-real source, ingestion-run, query-history, and collection evidence that already
-exists in the backend.
+individual Lab pages. `Experiments`, `Results`, `Artifacts`, and `Reproduce`
+use real source, ingestion-run, query-history, and collection evidence that
+already exists in the backend. Unsupported baseline, evaluator, cost, and
+generic experiment-record slots are labeled as unavailable or planned rather
+than rendered as fake metrics.
 
 ## Routes
 
@@ -133,9 +134,9 @@ exists in the backend.
 | `/projects` | Project list, create, rename, delete |
 | `/projects/[projectId]/overview` | Real project readiness, next action, recent runs, latest query |
 | `/projects/[projectId]/research` | Lab research corpus and methodology evidence from real sources and runs |
-| `/projects/[projectId]/experiments` | Project-scoped planned experiment surface |
-| `/projects/[projectId]/results` | Real playground result evidence and run completion signals |
-| `/projects/[projectId]/artifacts` | Source, run, and collection artifact registry backed by current endpoints |
+| `/projects/[projectId]/experiments` | Evidence-backed experiment configurations, comparisons, readiness plots, and current findings |
+| `/projects/[projectId]/results` | Real playground result evidence, comparison summary, metrics, plots, and findings |
+| `/projects/[projectId]/artifacts` | Typed artifact registry for datasets, model references, configs, reports, plots, and code references backed by current endpoints |
 | `/projects/[projectId]/test` | Lab test surface embedding the implemented RAG playground |
 | `/projects/[projectId]/reproduce` | Reproducibility checklist from current source, run, and query evidence |
 | `/projects/[projectId]/sources` | Unified source manager and playground workspace entry |
@@ -188,8 +189,9 @@ frontend/
 | `AppShell` | Authenticated shell, sidebar, top bar, project switcher, command palette |
 | `LabShell` | Common Lab identity header and tabs: Overview, Research, Experiments, Results, Artifacts, Test, Reproduce |
 | `LabResearchPage` | Project-backed research corpus and methodology evidence |
-| `LabResultsPage` | Real query-history result evidence and run completion signals |
-| `LabArtifactsPage` | Source, ingestion-run, and collection artifacts |
+| `LabExperimentsPage` | Evidence-backed experiment configuration, comparison matrix, readiness plot, and experiment evidence |
+| `LabResultsPage` | Real query-history result evidence, comparison summary, plots, and findings |
+| `LabArtifactsPage` | Typed artifact registry for datasets, model references, configs, reports, plots, notebooks, and code references |
 | `LabReproducePage` | Reproducibility readiness checklist |
 | `LabTestPage` | Lab wrapper around the implemented workspace playground |
 | `ProjectOverview` | Project readiness and next meaningful action using real data |
