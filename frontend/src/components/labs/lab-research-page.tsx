@@ -94,9 +94,44 @@ export function LabResearchPage({projectId}: {projectId: string}) {
         <p className="mt-2 text-xs leading-5 text-[var(--ink-muted)]">{latestRun ? `Latest run ${latestRun.status.replaceAll("_", " ")} ${relativeTime(latestRun.created_at)}.` : "No ingestion run evidence exists yet."}</p>
       </section>
     </div>
+    <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+        <div className="border-b border-[var(--border)] p-4">
+          <h2 className="text-sm font-semibold">Paper metadata</h2>
+          <p className="mt-1 text-[9px] text-[var(--ink-muted)]">Real source and version fields for the selected paper</p>
+        </div>
+        {selectedDocument ? <div className="space-y-3 p-4">
+          {metadataRows.map(({label, value, icon: Icon}) => <div key={label} className="grid grid-cols-[22px_92px_1fr] items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2">
+            <Icon className="size-3.5 text-[var(--ink-muted)]" />
+            <span className="text-[9px] text-[var(--ink-muted)]">{label}</span>
+            <span className="mono min-w-0 truncate text-[10px] text-[var(--ink-secondary)]" title={value}>{value}</span>
+          </div>)}
+          {versions.isError ? <p className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-soft)] p-3 text-[10px] leading-5 text-[var(--warning-soft-text)]">Version metadata could not be loaded for this source.</p> : null}
+        </div> : <EmptyState icon={FileStack} title="No paper selected" description="Add a source to populate paper metadata." />}
+      </div>
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+        <div className="flex items-center justify-between border-b border-[var(--border)] p-4">
+          <div><h2 className="text-sm font-semibold">Paper viewer</h2><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Metadata-first preview for the selected research source</p></div>
+          {selectedDocument ? <Link href={`/projects/${projectId}/documents/${selectedDocument.document_id}`} className="text-[10px] text-[var(--accent)] hover:text-[var(--accent-hover)]">Open details</Link> : null}
+        </div>
+        <div className="min-h-[360px] bg-[var(--background)] p-4">
+          {selectedDocument ? <article className="mx-auto max-w-2xl rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--research-violet)]">Paper</p>
+            <h3 className="mt-3 text-lg font-semibold leading-7">{selectedDocument.filename ?? "Untitled source"}</h3>
+            <p className="mt-3 text-sm leading-6 text-[var(--ink-secondary)]">Full extracted paper text is not exposed by the current document list endpoint. Use source details, versions, and retrieval citations after a test to inspect available content and evidence.</p>
+            <div className="mt-5 grid gap-3 text-xs sm:grid-cols-2">
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3"><span className="block text-[9px] text-[var(--ink-muted)]">Source type</span><b className="mt-1 block font-medium text-[var(--ink)]">{selectedDocument.source_type ?? "Unknown"}</b></div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3"><span className="block text-[9px] text-[var(--ink-muted)]">File type</span><b className="mt-1 block font-medium text-[var(--ink)]">{selectedDocument.mime_type ?? selectedDocument.extension ?? "Unknown"}</b></div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3"><span className="block text-[9px] text-[var(--ink-muted)]">Content hash</span><b className="mono mt-1 block truncate font-medium text-[var(--ink)]">{latestVersion?.content_hash ?? "Unavailable"}</b></div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3"><span className="block text-[9px] text-[var(--ink-muted)]">Created</span><b className="mt-1 block font-medium text-[var(--ink)]">{relativeTime(selectedDocument.created_at)}</b></div>
+            </div>
+          </article> : <EmptyState icon={BookOpenText} title="No paper to preview" description="Add a paper or source document to render metadata here." />}
+        </div>
+      </div>
+    </section>
     <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
       <div className="flex items-center justify-between border-b border-[var(--border)] p-4"><div><h2 className="text-sm font-semibold">Sources and papers</h2><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Real source records from the current backend</p></div><Link href={`/projects/${projectId}/sources`} className="text-[10px] text-[var(--accent)] hover:text-[var(--accent-hover)]">Open source manager</Link></div>
-      {docs.length ? <div className="divide-y divide-[var(--border)]">{docs.slice(0, 10).map((document) => <Link key={document.document_id} href={`/projects/${projectId}/documents/${document.document_id}`} className="grid gap-3 p-4 hover:bg-[var(--surface-elevated)] sm:grid-cols-[1fr_auto_auto] sm:items-center"><span className="min-w-0"><span className="block truncate text-xs font-medium">{document.filename ?? document.document_id}</span><span className="mono mt-1 block truncate text-[8px] text-[var(--ink-disabled)]">{document.document_id}</span></span><StatusBadge status={document.status} /><span className="inline-flex items-center gap-1 text-[10px] text-[var(--accent)]">Inspect<ArrowRight className="size-3" /></span></Link>)}</div> : <EmptyState icon={FileStack} title="No research sources yet" description="Add papers, datasets, notes, or source documents before defining experiments." action="Add sources" onAction={() => location.assign(`/projects/${projectId}/sources`)} />}
+      {docs.length ? <div className="divide-y divide-[var(--border)]">{docs.slice(0, 10).map((document) => <button key={document.document_id} onClick={() => setSelectedDocumentId(document.document_id)} className="grid w-full gap-3 p-4 text-left hover:bg-[var(--surface-elevated)] sm:grid-cols-[1fr_auto_auto] sm:items-center"><span className="min-w-0"><span className="block truncate text-xs font-medium">{document.filename ?? document.document_id}</span><span className="mono mt-1 block truncate text-[8px] text-[var(--ink-disabled)]">{document.document_id}</span></span><StatusBadge status={document.status} /><span className="inline-flex items-center gap-1 text-[10px] text-[var(--accent)]">View paper<ArrowRight className="size-3" /></span></button>)}</div> : <EmptyState icon={FileStack} title="No research sources yet" description="Add papers, datasets, notes, or source documents before defining experiments." action="Add sources" onAction={() => location.assign(`/projects/${projectId}/sources`)} />}
     </section>
   </div>;
 }
