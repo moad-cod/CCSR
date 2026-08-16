@@ -99,9 +99,66 @@ export function LabTestPage({projectId}: {projectId: string}) {
   const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) ?? variants[1];
 
   return <div className="space-y-6">
-    <PageHeader eyebrow="Interactive test" title="Test" description="Run the implemented RAG playground, inspect citations, and turn grounded answers into persisted result evidence." />
-    <section className="h-[calc(100dvh-22rem)] min-h-[640px] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)]">
-      <WorkspaceEntry projectId={projectId} />
+    <PageHeader
+      eyebrow={project.data?.name ?? "Interactive test"}
+      title="Test"
+      description="Interactive testing for implemented RAG systems and research variants, with unsupported comparison arms labeled plainly."
+      actions={<Link href={`/projects/${projectId}/results`}><Button variant="secondary"><MessageSquareText className="size-4" />View results</Button></Link>}
+    />
+
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <MetricCard label="Indexed sources" value={indexedDocs.length} detail={`${percent(indexedDocs.length, docs.length)}% of source records`} icon={Database} />
+      <MetricCard label="Active runs" value={activeRuns.length} detail="Ingestion work affecting readiness" icon={Activity} />
+      <MetricCard label="Persisted tests" value={queries.length} detail="Saved playground evidence" icon={MessageSquareText} />
+      <MetricCard label="Executable variant" value={selectedVariant.executable ? selectedVariant.label : "n/a"} detail={selectedVariant.system} icon={Beaker} />
+    </div>
+
+    <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <div className="flex items-center gap-2"><FlaskConical className="size-4 text-[var(--accent)]" /><h2 className="text-sm font-semibold">Experimental variants</h2></div>
+        <p className="mt-1 text-[9px] text-[var(--ink-muted)]">Select a research configuration and run the implemented path when it is available.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {variants.map((variant) => <VariantCard key={variant.id} variant={variant} selected={variant.id === selectedVariant.id} onSelect={() => setSelectedVariantId(variant.id)} />)}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em]" style={{color: selectedVariant.accent}}>Selected configuration</p>
+            <h2 className="mt-2 text-base font-semibold text-[var(--ink)]">{selectedVariant.label} - {selectedVariant.system}</h2>
+          </div>
+          <StatusBadge status={selectedVariant.status} />
+        </div>
+        <p className="mt-3 text-xs leading-5 text-[var(--ink-muted)]">{selectedVariant.detail}</p>
+        <div className="mt-5 space-y-4">
+          <ReadinessBar label="Corpus indexed" value={indexedDocs.length} total={docs.length} color="var(--domain-cv)" />
+          <ReadinessBar label="Runs completed" value={completedRuns.length} total={runItems.length} color="var(--research-violet)" />
+          <ReadinessBar label="Tests recorded" value={Math.min(queries.length, 10)} total={10} color="var(--domain-final)" />
+        </div>
+        <div className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+          <div className="flex items-center gap-2 text-xs font-medium text-[var(--ink)]"><TimerReset className="size-3.5 text-[var(--accent)]" />Latest evidence</div>
+          <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--ink-muted)]">{latestQuery ? latestQuery.question : "No persisted test question exists yet."}</p>
+          <p className="mt-2 text-[9px] text-[var(--ink-disabled)]">{latestQuery ? relativeTime(latestQuery.created_at) : "Run the playground to create evidence."}</p>
+        </div>
+        {retrievalReady ? <Link href={`/projects/${projectId}/sources`} className="mt-4 inline-flex text-[10px] font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">Inspect indexed sources</Link> : <Link href={`/projects/${projectId}/sources`} className="mt-4 inline-flex text-[10px] font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">Add or index sources</Link>}
+      </div>
+    </section>
+
+    <section className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)]">
+      <div className="flex flex-col gap-3 border-b border-[var(--border)] bg-[var(--surface)] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold">Interactive test environment</h2>
+          <p className="mt-1 text-[9px] text-[var(--ink-muted)]">The executable surface below runs the current retrieval-backed system, preserves query history, and exposes citations.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={retrievalReady ? "ready" : "draft"} />
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-2 py-1 text-[9px] text-[var(--ink-muted)]"><Boxes className="size-3" />{indexedDocs.length} indexed</span>
+        </div>
+      </div>
+      <div className="h-[calc(100dvh-26rem)] min-h-[640px]">
+        <WorkspaceEntry projectId={projectId} />
+      </div>
     </section>
   </div>;
 }
