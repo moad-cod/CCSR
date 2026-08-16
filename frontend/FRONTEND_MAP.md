@@ -137,7 +137,7 @@ than rendered as fake metrics.
 | `/projects/[projectId]/experiments` | Evidence-backed experiment configurations, comparisons, readiness plots, and current findings |
 | `/projects/[projectId]/results` | Real playground result evidence, comparison summary, metrics, plots, and findings |
 | `/projects/[projectId]/artifacts` | Typed artifact registry for datasets, model references, configs, reports, plots, and code references backed by current endpoints |
-| `/projects/[projectId]/test` | Lab test surface embedding the implemented RAG playground |
+| `/projects/[projectId]/test` | Interactive Test Lab with live readiness, variant comparison slots, and the implemented RAG playground |
 | `/projects/[projectId]/reproduce` | Reproducibility checklist from current source, run, and query evidence |
 | `/projects/[projectId]/sources` | Unified source manager and playground workspace entry |
 | `/projects/[projectId]/playground` | Unified playground workspace entry |
@@ -193,7 +193,7 @@ frontend/
 | `LabResultsPage` | Real query-history result evidence, comparison summary, plots, and findings |
 | `LabArtifactsPage` | Typed artifact registry for datasets, model references, configs, reports, plots, notebooks, and code references |
 | `LabReproducePage` | Reproducibility readiness checklist |
-| `LabTestPage` | Lab wrapper around the implemented workspace playground |
+| `LabTestPage` | Interactive Test Lab for current RAG execution, variant readiness, recent evidence, and persisted playground testing |
 | `ProjectOverview` | Project readiness and next meaningful action using real data |
 | `ProjectPipelinesPage` | Project pipeline information plus reusable run index |
 | `IngestionRunsPage` | Global or project-scoped durable run list |
