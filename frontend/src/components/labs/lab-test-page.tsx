@@ -37,7 +37,7 @@ function ReadinessBar({label, value, total, color}: {label: string; value: numbe
   const progress = percent(value, total);
   return <div>
     <div className="mb-1 flex items-center justify-between gap-3 text-[10px]"><span className="text-[var(--ink-muted)]">{label}</span><span className="font-mono text-[var(--ink-secondary)]">{value}/{total}</span></div>
-    <div className="h-2 rounded-full bg-[var(--surface-elevated)]"><div className="h-full rounded-full" style={{width: `${progress}%`, backgroundColor: color}} /></div>
+    <div className="h-2 rounded-full bg-[var(--surface-elevated)]" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><div className="h-full rounded-full" style={{width: `${progress}%`, backgroundColor: color}} /></div>
   </div>;
 }
 
