@@ -69,6 +69,35 @@ function VariantCard({variant, selected, onSelect}: {variant: TestVariant; selec
 }
 
 export function LabTestPage({projectId}: {projectId: string}) {
+  const [selectedVariantId, setSelectedVariantId] = useState<VariantId>("retrieval");
+  const project = useQuery({queryKey: ["project", projectId], queryFn: () => apiFetch<Project>(`/projects/${projectId}`)});
+  const documents = useQuery({queryKey: ["documents", projectId], queryFn: () => apiFetch<Document[]>(`/documents/?project_id=${projectId}`)});
+  const runs = useQuery({queryKey: ["ingestion-runs", projectId], queryFn: () => apiFetch<IngestionRun[]>(`/ingest/runs?project_id=${projectId}&limit=100`)});
+  const history = useQuery({queryKey: ["query-history", projectId], queryFn: () => apiFetch<QueryHistoryItem[]>(`/rag/projects/${projectId}/history?limit=100`)});
+  const loading = project.isLoading || documents.isLoading || runs.isLoading || history.isLoading;
+  const error = project.isError || documents.isError || runs.isError || history.isError;
+
+  if (loading) return <LoadingState label="Loading test lab" rows={5} />;
+  if (error) return <ErrorState title="Test Lab could not be loaded" description="Project, source, run, or query-history endpoints returned an error." onRetry={() => void Promise.all([project.refetch(), documents.refetch(), runs.refetch(), history.refetch()])} />;
+
+  const docs = documents.data ?? [];
+  const runItems = runs.data ?? [];
+  const queries = history.data ?? [];
+  const indexedDocs = docs.filter((document) => document.status === "indexed");
+  const activeRuns = runItems.filter((run) => run.status === "queued" || run.status === "running" || run.status === "landed");
+  const completedRuns = runItems.filter((run) => run.status === "indexed");
+  const latestQuery = queries[0];
+  const retrievalReady = indexedDocs.length > 0;
+  const finalReady = retrievalReady && queries.length > 0;
+
+  const variants: TestVariant[] = [
+    {id: "baseline", label: "A", title: "Baseline", system: "Ungrounded model", status: "planned", executable: false, accent: "var(--domain-baseline)", detail: "A model-only baseline endpoint is not exposed by the current backend, so this arm stays labeled as planned."},
+    {id: "retrieval", label: "B", title: "Retrieval", system: "Current RAG", status: retrievalReady ? "ready" : "draft", executable: retrievalReady, accent: "var(--domain-cv)", detail: `${indexedDocs.length} indexed sources can be used by the implemented retrieval-backed playground.`},
+    {id: "adaptation", label: "C", title: "Adaptation", system: "QLoRA adapter", status: "planned", executable: false, accent: "var(--research-violet)", detail: "Adapter and fine-tuning variants are represented as a comparison slot until an execution contract exists."},
+    {id: "final", label: "D", title: "Final", system: "Tested RAG system", status: finalReady ? "ready" : "processing", executable: retrievalReady, accent: "var(--domain-final)", detail: `${queries.length} persisted tests can support the current final-system evidence path.`},
+  ];
+  const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) ?? variants[1];
+
   return <div className="space-y-6">
     <PageHeader eyebrow="Interactive test" title="Test" description="Run the implemented RAG playground, inspect citations, and turn grounded answers into persisted result evidence." />
     <section className="h-[calc(100dvh-22rem)] min-h-[640px] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)]">
