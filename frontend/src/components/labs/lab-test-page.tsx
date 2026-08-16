@@ -45,6 +45,8 @@ function VariantCard({variant, selected, onSelect}: {variant: TestVariant; selec
   return <button
     type="button"
     onClick={onSelect}
+    aria-pressed={selected}
+    aria-label={`Select ${variant.title} configuration: ${variant.system}`}
     className={cn(
       "group rounded-lg border bg-[var(--surface-elevated)] p-4 text-left transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
       selected ? "border-[var(--accent-border)] bg-[var(--surface-hover)]" : "border-[var(--border)]",
