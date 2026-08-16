@@ -1,7 +1,7 @@
 "use client";
 
 import {useQuery} from "@tanstack/react-query";
-import {Activity, Beaker, Boxes, CircleDot, Database, FlaskConical, MessageSquareText, TimerReset} from "lucide-react";
+import {Activity, ArrowRight, Beaker, Boxes, CircleDot, Database, FlaskConical, MessageSquareText, TimerReset} from "lucide-react";
 import Link from "next/link";
 import {useState} from "react";
 import {MetricCard} from "@/components/metric-card";
@@ -142,6 +142,7 @@ export function LabTestPage({projectId}: {projectId: string}) {
           <div className="flex items-center gap-2 text-xs font-medium text-[var(--ink)]"><TimerReset className="size-3.5 text-[var(--accent)]" />Latest evidence</div>
           <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--ink-muted)]">{latestQuery ? latestQuery.question : "No persisted test question exists yet."}</p>
           <p className="mt-2 text-[9px] text-[var(--ink-disabled)]">{latestQuery ? relativeTime(latestQuery.created_at) : "Run the playground to create evidence."}</p>
+          {latestQuery ? <Link href={`/projects/${projectId}/history/${latestQuery.query_log_id}`} className="mt-3 inline-flex items-center gap-1 text-[10px] font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">Open evidence<ArrowRight className="size-3" /></Link> : null}
         </div>
         {retrievalReady ? <Link href={`/projects/${projectId}/sources`} className="mt-4 inline-flex text-[10px] font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">Inspect indexed sources</Link> : <Link href={`/projects/${projectId}/sources`} className="mt-4 inline-flex text-[10px] font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">Add or index sources</Link>}
       </div>
