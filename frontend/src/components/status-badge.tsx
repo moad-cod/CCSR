@@ -8,5 +8,9 @@ export function StatusBadge({status}: {status: string}) {
   const warning = normalized === "cancelled" || normalized === "queued";
   const active = normalized === "running" || normalized === "processing" || normalized === "landed";
   const Icon = success ? CheckCircle2 : danger ? AlertCircle : warning ? PauseCircle : active ? LoaderCircle : Circle;
-  return <Badge tone={success ? "success" : danger ? "danger" : warning ? "warning" : active ? "info" : "neutral"} className="gap-1.5 capitalize"><Icon className={active ? "size-3 animate-spin" : "size-3"} />{status.replaceAll("_", " ")}</Badge>;
+  const label = status.replaceAll("_", " ");
+  return <Badge tone={success ? "success" : danger ? "danger" : warning ? "warning" : active ? "info" : "neutral"} className="gap-1.5 capitalize" aria-label={`Status: ${label}`}>
+    <Icon className={active ? "size-3 animate-spin" : "size-3"} aria-hidden="true" />
+    {label}
+  </Badge>;
 }
