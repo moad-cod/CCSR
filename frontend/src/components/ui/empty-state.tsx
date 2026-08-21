@@ -1,5 +1,6 @@
 import type {LucideIcon} from "lucide-react";
 import {Button} from "@/components/ui/button";
+import {cn} from "@/lib/utils";
 
 export function EmptyState({
   icon: Icon,
@@ -7,16 +8,18 @@ export function EmptyState({
   description,
   action,
   onAction,
+  className,
 }: {
   icon: LucideIcon;
   title: string;
   description: string;
   action?: string;
   onAction?: () => void;
+  className?: string;
 }) {
   return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--surface)] px-6 text-center">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]">
+    <div className={cn("flex min-h-64 flex-col items-center justify-center rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--surface)] px-5 py-10 text-center sm:px-6", className)} aria-live="polite">
+      <div className="mb-4 flex size-11 items-center justify-center rounded-lg border border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]" aria-hidden="true">
         <Icon className="size-6" />
       </div>
       <h3 className="text-base font-semibold text-[var(--ink)]">{title}</h3>
@@ -24,7 +27,7 @@ export function EmptyState({
         {description}
       </p>
       {action && onAction ? (
-        <Button className="mt-5" onClick={onAction}>
+        <Button className="mt-5" size="sm" onClick={onAction}>
           {action}
         </Button>
       ) : null}
