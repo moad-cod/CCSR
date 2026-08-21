@@ -294,6 +294,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   );
 
   return <div className="min-h-dvh bg-[var(--background)] text-[var(--ink)]">
+    <a href="#main-content" className="skip-link">Skip to content</a>
     <aside className={cn("fixed inset-y-0 left-0 z-50 hidden border-r border-[var(--border)] bg-[var(--sidebar)] transition-[width] duration-200 md:block", collapsed ? "w-[72px]" : "w-[264px]")}>{sidebar()}</aside>
 
     <div className={cn("min-h-dvh transition-[padding] duration-200", collapsed ? "md:pl-[72px]" : "md:pl-[264px]")}>
@@ -362,7 +363,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
           </div>
         </div>
       </header>
-      <main className={cn(isWorkspaceRoute ? "h-[calc(100dvh-4rem)] overflow-hidden" : "app-page-container")}>{children}</main>
+      <main id="main-content" tabIndex={-1} className={cn(isWorkspaceRoute ? "h-[calc(100dvh-4rem)] overflow-hidden" : "app-page-container")}>{children}</main>
     </div>
 
     {mobileOpen ? <div className="fixed inset-0 z-[100] md:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
