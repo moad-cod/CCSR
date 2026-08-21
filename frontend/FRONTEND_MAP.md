@@ -1,61 +1,51 @@
 # CCSR Frontend Map
 
-This document describes the frontend as it exists after the first CCSR
-frontend migration. It documents implemented behavior only. Planned CCSR
-research features are called out as backend blockers rather than presented as
-working product surfaces.
+This document maps the current frontend implementation for CCSR, Canonical
+Computer Science Research. It describes implemented behavior only, including
+which backend APIs each feature uses. Planned research-system concepts are
+called out as backend blockers rather than presented as working product
+surfaces.
 
 ## Product Model
 
-CCSR, Canonical Computer Science Research, is presented in the frontend as a
-local-first research engineering workspace.
-
-The current mature workflow remains Retrieval/RAG:
+CCSR is a local-first research engineering system for computer science and AI
+experimentation. The frontend currently presents a broader research Lab model,
+while the strongest implemented workflow remains Retrieval-Augmented
+Generation:
 
 ```text
-Project
+Project/Lab
   -> Sources
-  -> Pipeline runs
-  -> Playground query
-  -> Evidence and retrieval trace
-  -> Persisted history
+  -> Ingestion runs
+  -> Indexed corpus
+  -> Interactive RAG test
+  -> Retrieval traces and citations
+  -> Persisted query history
+  -> Results, artifacts, and reproducibility evidence
 ```
 
-The frontend preserves the existing implemented RAG control-plane behavior:
-
-- Authentication through Next.js auth route handlers and an HttpOnly session
-  cookie.
-- Project CRUD.
-- Source/document upload and management.
-- URL and Google Drive ingestion.
-- Durable file ingestion runs.
-- Document versions and source metadata.
-- Ingestion SSE recovery.
-- Streamed `/rag/query/stream` answers.
-- Gemini/Groq provider selection.
-- Citations and retrieval traces.
-- Playground history.
-- Observability, organization, and profile settings.
-
-The frontend does not implement first-class experiment records, dataset
-registry, model registry, research notes, findings, reproducibility manifests,
-or cross-domain NLP/CV experiment engines.
+The UI is intentionally honest about unsupported functionality. It does not
+fabricate experiment records, evaluation scores, model registries, dataset
+registries, cost metrics, or research findings when no backend contract exists.
 
 ## Stack
 
 | Area | Current implementation |
 | --- | --- |
 | Framework | Next.js App Router, React, TypeScript |
-| Styling | Tailwind CSS v4 through `globals.css` with black, charcoal, and warm-cream CCSR tokens |
+| Styling | Tailwind CSS v4 through `frontend/src/app/globals.css` |
+| Design identity | Dark graphite research UI with restrained CCSR blue and research violet accents |
 | Data fetching | TanStack Query |
-| Forms | React Hook Form and Zod where forms need schema validation |
+| Forms | React Hook Form and Zod where schema validation is needed |
 | Notifications | `sonner` toast system |
 | Icons | `lucide-react` |
 | Markdown | `react-markdown` with `remark-gfm` |
 | Tests | Vitest, Testing Library, Playwright config |
 | Auth | HttpOnly `ragforge_session` compatibility cookie set by Next.js route handlers |
 
-The browser does not read or store the backend JWT directly.
+## Auth And API Flow
+
+The browser never reads or stores the backend JWT directly.
 
 ```text
 Browser UI
@@ -65,312 +55,356 @@ Browser UI
   -> FastAPI backend with Authorization: Bearer <token>
 ```
 
-## Information Architecture
+### Frontend Route Handlers
 
-### Global Navigation
+| Frontend handler | Backend connection | Behavior |
+| --- | --- | --- |
+| `/api/auth/login` | `POST /auth/login` | Sends form-encoded credentials to the backend and stores `access_token` in the HttpOnly `ragforge_session` cookie. |
+| `/api/auth/register` | `POST /auth/register` | Proxies registration JSON to the backend. |
+| `/api/auth/logout` | none | Clears the `ragforge_session` cookie. |
+| `/api/backend/[...path]` | Any authenticated backend path | Adds `Authorization: Bearer <cookie token>`, forwards request body and selected headers, and streams backend responses back to the UI. |
 
-The global sidebar is workflow-oriented:
+`BACKEND_URL` controls the backend origin. If unset, the frontend uses
+`http://localhost:8000`.
 
-```text
-Workspace
-  Home
-  Labs
-  Projects
-
-Research
-  Experiments
-  Comparisons
-
-Monitor
-  Runs
-  Observability
-
-Manage
-  Organization
-  Settings
-```
-
-`Experiments` and `Comparisons` route to planned-feature pages. They do not
-show fake experiment records, fake metrics, or comparison results.
-
-Global `Documents` and global `Query History` are not primary navigation
-items. Source management and query history belong inside project workflows.
-
-### Lab Navigation
-
-Inside a project-backed Lab, the sidebar switches to Lab context:
-
-```text
-Back to all labs / projects
-
-<Project Name>
-  Overview
-  Research
-  Experiments
-  Results
-  Artifacts
-  Test
-  Reproduce
-```
-
-The common Lab shell also exposes the same sequence as a compact tab row inside
-individual Lab pages. `Experiments`, `Results`, `Artifacts`, and `Reproduce`
-use real source, ingestion-run, query-history, and collection evidence that
-already exists in the backend. Unsupported baseline, evaluator, cost, and
-generic experiment-record slots are labeled as unavailable or planned rather
-than rendered as fake metrics.
-
-## Routes
-
-### Implemented Routes
-
-| Route | Purpose |
-| --- | --- |
-| `/` | Redirects to `/projects` |
-| `/login` | CCSR sign-in page |
-| `/register` | CCSR registration page |
-| `/home` | Cross-project home and next-work guidance |
-| `/labs` | Premium lab discovery across implemented project workspaces, with domain filters and real readiness data |
-| `/projects` | Project list, create, rename, delete |
-| `/projects/[projectId]/overview` | Real project readiness, next action, recent runs, latest query |
-| `/projects/[projectId]/research` | Lab research corpus and methodology evidence from real sources and runs |
-| `/projects/[projectId]/experiments` | Evidence-backed experiment configurations, comparisons, readiness plots, and current findings |
-| `/projects/[projectId]/results` | Real playground result evidence, comparison summary, metrics, plots, and findings |
-| `/projects/[projectId]/artifacts` | Typed artifact registry for datasets, model references, configs, reports, plots, and code references backed by current endpoints |
-| `/projects/[projectId]/test` | Interactive Test Lab with live readiness, variant comparison slots, and the implemented RAG playground |
-| `/projects/[projectId]/reproduce` | Reproducibility checklist from current source, run, and query evidence |
-| `/projects/[projectId]/sources` | Unified source manager and playground workspace entry |
-| `/projects/[projectId]/playground` | Unified playground workspace entry |
-| `/projects/[projectId]/pipelines` | Pipeline configuration notes and project run list |
-| `/projects/[projectId]/settings` | Lab/project settings and destructive delete action |
-| `/projects/[projectId]/runs/[runId]` | Run detail with durable ingestion status |
-| `/projects/[projectId]/history/[queryId]` | Persisted query detail and retrieval evidence |
-| `/runs` | Cross-project ingestion run index |
-| `/observability` | Cross-project observability from real documents, runs, and queries |
-| `/organization` | Organization list, create, rename, delete |
-| `/settings/profile` | Current-user profile and organization context |
-
-### Compatibility Routes
-
-| Legacy route | Behavior |
-| --- | --- |
-| `/projects/[projectId]` | Redirects to `/projects/[projectId]/overview` |
-| `/projects/[projectId]/chat` | Redirects to `/projects/[projectId]/playground` |
-| `/projects/[projectId]/history` | Redirects to `/projects/[projectId]/playground?view=history` |
-| `/projects/[projectId]/runs` | Redirects to `/projects/[projectId]/pipelines?view=runs` |
-| `/projects/[projectId]/documents` | Supported as workspace compatibility for Sources |
-| `/projects/[projectId]/evaluation` | Redirects to `/projects/[projectId]/results` |
-
-## Main Frontend Directories
+## Current Folder Structure
 
 ```text
 frontend/
+  FRONTEND_MAP.md
+  components.json
+  eslint.config.mjs
+  next.config.ts
+  package.json
+  playwright.config.ts
+  postcss.config.mjs
+  tsconfig.json
   src/
     app/
       (auth)/
+        layout.tsx
+        login/page.tsx
+        register/page.tsx
       (dashboard)/
+        layout.tsx
+        home/page.tsx
+        labs/page.tsx
+        projects/page.tsx
+        runs/page.tsx
+        observability/page.tsx
+        organization/page.tsx
+        experiments/page.tsx
+        comparisons/page.tsx
+        documents/page.tsx
+        history/page.tsx
+        settings/profile/page.tsx
+        projects/[projectId]/
+          page.tsx
+          overview/page.tsx
+          research/page.tsx
+          experiments/page.tsx
+          results/page.tsx
+          artifacts/page.tsx
+          test/page.tsx
+          reproduce/page.tsx
+          sources/page.tsx
+          playground/page.tsx
+          pipelines/page.tsx
+          settings/page.tsx
+          onboarding/page.tsx
+          observability/page.tsx
+          chat/page.tsx
+          documents/page.tsx
+          evaluation/page.tsx
+          history/page.tsx
+          runs/page.tsx
+          runs/[runId]/
+          history/[queryId]/
+          documents/[documentId]/
+          experiments/new/page.tsx
+          experiments/[experimentId]/page.tsx
       api/
+        auth/
+        backend/[...path]/
       globals.css
       layout.tsx
       page.tsx
     components/
-      workspace/
+      labs/
       onboarding/
       ui/
+      workspace/
+      app-shell.tsx
+      document-detail.tsx
+      ingestion-run-detail.tsx
+      ingestion-runs-page.tsx
+      project-overview.tsx
+      project-pipelines-page.tsx
+      query-detail.tsx
+      query-history-page.tsx
     hooks/
+      use-ingestion-stream.ts
+      use-workspace-overview.ts
     lib/
+      api.ts
+      server-auth.ts
+      sse.ts
+      types.ts
+      utils.ts
     test/
+      setup.ts
 ```
 
-## Key Components
+## Route Map
 
-| Component | Role |
+### Implemented Primary Routes
+
+| Route | Feature | Characteristics | Backend APIs |
+| --- | --- | --- | --- |
+| `/` | Root redirect | Redirects authenticated users into project workspace flow. | none |
+| `/login` | Login | CCSR sign-in, validation, password visibility, toast errors, auth ambience. | `POST /api/auth/login` -> backend `POST /auth/login` |
+| `/register` | Registration | Account creation, password confirmation, auto-login after successful registration. | `POST /api/auth/register` -> backend `POST /auth/register`; then `POST /api/auth/login` |
+| `/home` | Workspace home | Cross-project summary, next-action guidance, recent projects, runs needing attention, truthful planned experiment state. | `GET /projects/`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=100`; optional create flow uses `GET /organizations/`, `GET /chunkers`, `POST /projects/` |
+| `/labs` | Lab discovery | Premium project-backed Lab discovery, domain filters, readiness stats, create/rename/delete Lab actions. | `GET/POST /projects/`; `PATCH/DELETE /projects/{project_id}`; `GET /organizations/`; `GET /chunkers`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=30` |
+| `/projects` | Project index | Grid/list project browser, search, sort, project stats, create/rename/delete. | `GET/POST /projects/`; `PATCH/DELETE /projects/{project_id}`; `GET /organizations/`; `GET /chunkers`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=30` |
+| `/documents` | Global source browser | Cross-project source list, filename search, status filter, delete source action. | `GET /projects/`; per-project `GET /documents/?project_id=...`; `DELETE /documents/{document_id}` |
+| `/history` | Global query history | Cross-project persisted query history, search, outcome filter, links to query detail. | `GET /projects/`; per-project `GET /rag/projects/{project_id}/history?limit=100` |
+| `/runs` | Global runs | Cross-project durable ingestion run list, search, status filter, run detail links. | `GET /projects/`; per-project `GET /ingest/runs?project_id=...&limit=100`; per-project `GET /documents/?project_id=...` |
+| `/observability` | Global observability | Aggregated source, ingestion, query, latency, cache, and failure evidence. | `GET /projects/`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=100`; per-project `GET /rag/projects/{project_id}/history?limit=100` |
+| `/organization` | Organization management | Organization list, create, rename, delete, active organization indication. | `GET /organizations/`; `POST /organizations/`; `PATCH /organizations/{organization_id}`; `DELETE /organizations/{organization_id}`; `GET /auth/me` |
+| `/settings/profile` | Profile settings | Current-user profile, organization selection, optional password update. | `GET /auth/me`; `PATCH /auth/me`; `GET /organizations/` |
+
+### Project Lab Routes
+
+| Route | Feature | Characteristics | Backend APIs |
+| --- | --- | --- | --- |
+| `/projects/[projectId]/overview` | Lab overview | Readiness summary, next meaningful action, recent run/query evidence. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| `/projects/[projectId]/research` | Lab research/paper | Research question framing, abstract/methodology derived from real source and run evidence, source/paper list, selected paper metadata. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=20`; `GET /documents/{document_id}/versions` |
+| `/projects/[projectId]/experiments` | Experiment evidence | A/B/C/D configuration slots, readiness plot, evidence table, planned labels for unsupported experiment APIs. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| `/projects/[projectId]/results` | Results | Real persisted query results, latency/cache summaries, comparison summary, findings from available evidence. | `GET /projects/{project_id}`; `GET /rag/projects/{project_id}/history?limit=100`; `GET /ingest/runs?project_id=...&limit=100` |
+| `/projects/[projectId]/artifacts` | Artifacts | Typed registry for source objects, model references, configs, reports, plots, notebooks placeholder, and code references. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100`; `GET /documents/{document_id}/versions` |
+| `/projects/[projectId]/test` | Interactive Test Lab | Variant selector for baseline/retrieval/adaptation/final, readiness metrics, latest evidence, embedded executable RAG workspace. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100`; workspace APIs listed under Sources and Playground |
+| `/projects/[projectId]/reproduce` | Reproducibility | Checklist for corpus, pipeline, query evidence, traceability, and reproduction readiness. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| `/projects/[projectId]/sources` | Sources workspace | Unified source manager and source inspector; uploads, URL/Drive ingestion, search, retry, delete, versions, traces. | `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=30`; `GET /chunkers`; `POST /ingest/file`; `POST /ingest/url`; `POST /ingest/gdrive`; `POST /ingest/runs/{run_id}/retry`; `DELETE /documents/{document_id}`; `GET /documents/{document_id}/versions`; `GET /rag/queries/{query_log_id}` when inspecting traces |
+| `/projects/[projectId]/playground` | RAG playground | Streamed answers, provider selection, one-source filter, retrieval options, stop generation, Markdown, citations, history drawer. | `GET /documents/?project_id=...`; `POST /rag/query/stream` through `/api/backend/rag/query/stream`; `GET /rag/queries/{query_log_id}`; `GET /rag/projects/{project_id}/history?limit=100` |
+| `/projects/[projectId]/pipelines` | Pipeline info | Pipeline configuration notes, chunker options, and project-scoped run list. | `GET /projects/{project_id}`; `GET /chunkers`; run list APIs from `IngestionRunsPage` |
+| `/projects/[projectId]/settings` | Project settings | Rename project, source count warning, delete project. | `GET /projects/{project_id}`; `PATCH /projects/{project_id}`; `DELETE /projects/{project_id}`; `GET /documents/?project_id=...` |
+| `/projects/[projectId]/onboarding` | Project onboarding | Guided source selection, chunker selection, ingestion submission, processing status, retry failed stage. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=30`; `GET /chunkers`; `POST /ingest/file`; `POST /ingest/url`; `POST /ingest/gdrive`; `GET /ingest/runs/{run_id}`; `POST /ingest/runs/{run_id}/retry` |
+| `/projects/[projectId]/runs/[runId]` | Run detail | Durable ingestion status, stage progress, diagnostics, retry, linked source. | `GET /ingest/runs/{run_id}`; `GET /documents/{document_id}` when linked from detail; `POST /ingest/runs/{run_id}/retry` |
+| `/projects/[projectId]/history/[queryId]` | Query detail | Persisted question, answer, provider/model metadata, latency, retrieval trace, citations. | `GET /rag/queries/{query_log_id}`; `GET /projects/{project_id}` |
+| `/projects/[projectId]/documents/[documentId]` | Source detail | Document overview, status, versions, linked runs, metadata, upload new version, delete. | `GET /documents/{document_id}`; `GET /projects/{project_id}`; `GET /documents/{document_id}/versions`; `GET /ingest/runs?project_id=...&limit=100`; `POST /ingest/file`; `DELETE /documents/{document_id}` |
+| `/projects/[projectId]/observability` | Project observability | Project-scoped observability using the shared observability component. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| `/projects/[projectId]/experiments/new` | Planned experiment creation | Project-scoped planned page for future persisted experiment creation. | `GET /projects/{project_id}` through `ProjectPlannedFeaturePage` |
+| `/projects/[projectId]/experiments/[experimentId]` | Planned experiment detail | Project-scoped planned page for future experiment detail records. | `GET /projects/{project_id}` through `ProjectPlannedFeaturePage` |
+
+### Planned Or Compatibility Routes
+
+| Route | Behavior | Backend APIs |
+| --- | --- | --- |
+| `/experiments` | Planned global experiment records page; no fake records. | none |
+| `/comparisons` | Planned global comparison page; no fake matrices. | none |
+| `/projects/[projectId]` | Redirects to `/projects/[projectId]/overview`. | none |
+| `/projects/[projectId]/chat` | Redirects to `/projects/[projectId]/playground`. | none |
+| `/projects/[projectId]/history` | Redirects to `/projects/[projectId]/playground?view=history`. | none |
+| `/projects/[projectId]/runs` | Redirects to `/projects/[projectId]/pipelines?view=runs`. | none |
+| `/projects/[projectId]/documents` | Supported compatibility entry for Sources. | Source workspace APIs |
+| `/projects/[projectId]/evaluation` | Redirects to `/projects/[projectId]/results`. | none |
+
+## Feature Matrix
+
+| Feature area | Primary components | Characteristics | Backend/API connections |
+| --- | --- | --- | --- |
+| Application shell | `AppShell`, `PageHeader`, `Button`, `Badge`, `StatusBadge` | Sidebar, top bar, breadcrumbs, project switcher, organization switcher, command palette, notifications placeholder, skip navigation, responsive mobile nav. | `GET /auth/me`; `PATCH /auth/me` for organization switch; `GET /projects/`; `GET /organizations/`; `POST /api/auth/logout` |
+| Authentication | `(auth)/layout.tsx`, `login/page.tsx`, `register/page.tsx` | Branded auth layout, validated forms, HttpOnly-cookie auth, no client JWT storage. | `POST /api/auth/login`; `POST /api/auth/register`; backend `POST /auth/login`; backend `POST /auth/register` |
+| Project/Lab creation | `ProjectForm`, `ProjectsPage`, `LabsDiscoveryPage`, Home create flow | Create named research workspace, choose organization, choose chunker preference in local storage for onboarding. | `POST /projects/`; `GET /organizations/`; `GET /chunkers` |
+| Project/Lab management | `ProjectCard`, `LabCard`, `ConfirmDeleteDialog`, settings page | Search, sort, grid/list, rename, delete, destructive confirmation. | `GET /projects/`; `PATCH /projects/{project_id}`; `DELETE /projects/{project_id}` |
+| Lab shell | `LabShell` | Common project-backed research navigation for Overview, Research, Experiments, Results, Artifacts, Test, Reproduce. | `GET /projects/{project_id}` |
+| Overview | `ProjectOverview` | Readiness, next action, latest run, latest query, project evidence summary. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| Research paper view | `LabResearchPage` | Research question, abstract, hypothesis, methodology, paper/source viewer and metadata. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=20`; `GET /documents/{document_id}/versions` |
+| Experiment evidence | `LabExperimentsPage` | Baseline/retrieval/pipeline/final comparison slots, readiness bars, run/query evidence. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| Results | `LabResultsPage` | Persisted query counts, latency, cache hits, indexed runs, result plots, findings, evidence links. | `GET /projects/{project_id}`; `GET /rag/projects/{project_id}/history?limit=100`; `GET /ingest/runs?project_id=...&limit=100` |
+| Artifacts | `LabArtifactsPage` | Datasets from documents, model/config references from versions and query history, report links, plot summary, code references. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /documents/{document_id}/versions`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| Test Lab | `LabTestPage`, `WorkspaceEntry`, `KnowledgeWorkspace` | Interactive testing of current RAG system, variant readiness selector, latest evidence, embedded workspace. | Lab evidence APIs plus workspace APIs: documents, runs, chunkers, ingestion, streamed RAG query, query trace/history |
+| Reproduce | `LabReproducePage` | Reproducibility checklist from real corpus, run, query, trace, and artifact evidence. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| Sources | `KnowledgeWorkspace`, `DocumentPanel`, `SourceInspector`, `DocumentDetail` | File/URL/Drive ingestion, source list, status filters, retry, delete, versions, metadata, source-specific trace inspection. | `GET /documents/?project_id=...`; `GET /documents/{document_id}`; `GET /documents/{document_id}/versions`; `DELETE /documents/{document_id}`; `GET /chunkers`; `POST /ingest/file`; `POST /ingest/url`; `POST /ingest/gdrive`; `GET /ingest/runs?project_id=...`; `POST /ingest/runs/{run_id}/retry` |
+| Pipelines and runs | `ProjectPipelinesPage`, `IngestionRunsPage`, `IngestionRunDetail`, `IngestionPipeline`, `useIngestionStream` | Run list, filters, stage progress, embedding progress, diagnostics, retry, SSE recovery/poll fallback. | `GET /chunkers`; `GET /ingest/runs?project_id=...`; `GET /ingest/runs/{run_id}`; `GET /ingest/runs/{run_id}/events` through `EventSource`; `POST /ingest/runs/{run_id}/retry`; `GET /documents/?project_id=...` |
+| Playground | `AssistantPanel`, `HistoryDrawer`, `RetrievalTrace`, `QueryHistoryPage`, `QueryDetail` | Provider selection, streamed answer generation, stop, markdown answer, execution activity, citations, trace restore, history search/filter. | `POST /rag/query/stream`; `GET /rag/queries/{query_log_id}`; `GET /rag/projects/{project_id}/history?limit=100`; `GET /documents/?project_id=...` |
+| Observability | `ObservabilityDashboard` | Cross-project or project-scoped health, failures, query/runs windows, cache and latency evidence. | `GET /projects/`; `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| Organization | `organization/page.tsx` | Organization CRUD and active organization context display. | `GET /organizations/`; `POST /organizations/`; `PATCH /organizations/{organization_id}`; `DELETE /organizations/{organization_id}`; `GET /auth/me` |
+| Profile | `settings/profile/page.tsx` | User profile, email/full-name edits, organization assignment, optional password update. | `GET /auth/me`; `PATCH /auth/me`; `GET /organizations/` |
+| Shared states and polish | `LoadingState`, `EmptyState`, `ErrorState`, `globals.css` | Accessible loading skeletons, empty/error panels, reduced-motion support, skip navigation, consistent focus styles. | none |
+
+## API Endpoint Reference
+
+All browser calls to backend business APIs go through the same-origin proxy:
+
+```text
+apiFetch("/projects/")
+  -> /api/backend/projects/
+  -> BACKEND_URL/projects/
+```
+
+### Auth
+
+| API | Used by | Notes |
+| --- | --- | --- |
+| `POST /auth/login` | `/api/auth/login` route handler | Backend returns access token; frontend stores it as HttpOnly cookie. |
+| `POST /auth/register` | `/api/auth/register` route handler | Registration proxy. |
+| `GET /auth/me` | App shell, organization, profile | Current user and active organization. |
+| `PATCH /auth/me` | App shell, profile | Organization switch, profile edits, optional password update. |
+
+### Projects And Organizations
+
+| API | Used by | Notes |
+| --- | --- | --- |
+| `GET /projects/` | Home, Labs, Projects, Observability, AppShell, overview hooks | Project list. |
+| `POST /projects/` | Home, Labs, Projects | Create project/Lab. |
+| `GET /projects/{project_id}` | Lab shell, overview, research, settings, pipelines, query detail, observability | Project detail. |
+| `PATCH /projects/{project_id}` | Labs, Projects, settings | Rename/update project. |
+| `DELETE /projects/{project_id}` | Labs, Projects, settings | Delete project. |
+| `GET /organizations/` | AppShell, create dialogs, organization, profile | Organization list. |
+| `POST /organizations/` | Organization page | Create organization. |
+| `PATCH /organizations/{organization_id}` | Organization page | Rename organization. |
+| `DELETE /organizations/{organization_id}` | Organization page | Delete organization. |
+
+### Sources, Versions, And Ingestion
+
+| API | Used by | Notes |
+| --- | --- | --- |
+| `GET /documents/?project_id={project_id}` | Most Lab pages, workspace, projects/labs stats, observability, runs | Project source list. |
+| `GET /documents/{document_id}` | Document detail, run detail links | Source detail. |
+| `GET /documents/{document_id}/versions` | Research page, artifacts page, source inspector, document detail | Immutable document versions and parser/chunker/embedding metadata. |
+| `DELETE /documents/{document_id}` | Workspace source panel, document detail | Delete logical source. |
+| `GET /chunkers` | Create dialogs, onboarding, documents workspace, pipelines | Available chunking configurations. |
+| `POST /ingest/file` | Onboarding, sources workspace, document version upload | Multipart file upload and ingestion run creation. |
+| `POST /ingest/url` | Onboarding, sources workspace | URL ingestion. |
+| `POST /ingest/gdrive` | Onboarding, sources workspace | Google Drive ingestion with file ID and token. |
+| `GET /ingest/runs?project_id={project_id}&limit={n}` | Lab pages, source workspace, projects/labs stats, runs, observability | Project-scoped ingestion runs. |
+| `GET /ingest/runs/{run_id}` | Run detail, onboarding status, ingestion stream recovery | Durable run detail. |
+| `GET /ingest/runs/{run_id}/events` | `useIngestionStream` | Server-sent run status events via same-origin backend proxy. |
+| `POST /ingest/runs/{run_id}/retry` | Source workspace, onboarding, run detail, pipeline component | Retry failed run from durable artifacts. |
+
+### RAG And Retrieval Evidence
+
+| API | Used by | Notes |
+| --- | --- | --- |
+| `POST /rag/query/stream` | `AssistantPanel`, legacy `ChatWorkspace` | SSE answer generation. Request includes `question`, `project_id`, `provider`, optional `document_id`, `use_parent_context`, and `include_context`. |
+| `GET /rag/projects/{project_id}/history?limit=100` | Lab pages, history drawer, query history, observability | Persisted query records for a project. |
+| `GET /rag/queries/{query_log_id}` | Query detail, history restore, assistant trace load, source inspector traces | Persisted answer plus retrieval trace/citations. |
+
+## Key Component Responsibilities
+
+| Component | Responsibility |
 | --- | --- |
-| `AppShell` | Authenticated shell, sidebar, top bar, project switcher, command palette |
-| `LabShell` | Common Lab identity header and tabs: Overview, Research, Experiments, Results, Artifacts, Test, Reproduce |
-| `LabResearchPage` | Project-backed research corpus and methodology evidence |
-| `LabExperimentsPage` | Evidence-backed experiment configuration, comparison matrix, readiness plot, and experiment evidence |
-| `LabResultsPage` | Real query-history result evidence, comparison summary, plots, and findings |
-| `LabArtifactsPage` | Typed artifact registry for datasets, model references, configs, reports, plots, notebooks, and code references |
-| `LabReproducePage` | Reproducibility readiness checklist |
-| `LabTestPage` | Interactive Test Lab for current RAG execution, variant readiness, recent evidence, and persisted playground testing |
-| `ProjectOverview` | Project readiness and next meaningful action using real data |
-| `ProjectPipelinesPage` | Project pipeline information plus reusable run index |
-| `IngestionRunsPage` | Global or project-scoped durable run list |
-| `WorkspaceEntry` | Loads project state and mounts the unified workspace |
-| `KnowledgeWorkspace` | Unified Sources/Playground layout with source panel and inspector |
-| `DocumentPanel` | Source upload, URL/Drive ingestion, search, selection, retry, delete |
-| `AssistantPanel` | Streamed playground query flow, execution trace, citations, history drawer |
-| `SourceInspector` | Supported source tabs: Content, Versions, Retrieval Trace, Metadata |
-| `QueryHistoryPage` | Durable playground history list |
-| `QueryDetail` | Persisted answer and retrieval trace detail |
-| `DocumentDetail` | Source metadata, versions, runs, and delete/version actions |
-| `ConfirmDeleteDialog` | Shared typed destructive confirmation |
-| `PlannedFeaturePage` | Truthful placeholder for backend-dependent research surfaces |
+| `AppShell` | Authenticated application chrome, responsive sidebar, top navigation, organization/project switchers, command palette, skip navigation. |
+| `LabShell` | Common project Lab header and tabs. |
+| `LabsDiscoveryPage` | Project-backed Lab discovery and domain filtering. |
+| `LabResearchPage` | Research question, methodology, paper/source viewer, document metadata. |
+| `LabExperimentsPage` | Evidence-backed configuration comparison and experiment readiness. |
+| `LabResultsPage` | Query-history result evidence, plots, findings, comparison summary. |
+| `LabArtifactsPage` | Artifact registry assembled from current source/version/run/query evidence. |
+| `LabTestPage` | Interactive Test Lab wrapper and variant readiness layer. |
+| `LabReproducePage` | Reproducibility checklist and run/query/source readiness. |
+| `ProjectOverview` | Project readiness and next action. |
+| `ProjectPipelinesPage` | Pipeline description and chunker configuration context. |
+| `IngestionRunsPage` | Global or project-scoped ingestion run index. |
+| `IngestionRunDetail` | Durable run detail and retry path. |
+| `WorkspaceEntry` | Loads source state before mounting the unified workspace. |
+| `KnowledgeWorkspace` | Unified Sources/Playground layout, selection state, upload/delete/retry mutations. |
+| `DocumentPanel` | Source list, filters, upload actions, status cards. |
+| `AssistantPanel` | Streaming RAG interaction, activity trace, citations, history restore. |
+| `SourceInspector` | Source content, versions, retrieval trace, metadata. |
+| `QueryHistoryPage` | Query history search and outcome filtering. |
+| `QueryDetail` | Persisted answer and retrieval trace detail. |
+| `DocumentDetail` | Source metadata, versions, runs, upload new version, delete. |
+| `LoadingState` | Accessible skeleton loading region. |
+| `EmptyState` | Consistent empty-state panel. |
+| `ErrorState` | Consistent error-state panel with retry affordance. |
+| `ConfirmDeleteDialog` | Typed destructive confirmation. |
+| `PlannedFeaturePage` | Truthful placeholder for backend-dependent surfaces. |
 
-`ChatWorkspace`, `DocumentsWorkspace`, and `HistoryWorkspace` remain in the
-codebase as legacy components. They are not primary navigation destinations.
-They should be removed only after route and test coverage confirms they are no
-longer needed.
-
-## Current UX Surfaces
-
-### Home
-
-`/home` answers "what should I work on next?" It uses real project, document,
-run, and query data. Empty states guide the user toward:
+Legacy components still present:
 
 ```text
-Create project
-  -> Add sources
-  -> Process/index sources
-  -> Test retrieval in Playground
-  -> Inspect evidence
+ChatWorkspace
+DocumentsWorkspace
+HistoryWorkspace
+IngestionCard
+DocumentList
+ProjectPlannedFeaturePage
 ```
 
-The page avoids fake analytics and does not show unsupported experiment
-metrics.
+They are retained for compatibility and tests. Remove them only after route and
+test coverage confirms they are no longer referenced.
 
-### Projects
+## Shared Data Hooks And Utilities
 
-`/projects` shows projects as research workspaces. Cards link primarily to the
-project overview. Rename and delete are kept in an overflow menu. Counts are
-loaded from current document and ingestion endpoints.
-
-### Labs
-
-`/labs` is the premium discovery surface for project-backed research labs. It
-groups existing project workspaces by frontend-inferred research domains such
-as Retrieval/RAG, NLP, Computer Vision, Machine Learning, Multimodal, AI
-Systems, and Mathematics. Lab cards use real project, source, and ingestion run
-data; they do not invent unsupported experiment records or synthetic metrics.
-
-### Sources
-
-The Sources workflow reuses the existing document/source implementation and
-preserves:
-
-- file upload
-- URL ingestion
-- Google Drive ingestion
-- chunker selection
-- source search
-- source status
-- retry failed ingestion
-- delete source
-- document versions
-- source metadata
-
-The backend API still uses `documents` route names and document IDs. The UI
-uses `Sources` for the product concept.
-
-### Playground
-
-The Playground preserves the implemented RAG query behavior:
-
-- streamed SSE answers
-- provider selection for Gemini/Groq
-- one-source filter supported by the current backend
-- retrieval settings
-- stop generation
-- Markdown answer rendering
-- execution trace
-- citations
-- answer copy/regenerate actions
-- query history drawer
-- retrieval trace and source inspection
-
-The Playground is not presented as an autonomous agent.
-
-### Pipelines
-
-Pipelines present durable ingestion execution without exposing Airflow as the
-generic product concept. The UI uses:
-
-```text
-Pipeline
-Run
-Orchestrator
-```
-
-Airflow/Celery details remain implementation-specific and appear only where the
-backend reports them.
-
-### Observability
-
-Observability is based on real documents, ingestion runs, and persisted query
-history. Missing metrics are shown as unavailable rather than fabricated.
+| File | Purpose | API behavior |
+| --- | --- | --- |
+| `lib/api.ts` | `apiFetch` and `authFetch` wrappers | `apiFetch` prefixes `/api/backend`; `authFetch` prefixes `/api/auth`; both normalize backend error payloads. |
+| `lib/server-auth.ts` | Server-side auth constants | Defines `AUTH_COOKIE = "ragforge_session"` and `backendUrl()`. |
+| `lib/sse.ts` | SSE parsing helpers | Consumes streamed backend events for RAG answers. |
+| `hooks/use-workspace-overview.ts` | Cross-project overview aggregation | Loads `GET /projects/`, per-project documents, runs, and query history depending on options. |
+| `hooks/use-ingestion-stream.ts` | Run status streaming | Uses `EventSource` to `/api/backend/ingest/runs/{run_id}/events`, then recovers with `GET /ingest/runs/{run_id}`. |
 
 ## Visual System
 
-The active CCSR frontend identity uses:
-
-- black page backgrounds
-- charcoal panels and cards
-- warm-cream primary actions and active navigation
-- green only for semantic success/indexed/healthy states
-
 Core tokens live in `frontend/src/app/globals.css`.
 
-Approximate token intent:
+Current identity:
 
-```css
---background: #090909;
---sidebar: #0d0d0d;
---surface: #131313;
---surface-raised: #191919;
---surface-hover: #202020;
---border: #2b2926;
---border-strong: #403c36;
---ink: #f4efe7;
---ink-muted: #b7b0a7;
---ink-faint: #77716a;
---accent: #ebe0d1;
---accent-hover: #fff7ec;
-```
+- dark graphite background: `--background: #090B10`
+- dark sidebar: `--sidebar: #0C0F15`
+- primary panels: `--surface-1: #11151D`
+- raised panels: `--surface-2: #161B25`
+- hover panels: `--surface-hover: #1A202B`
+- primary text: `--text-primary: #F3F5F7`
+- secondary text: `--text-secondary: #A6AFBD`
+- muted text: `--text-muted: #717B89`
+- CCSR blue: `--accent: #6C8CFF`
+- research violet: `--research-violet: #A78BFA`
+- semantic success/warning/danger/info tokens for status only
 
-Auth pages include a separate subtle atmospheric treatment in
-`globals.css`. The main application shell remains calmer and denser.
+Design characteristics:
 
-## Auth Constraints
-
-Do not move backend JWTs into client-readable storage. The frontend must keep:
-
-```text
-Next.js route handlers
-  -> HttpOnly ragforge_session cookie
-  -> same-origin backend proxy
-```
-
-The `ragforge_session` name remains for compatibility even though the product
-branding is CCSR.
+- restrained dark research UI
+- dense but readable operational layouts
+- cards with small radii, not nested decorative cards
+- icons from `lucide-react`
+- color plus text/icon status communication
+- accessible skip navigation and focus states
+- reduced-motion cleanup for users who prefer less animation
+- loading, empty, and error states are centralized in shared primitives
 
 ## Backend-Dependent Blockers
 
-These are intentionally not implemented in this frontend milestone:
+The frontend intentionally labels these as planned or unavailable until backend
+contracts exist:
 
 - first-class experiment records
-- experiment run detail pages backed by persisted experiment APIs
+- persisted experiment run detail APIs
+- model-only baseline execution endpoint
+- fine-tuned/QLoRA adapter execution endpoint
 - dataset registry and versioning
 - model registry and versioning
+- notebook registry
 - evaluation metrics dashboard
-- comparison matrices
+- evaluator score contracts
+- formal comparison matrices
 - cost/resource metrics
-- research notes and findings
-- reproducibility manifests
+- research notes and findings APIs
+- reproducibility manifest export/import
 - knowledge graph or paper relationship browser
-- project descriptions persisted by the backend
-
-Planned pages must remain explicit that backend support is required.
+- persisted project descriptions, research questions, abstracts, and hypotheses
 
 ## Validation Expectations
 
-For frontend migration work, run from `frontend/`:
+For frontend changes, run from `frontend/`:
 
 ```bash
 npm run lint
-npm run test
 npm run typecheck
+npm run test
 npm run build
 ```
 
