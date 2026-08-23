@@ -9,6 +9,7 @@ from app.models import (
     Document,
     EmbeddingRun,
     IngestionRun,
+    OrganizationMembership,
     QueryLog,
 )
 
@@ -22,6 +23,7 @@ class ControlPlaneModelTests(unittest.TestCase):
         self.assertTrue(
             {
                 "ingestion_runs",
+                "organization_memberships",
                 "chunks",
                 "embedding_runs",
                 "query_logs",
@@ -41,14 +43,15 @@ class ControlPlaneModelTests(unittest.TestCase):
 
     def test_invalid_lifecycle_statuses_are_rejected_by_models(self):
         cases = (
-            (Document, "not-a-document-status"),
-            (IngestionRun, "not-an-ingestion-status"),
-            (EmbeddingRun, "not-an-embedding-status"),
+            (Document, "status", "not-a-document-status"),
+            (IngestionRun, "status", "not-an-ingestion-status"),
+            (EmbeddingRun, "status", "not-an-embedding-status"),
+            (OrganizationMembership, "role", "not-an-organization-role"),
         )
-        for model, status in cases:
+        for model, field_name, invalid_value in cases:
             with self.subTest(model=model.__name__):
                 with self.assertRaises(ValueError):
-                    model(status=status)
+                    model(**{field_name: invalid_value})
 
     def test_lifecycle_statuses_have_database_check_constraints(self):
         for model in (Document, IngestionRun, EmbeddingRun):
@@ -59,6 +62,14 @@ class ControlPlaneModelTests(unittest.TestCase):
                     if isinstance(constraint, CheckConstraint)
                 ]
                 self.assertEqual(len(checks), 1)
+
+    def test_organization_membership_uniqueness_constraints_are_present(self):
+        unique_columns = {
+            tuple(constraint.columns.keys())
+            for constraint in OrganizationMembership.__table__.constraints
+            if isinstance(constraint, UniqueConstraint)
+        }
+        self.assertIn(("organization_id", "user_id"), unique_columns)
 
     def test_embedding_run_tracks_model_loading_and_retrying(self):
         self.assertEqual(EmbeddingRun(status="loading_model").status, "loading_model")
@@ -82,6 +93,12 @@ class ControlPlaneModelTests(unittest.TestCase):
                 ("status",),
                 ("created_by",),
                 ("created_at",),
+            },
+            "organization_memberships": {
+                ("organization_id",),
+                ("user_id",),
+                ("role",),
+                ("deleted_at",),
             },
             "document_versions": {
                 ("document_id",),
