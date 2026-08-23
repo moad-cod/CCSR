@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.core.db import get_db
 from app.models.tables import User, Project, Document, Organization
 from app.core.auth import get_current_user
+from app.repositories import organization_memberships as membership_repository
 from datetime import datetime, timedelta
 from pydantic import BaseModel, ConfigDict, field_validator
 import uuid
@@ -150,6 +151,13 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
         hashed_password=hash_password(body.password),
     )
     db.add(user)
+    await db.flush()
+    if body.organization_id:
+        await membership_repository.create_membership(
+            db,
+            organization_id=body.organization_id,
+            user_id=user.id,
+        )
     await db.commit()
     await db.refresh(user)
     return _user_payload(user)
@@ -228,14 +236,13 @@ async def update_me(
         u.full_name = body.full_name
     if body.organization_id is not None:
         if body.organization_id:
-            org_result = await db.execute(
-                select(Organization).where(
-                    Organization.id == body.organization_id,
-                    Organization.deleted_at.is_(None),
-                )
+            membership = await membership_repository.get_active_membership(
+                db,
+                organization_id=body.organization_id,
+                user_id=user["user_id"],
             )
-            if not org_result.scalar_one_or_none():
-                raise HTTPException(400, "Organization not found")
+            if membership is None:
+                raise HTTPException(403, "Organization membership required")
         u.organization_id = body.organization_id or None
 
     await db.commit()
