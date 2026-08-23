@@ -21,6 +21,11 @@ class User(Base):
     deleted_at = Column(DateTime, nullable=True)
 
     organization = relationship("Organization", back_populates="users")
+    organization_memberships = relationship(
+        "OrganizationMembership",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     projects = relationship("Project", back_populates="creator", foreign_keys="Project.created_by")
     ingestion_runs = relationship("IngestionRun", back_populates="creator")
     query_logs = relationship("QueryLog", back_populates="user")
