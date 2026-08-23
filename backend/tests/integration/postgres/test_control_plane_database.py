@@ -27,6 +27,7 @@ from app.models import (
     EmbeddingRun,
     IngestionRun,
     Organization,
+    OrganizationMembership,
     Project,
     QueryLog,
     RetrievalLog,
@@ -152,6 +153,14 @@ class ControlPlaneDatabaseTests(unittest.IsolatedAsyncioTestCase):
 
         identifiers = {
             Organization: self.seed.organization_id,
+            OrganizationMembership: (
+                await self.db.scalar(
+                    select(OrganizationMembership.id).where(
+                        OrganizationMembership.organization_id == self.seed.organization_id,
+                        OrganizationMembership.user_id == self.seed.user_id,
+                    )
+                )
+            ),
             User: self.seed.user_id,
             Project: self.seed.project_id,
             Document: self.seed.document_id,
