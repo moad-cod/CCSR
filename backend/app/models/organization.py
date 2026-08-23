@@ -19,3 +19,8 @@ class Organization(Base):
 
     users = relationship("User", back_populates="organization")
     projects = relationship("Project", back_populates="organization")
+    memberships = relationship(
+        "OrganizationMembership",
+        back_populates="organization",
+        cascade="all, delete-orphan",
+    )
