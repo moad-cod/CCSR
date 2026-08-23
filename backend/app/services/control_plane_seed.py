@@ -15,6 +15,7 @@ from app.models import (
     EmbeddingRun,
     IngestionRun,
     Organization,
+    OrganizationMembership,
     Project,
     QueryLog,
     RetrievalLog,
@@ -76,6 +77,7 @@ async def seed_control_plane(
         entity: _seed_id(namespace, entity)
         for entity in (
             "organization",
+            "organization_membership",
             "user",
             "project",
             "document",
@@ -102,6 +104,14 @@ async def seed_control_plane(
         email=f"seed-{slug}@ragforge.local",
         full_name="RAGForge Seed User",
         hashed_password="seed-data-not-for-authentication",
+    )
+    await _get_or_add(
+        db,
+        OrganizationMembership,
+        ids["organization_membership"],
+        organization_id=ids["organization"],
+        user_id=ids["user"],
+        role="owner",
     )
     await _get_or_add(
         db,
