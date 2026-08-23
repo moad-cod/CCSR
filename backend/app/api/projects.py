@@ -3,8 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.auth import get_current_user
 from app.core.db import get_db
-from app.models.tables import Project, Document, Organization
+from app.models.tables import Project, Document
 from app.repositories import projects as project_repository
+from app.repositories import organization_memberships as membership_repository
 from app.services.indexer import delete_document_chunks, delete_collection
 from pydantic import BaseModel, field_validator
 from datetime import datetime
@@ -26,6 +27,16 @@ class ProjectCreate(BaseModel):
         if len(name) > 120:
             raise ValueError("Project name must be 120 characters or fewer")
         return name
+
+    @field_validator("organization_id")
+    @classmethod
+    def validate_organization_id(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        try:
+            return str(uuid.UUID(value.strip()))
+        except ValueError as exc:
+            raise ValueError("organization_id must be a valid UUID") from exc
 
 class ProjectUpdate(BaseModel):
     name: str
@@ -66,14 +77,13 @@ async def create_project(
     user: dict = Depends(get_current_user),
 ):
     if body.organization_id:
-        org_result = await db.execute(
-            select(Organization).where(
-                Organization.id == body.organization_id,
-                Organization.deleted_at.is_(None),
-            )
+        membership = await membership_repository.get_active_membership(
+            db,
+            organization_id=body.organization_id,
+            user_id=user["user_id"],
         )
-        if not org_result.scalar_one_or_none():
-            raise HTTPException(400, "Organization not found")
+        if membership is None:
+            raise HTTPException(403, "Organization membership required")
 
     project_id = str(uuid.uuid4())
     collection = f"project_{project_id}"
