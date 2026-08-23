@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 CORE_TABLES = frozenset(
     {
         "organizations",
+        "organization_memberships",
         "users",
         "projects",
         "documents",
@@ -24,6 +25,8 @@ CORE_TABLES = frozenset(
 REQUIRED_FOREIGN_KEYS = frozenset(
     {
         ("users", ("organization_id",), "organizations"),
+        ("organization_memberships", ("organization_id",), "organizations"),
+        ("organization_memberships", ("user_id",), "users"),
         ("projects", ("organization_id",), "organizations"),
         ("projects", ("created_by",), "users"),
         ("documents", ("project_id",), "projects"),
@@ -50,6 +53,7 @@ REQUIRED_FOREIGN_KEYS = frozenset(
 REQUIRED_UNIQUE_CONSTRAINTS = frozenset(
     {
         ("users", "uq_users_email"),
+        ("organization_memberships", "uq_organization_memberships_org_user"),
         ("projects", "uq_projects_qdrant_collection"),
         ("document_versions", "uq_document_versions_document_version_number"),
         ("document_versions", "uq_document_versions_document_content_hash"),
@@ -62,6 +66,7 @@ REQUIRED_UNIQUE_CONSTRAINTS = frozenset(
 REQUIRED_CHECK_CONSTRAINTS = frozenset(
     {
         ("documents", "ck_documents_status"),
+        ("organization_memberships", "ck_organization_memberships_role"),
         ("ingestion_runs", "ck_ingestion_runs_status"),
         ("embedding_runs", "ck_embedding_runs_status"),
     }
@@ -70,6 +75,8 @@ REQUIRED_CHECK_CONSTRAINTS = frozenset(
 REQUIRED_INDEXES = frozenset(
     {
         ("documents", "ix_documents_project_id"),
+        ("organization_memberships", "ix_organization_memberships_organization_id"),
+        ("organization_memberships", "ix_organization_memberships_user_id"),
         ("documents", "ix_documents_current_version_id"),
         ("documents", "ix_documents_status"),
         ("document_versions", "ix_document_versions_document_id"),
