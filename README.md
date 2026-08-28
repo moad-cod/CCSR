@@ -13,7 +13,7 @@ The project evolved from RAGForge. Its current implementation is strongest in Re
 
 > CCSR is being built around one principle: research results are more useful when the experiment, configuration, evidence, metrics, artifacts, and environment that produced them can be inspected and reproduced.
 
-**Quick links:** [Docker Quick Start](#docker-quick-start) | [Architecture](#architecture) | [RAG Research Domain](#rag-research-domain) | [Evaluation](#evaluation-and-experiments) | [Reproducibility](#reproducibility) | [Project Map](PROJECT_MAP.md) | [Backend Map](backend/BACKEND_MAP.md) | [Frontend Map](frontend/FRONTEND_MAP.md)
+**Quick links:** [Repository Context](CONTEXT.md) | [System Map](docs/map/CONTEXT.md) | [Docker Quick Start](#docker-quick-start) | [Architecture](#architecture) | [RAG Research Domain](#rag-research-domain) | [Evaluation](#evaluation-and-experiments) | [Reproducibility](#reproducibility) | [Project Map](PROJECT_MAP.md) | [Backend Map](backend/BACKEND_MAP.md) | [Frontend Map](frontend/FRONTEND_MAP.md)
 
 ## What Is CCSR?
 
@@ -115,7 +115,7 @@ CCSR is an active engineering project. The default runtime remains text-RAG focu
 | Research findings and notes | Planned | Intended to connect evaluated evidence to research conclusions. |
 | Paper and mathematical concept relationships | Planned | Directional knowledge layer; no implemented graph API exists yet. |
 | Reproducibility manifests | Planned | Target manifest fields are documented below, but no complete manifest model is implemented. |
-| Organization membership and roles | Planned | Organization records exist, but role/member enforcement is not complete. |
+| Organization membership and roles | Partially implemented | Membership records and owner/admin organization mutations are enforced. Platform-wide visitor/member/admin roles, invitations, membership management, and project collaboration are not implemented. |
 | Local generation through Ollama | Planned | Hosted Gemini/Groq generation is implemented; Ollama is not wired into the current config. |
 | Cross-domain NLP/CV/ML experiment support | Planned | The current mature implementation remains Retrieval/RAG. |
 
