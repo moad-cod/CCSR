@@ -397,6 +397,19 @@ contracts exist:
 - knowledge graph or paper relationship browser
 - persisted project descriptions, research questions, abstracts, and hypotheses
 
+## Current Modularity Boundary
+
+The App Router files are generally thin, but screen ownership is not yet split
+between platform and capability modules. `components/app-shell.tsx` and
+`components/labs/lab-shell.tsx` hard-code project navigation, while
+`hooks/use-workspace-overview.ts` loads RAG documents, ingestion runs, and query
+history for each project. These are current implementation facts, not the future
+generic project contract.
+
+The approved direction is to keep route paths stable while composing generic
+screens from `src/platform/` and RAG screens from `src/modules/ragforge/`.
+Neither directory should be created until real components are migrated.
+
 ## Validation Expectations
 
 For frontend changes, run from `frontend/`:
