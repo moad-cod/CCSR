@@ -1,4 +1,4 @@
-# RAGForge Project Map
+# CCSR Project Map — current RAGForge implementation
 
 RAGForge is a FastAPI SaaS backend for authenticated Retrieval-Augmented Generation. It ingests files and web sources, versions document content, chunks and embeds text, stores dense and sparse vectors in Qdrant, and answers questions through OpenAI-compatible LLM providers. PostgreSQL defines the durable control plane for identities, projects, ingestion runs, chunk lineage, embedding runs, query history, and retrieval traces.
 
@@ -405,9 +405,13 @@ Registration, login, the health check, and the chunker catalog are unauthenticat
 | Documents | Project list, read, version list, soft delete, new version through re-upload | Update metadata, read one version by ID, rollback, delete one version, direct chunk editing |
 | Ingestion runs | Project list, read, failed-run retry, SSE snapshot/replay/recovery | Cancel endpoint, retry history, per-stage duration/timestamp records, structured diagnostics |
 | Queries | Synchronous/streaming answer, document filter, provider/model choice, history, ranked trace | Regenerate endpoint, feedback endpoint, structured citations in the answer response |
-| Organizations | Authenticated create/list/read/rename/soft delete | Membership roles, admin authorization, per-user organization scoping |
+| Organizations | Authenticated create; membership-scoped list/read; owner/admin rename and soft delete | Membership administration, invitations, platform-wide roles |
 
-Project tenancy is enforced by `Project.created_by`, not by organization membership. Organization endpoints currently expose every non-deleted organization to any authenticated user. A project create/update payload only supports `name` plus optional `organization_id` on create.
+Project tenancy is enforced by `Project.created_by`, not by organization
+membership. Organization endpoints enforce active membership for list/read and
+owner/admin membership for mutations. Registration can still create a member
+record for a supplied existing organization UUID. A project create/update
+payload only supports `name` plus optional `organization_id` on create.
 
 `DocumentVersion` is exposed only through `GET /documents/{document_id}/versions`. Query responses return `query_log_id` and optionally bare `retrieved_chunks`; linked document/version/rank/score details require the follow-up query-trace endpoint. Fully linked traces are available only for points that have PostgreSQL `Chunk` lineage.
 

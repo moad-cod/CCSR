@@ -86,12 +86,15 @@ All protected user endpoints use `Authorization: Bearer <JWT>`. Login uses OAuth
 | `PATCH` | `/auth/me` | Change email, password, name, or organization. |
 | `DELETE` | `/auth/me` | Soft-delete the user and their projects; delete their Qdrant collections. |
 | `POST` | `/organizations/` | Create an organization. |
-| `GET` | `/organizations/` | List all non-deleted organizations. |
-| `GET` | `/organizations/{organization_id}` | Fetch an organization. |
-| `PATCH` | `/organizations/{organization_id}` | Rename an organization. |
-| `DELETE` | `/organizations/{organization_id}` | Soft-delete an organization. |
+| `GET` | `/organizations/` | List non-deleted organizations for which the current user has an active membership. |
+| `GET` | `/organizations/{organization_id}` | Fetch an organization after verifying active membership. |
+| `PATCH` | `/organizations/{organization_id}` | Rename an organization as an owner/admin member. |
+| `DELETE` | `/organizations/{organization_id}` | Soft-delete an organization as an owner/admin member. |
 
-Organization routes require authentication but currently do not enforce organization membership or an admin role.
+Organization creation also creates an owner membership. Organization list/read
+requires active membership, and update/delete requires an owner or admin
+membership. Membership administration, invitations, and platform-wide roles are
+not implemented.
 
 ### Project and document endpoints
 
@@ -668,7 +671,9 @@ The same suffix convention applies to `RAGFORGE_SILVER_TO_GOLD_*_CMD` and `RAGFO
 - Most route handlers separately ensure the user/project/document is not soft-deleted.
 - Projects and their resources are authorized by creator ownership.
 - Internal pipeline authorization is a direct comparison to one shared service bearer token.
-- There is no role/permission model, refresh-token flow, token revocation list, or organization membership enforcement in this codebase.
+- Organization membership roles (`owner`, `admin`, `member`) are enforced by the
+  organization routes. There is no platform-wide visitor/member/admin policy,
+  project-role authorization, refresh-token flow, or token revocation list.
 
 ## 13. Running and maintaining the backend
 
@@ -778,9 +783,16 @@ These are important implementation facts, not necessarily defects in every deplo
 1. **There are two text-ingestion architectures.** Batch file ingestion has full artifacts, runs, and chunk lineage. URL/Drive ingestion writes directly to Qdrant and lacks those durable records.
 2. **Multimodal is a separate stack.** It uses a separate collection, R2 images, ColQwen2, and a fixed Gemini generation path. The base image lacks its heavy model packages.
 3. **Document-level multimodal deletion is incomplete.** The document delete route removes points from the base text collection and R2 images, but does not explicitly remove that document's points from `<collection>_multimodal`. Project deletion removes the entire multimodal collection.
-4. **Organization APIs are globally visible to authenticated users.** Organization membership and role enforcement are not implemented.
+4. **Organization authorization is partial.** Organization list/read is
+   membership-scoped and mutations require owner/admin, but registration can
+   still join a known organization UUID, membership management/invitations are
+   absent, and project resources remain creator-owned.
 5. **Query cache invalidation is TTL-only.** The key does not include a document-version/index generation, and ingestion/deletion does not evict cached answers.
-6. **Orchestrator triggering is best-effort and has no inline fallback.** If the selected orchestrator is disabled, a file run remains `landed`; if background enqueue fails, it can also remain `landed`. Either case requires an external pipeline trigger or operational recovery.
+6. **Orchestrator triggering has no inline fallback.** If the selected
+   orchestrator is disabled, a file run remains `landed` and requires an
+   external pipeline trigger or operational recovery. If a configured Airflow
+   or Celery adapter fails to accept the run, the orchestrator boundary records
+   a terminal, retryable `failed` state.
 7. **Celery currently reuses `airflow_dag_run_id`.** The Celery workflow ID is persisted in the existing Airflow-named field to avoid schema churn during comparison.
 8. **Celery is implemented for benchmarking, but the infrastructure E2E suite is still Airflow-oriented.** Celery has focused unit coverage and benchmark validation; the older `tests/e2e/test_control_plane.py` still waits for Airflow success.
 9. **Embedding-run tracking is active for durable file ingestion.** The Silver-to-Gold stage updates `EmbeddingRun` records through the internal pipeline API; synchronous URL/GDrive/multimodal paths still do not create this lineage.
