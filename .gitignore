@@ -54,6 +54,6 @@ frontend/playwright-report/
 # Logs
 *.log
 logs/
-
+graphify-out/
 optimization_task.md
 tasks-evaluation.txt
