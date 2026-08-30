@@ -6,7 +6,7 @@ import logging
 
 from app.core.config import settings
 from app.core.db import AsyncSessionLocal
-from app.repositories.ingestion_runs import mark_ingestion_failed
+from app.modules.ragforge.repositories.ingestion_runs import mark_ingestion_failed
 from app.services.event_stream import publish_ingestion_event
 
 

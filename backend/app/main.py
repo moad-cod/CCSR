@@ -1,12 +1,12 @@
 from fastapi import FastAPI
-from app.api.auth import router as auth_router
+from app.platform.accounts.api import router as auth_router
 from app.api.projects import router as projects_router
-from app.api.ingest import router as ingest_router
-from app.api.query import router as query_router
-from app.api.documents import router as documents_router
-from app.api.chunkers import router as chunkers_router
-from app.api.organizations import router as organizations_router
-from app.api.internal_pipeline import router as internal_pipeline_router
+from app.modules.ragforge.api.ingest import router as ingest_router
+from app.modules.ragforge.api.query import router as query_router
+from app.modules.ragforge.api.documents import router as documents_router
+from app.modules.ragforge.api.chunkers import router as chunkers_router
+from app.platform.organizations.api import router as organizations_router
+from app.modules.ragforge.api.internal_pipeline import router as internal_pipeline_router
 
 app = FastAPI(
     title="RAGForge API",

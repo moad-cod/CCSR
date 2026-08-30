@@ -8,7 +8,7 @@ except ModuleNotFoundError:
 
 ensure_backend_path()
 
-from app.services.indexer import delete_document_chunks
+from app.modules.ragforge.services.indexer import delete_document_chunks
 
 # Replace with your actual project's collection name
 COLLECTION = "your_collection_name_here"

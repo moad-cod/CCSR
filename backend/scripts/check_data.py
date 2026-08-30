@@ -8,7 +8,7 @@ except ModuleNotFoundError:
 
 ensure_backend_path()
 
-from app.services.indexer import qdrant
+from app.modules.ragforge.services.indexer import qdrant
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 DOCUMENT_ID = '4aacc15d-54b7-4943-bacc-ac75ef6184b7'

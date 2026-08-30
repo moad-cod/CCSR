@@ -8,21 +8,21 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import (
+from app.models.project import Project
+from app.modules.ragforge.models import (
     Chunk,
     Document,
     DocumentVersion,
     EmbeddingRun,
     IngestionRun,
-    Organization,
-    OrganizationMembership,
-    Project,
     QueryLog,
     RetrievalLog,
-    User,
 )
-from app.services.chunk_indexing import qdrant_point_id
-from app.services.query_observability import normalized_question_hash
+from app.modules.ragforge.services.chunk_indexing import qdrant_point_id
+from app.modules.ragforge.services.query_observability import normalized_question_hash
+from app.platform.accounts.model import User
+from app.platform.organizations.membership import OrganizationMembership
+from app.platform.organizations.model import Organization
 
 
 SEED_UUID_NAMESPACE = uuid.UUID("bc286dc4-06af-4d65-8603-b3d51d78bce0")
