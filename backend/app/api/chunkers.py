@@ -1,9 +1,7 @@
-from fastapi import APIRouter
-from app.services.chunkers.registry import list_chunkers
+"""Compatibility alias for app.modules.ragforge.api.chunkers."""
 
-router = APIRouter()
+from app._compat import alias_module
+from app.modules.ragforge.api import chunkers as _implementation
 
 
-@router.get("")
-async def get_chunkers():
-    return list_chunkers()
+alias_module(globals(), _implementation)

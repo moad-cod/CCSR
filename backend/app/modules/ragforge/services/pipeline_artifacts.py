@@ -1,0 +1,484 @@
+"""Bronze, Silver, and Gold artifact transformations for batch ingestion."""
+
+from __future__ import annotations
+
+import hashlib
+import io
+import json
+import os
+import time
+from collections.abc import Callable, Sequence
+from datetime import UTC, datetime
+from typing import Any
+
+import boto3
+from botocore.config import Config
+
+
+SILVER_FILENAME = "chunks.parquet"
+GOLD_FILENAME = "embedded_chunks.parquet"
+DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+EmbeddingProgressCallback = Callable[[dict[str, Any]], None]
+
+
+def _split_object_path(path: str) -> tuple[str, str]:
+    bucket, separator, key = (path or "").partition("/")
+    if not separator or not bucket or not key:
+        raise ValueError(f"Invalid object path {path!r}; expected bucket/key")
+    return bucket, key
+
+
+def derive_artifact_path(bronze_path: str, bucket: str, filename: str) -> str:
+    """Derive a deterministic sibling path from a versioned Bronze object."""
+    _bronze_bucket, bronze_key = _split_object_path(bronze_path)
+    prefix, marker, _raw_name = bronze_key.rpartition("/raw/")
+    if not marker or not prefix:
+        raise ValueError(f"Bronze path {bronze_path!r} does not contain a versioned /raw/ key")
+    return f"{bucket}/{prefix}/{filename}"
+
+
+class ArtifactStore:
+    """Small S3-compatible object store used by the pipeline commands."""
+
+    def __init__(self, client=None) -> None:
+        max_attempts = int(os.environ.get("MINIO_MAX_ATTEMPTS", "3"))
+        connect_timeout = float(os.environ.get("MINIO_CONNECT_TIMEOUT_SECONDS", "3"))
+        read_timeout = float(os.environ.get("MINIO_READ_TIMEOUT_SECONDS", "30"))
+        self.client = client or boto3.client(
+            "s3",
+            endpoint_url=_minio_endpoint(),
+            aws_access_key_id=os.environ.get("MINIO_ACCESS_KEY", "ragforge"),
+            aws_secret_access_key=os.environ.get("MINIO_SECRET_KEY", "ragforge123"),
+            config=Config(
+                signature_version="s3v4",
+                connect_timeout=connect_timeout,
+                read_timeout=read_timeout,
+                retries={"max_attempts": max_attempts, "mode": "standard"},
+            ),
+            region_name="us-east-1",
+        )
+
+    def read_bytes(self, path: str) -> bytes:
+        bucket, key = _split_object_path(path)
+        return self.client.get_object(Bucket=bucket, Key=key)["Body"].read()
+
+    def write_bytes(self, path: str, data: bytes, content_type: str) -> str:
+        bucket, key = _split_object_path(path)
+        self.client.put_object(Bucket=bucket, Key=key, Body=data, ContentType=content_type)
+        return path
+
+
+def _minio_endpoint() -> str:
+    endpoint = os.environ.get("MINIO_ENDPOINT", "http://minio:9000").rstrip("/")
+    if not endpoint.startswith(("http://", "https://")):
+        endpoint = f"http://{endpoint}"
+    return endpoint
+
+
+def _parquet_modules():
+    try:
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+    except ImportError as exc:
+        raise RuntimeError("pyarrow is required by the ingestion artifact jobs") from exc
+    return pa, pq
+
+
+def _silver_schema():
+    pa, _pq = _parquet_modules()
+    return pa.schema(
+        [
+            ("chunk_index", pa.int64()),
+            ("text", pa.string()),
+            ("content_hash", pa.string()),
+            ("token_count", pa.int64()),
+            ("page_start", pa.int64()),
+            ("page_end", pa.int64()),
+            ("section_title", pa.string()),
+            ("metadata_json", pa.string()),
+            # Late chunking creates context-aware vectors while it identifies
+            # chunk boundaries. Preserve them so Gold does not recompute a
+            # less contextual embedding for the same text.
+            ("precomputed_dense_vector", pa.list_(pa.float32())),
+        ]
+    )
+
+
+def _gold_schema():
+    pa, _pq = _parquet_modules()
+    return pa.schema(
+        [
+            field
+            for field in _silver_schema()
+            if field.name != "precomputed_dense_vector"
+        ]
+    ).append(pa.field("dense_vector", pa.list_(pa.float32())))
+
+
+def _write_parquet(rows: Sequence[dict[str, Any]], schema) -> bytes:
+    pa, pq = _parquet_modules()
+    buffer = io.BytesIO()
+    table = pa.Table.from_pylist(list(rows), schema=schema)
+    pq.write_table(table, buffer, compression="zstd")
+    return buffer.getvalue()
+
+
+def _read_parquet(data: bytes) -> list[dict[str, Any]]:
+    _pa, pq = _parquet_modules()
+    return pq.read_table(io.BytesIO(data)).to_pylist()
+
+
+def _utc_timestamp() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _positive_int(value: Any, field_name: str) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be an integer") from exc
+    if parsed <= 0:
+        raise ValueError(f"{field_name} must be positive")
+    return parsed
+
+
+def _embedding_batch_size(run: dict[str, Any], chunk_count: int) -> int:
+    plan = run.get("ingestion_plan") or {}
+    if "embedding_batch_size" in plan:
+        configured = plan.get("embedding_batch_size")
+    else:
+        configured = (
+            os.environ.get("RAGFORGE_EMBEDDING_BATCH_SIZE")
+            or os.environ.get("EMBEDDING_BATCH_SIZE")
+        )
+    if configured is None:
+        return chunk_count
+    return _positive_int(configured, "ingestion_plan.embedding_batch_size")
+
+
+def _embedding_timeout_seconds() -> float | None:
+    configured = (
+        os.environ.get("RAGFORGE_EMBEDDING_TIMEOUT_SECONDS")
+        or os.environ.get("EMBEDDING_TIMEOUT_SECONDS")
+    )
+    if configured is None or configured == "":
+        return None
+    try:
+        timeout = float(configured)
+    except ValueError as exc:
+        raise ValueError("EMBEDDING_TIMEOUT_SECONDS must be numeric") from exc
+    return timeout if timeout > 0 else None
+
+
+def _emit_embedding_progress(
+    callback: EmbeddingProgressCallback | None,
+    *,
+    stage: str,
+    total_chunks: int,
+    embedded_chunks: int,
+    total_batches: int,
+    embedded_batches: int,
+    embedding_model: str,
+    batch_size: int,
+    started_at: float,
+    error_message: str | None = None,
+    model_info: dict[str, Any] | None = None,
+) -> None:
+    if callback is None:
+        return
+    payload = {
+        "stage": stage,
+        "embedding_model": embedding_model,
+        "embedding_batch_size": batch_size,
+        "total_chunks": total_chunks,
+        "embedded_chunks": embedded_chunks,
+        "total_batches": total_batches,
+        "embedded_batches": embedded_batches,
+        "elapsed_ms": int((time.monotonic() - started_at) * 1000),
+        "last_heartbeat_at": _utc_timestamp(),
+        "error_message": error_message,
+    }
+    if model_info:
+        payload.update(
+            {
+                "embedding_backend": model_info.get("backend"),
+                "embedding_device": model_info.get("device"),
+                "embedding_dimension": model_info.get("dimension"),
+                "model_load_elapsed_ms": model_info.get("load_elapsed_ms"),
+            }
+        )
+    callback(payload)
+
+
+def _validate_embedding_dimensions(
+    embeddings: Sequence[Sequence[float]],
+    *,
+    expected_dimension: int | None,
+    embedding_model: str,
+) -> None:
+    vector_size: int | None = None
+    for index, vector in enumerate(embeddings):
+        if not vector:
+            raise ValueError(f"Embedding vector {index} is empty")
+        if vector_size is None:
+            vector_size = len(vector)
+        elif len(vector) != vector_size:
+            raise ValueError("Embedding model returned vectors with inconsistent dimensions")
+        if expected_dimension and len(vector) != expected_dimension:
+            raise ValueError(
+                "Embedding vector dimension mismatch before Qdrant indexing: "
+                f"model {embedding_model!r} returned {len(vector)} dimensions, "
+                f"expected {expected_dimension}"
+            )
+
+
+def build_silver_rows(
+    raw_bytes: bytes,
+    *,
+    filename: str,
+    chunker_id: str,
+    parser: Callable[[bytes, str], list[str]] | None = None,
+    chunker_loader: Callable[[str], Callable[[str], list[str]]] | None = None,
+) -> list[dict[str, Any]]:
+    use_builtin_chunker = chunker_loader is None
+    if parser is None:
+        from app.modules.ragforge.services.parser import parse_document
+
+        parser = parse_document
+    if chunker_loader is None:
+        from app.modules.ragforge.services.chunkers.registry import get_chunker
+
+        chunker_loader = get_chunker
+
+    parsed_sections = parser(raw_bytes, filename)
+    full_text = "\n\n".join(parsed_sections)
+    precomputed_vectors = None
+    if chunker_id == "late_chunking" and use_builtin_chunker:
+        from app.modules.ragforge.services.chunkers.late_chunking import chunk_with_embeddings
+
+        chunks, precomputed_vectors = chunk_with_embeddings(full_text)
+    else:
+        chunks = chunker_loader(chunker_id)(full_text)
+    rows = []
+    for index, chunk in enumerate(chunks):
+        text = str(getattr(chunk, "text", chunk)).strip()
+        if not text:
+            continue
+        rows.append(
+            {
+                "chunk_index": index,
+                "text": text,
+                "content_hash": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                "token_count": None,
+                "page_start": None,
+                "page_end": None,
+                "section_title": None,
+                "metadata_json": json.dumps(
+                    {"parser_filename": filename, "chunker_id": chunker_id},
+                    sort_keys=True,
+                ),
+                "precomputed_dense_vector": (
+                    [float(value) for value in precomputed_vectors[index]]
+                    if precomputed_vectors is not None
+                    else None
+                ),
+            }
+        )
+    if not rows:
+        raise ValueError("No indexable text was extracted from the Bronze object")
+    return rows
+
+
+def bronze_to_silver(
+    run: dict[str, Any],
+    *,
+    store: ArtifactStore | None = None,
+    parser: Callable[[bytes, str], list[str]] | None = None,
+    chunker_loader: Callable[[str], Callable[[str], list[str]]] | None = None,
+) -> dict[str, Any]:
+    store = store or ArtifactStore()
+    bronze_path = run.get("bronze_path")
+    if not bronze_path:
+        raise ValueError("Ingestion metadata has no Bronze path")
+    filename = run.get("filename") or "upload"
+    chunker_id = run.get("chunker_id") or "paragraph"
+    rows = build_silver_rows(
+        store.read_bytes(bronze_path),
+        filename=filename,
+        chunker_id=chunker_id,
+        parser=parser,
+        chunker_loader=chunker_loader,
+    )
+    silver_path = run.get("silver_path") or derive_artifact_path(
+        bronze_path,
+        os.environ.get("MINIO_BUCKET_SILVER", "silver"),
+        SILVER_FILENAME,
+    )
+    store.write_bytes(
+        silver_path,
+        _write_parquet(rows, _silver_schema()),
+        "application/vnd.apache.parquet",
+    )
+    return {"artifact_path": silver_path, "chunks": len(rows)}
+
+
+def silver_to_gold(
+    run: dict[str, Any],
+    *,
+    store: ArtifactStore | None = None,
+    embedder: Callable[[list[str]], list[list[float]]] | None = None,
+    progress_callback: EmbeddingProgressCallback | None = None,
+) -> dict[str, Any]:
+    store = store or ArtifactStore()
+    silver_path = run.get("silver_path")
+    if not silver_path:
+        raise ValueError("Ingestion metadata has no Silver path")
+    rows = _read_parquet(store.read_bytes(silver_path))
+    if not rows:
+        raise ValueError("Silver artifact contains no chunks")
+    started_at = time.monotonic()
+    embedding_model = run.get("embedding_model") or os.environ.get("EMBEDDING_MODEL") or DEFAULT_EMBEDDING_MODEL
+    batch_size = _embedding_batch_size(run, len(rows))
+    total_batches = (len(rows) + batch_size - 1) // batch_size
+    model_info: dict[str, Any] | None = None
+    precomputed = [row.get("precomputed_dense_vector") for row in rows]
+    reused_precomputed_embeddings = any(vector is not None for vector in precomputed)
+    embedding_batches = 0
+    if reused_precomputed_embeddings:
+        if not all(vector for vector in precomputed):
+            raise ValueError("Silver artifact contains incomplete precomputed embeddings")
+        embeddings = [list(vector) for vector in precomputed]
+    else:
+        if embedder is None:
+            if embedding_model != DEFAULT_EMBEDDING_MODEL:
+                raise ValueError(f"Unsupported pipeline embedding model {embedding_model!r}")
+            from app.modules.ragforge.services.embedder import (
+                embed_texts,
+                ensure_embedding_model_ready,
+            )
+
+            _emit_embedding_progress(
+                progress_callback,
+                stage="loading_model",
+                total_chunks=len(rows),
+                embedded_chunks=0,
+                total_batches=total_batches,
+                embedded_batches=0,
+                embedding_model=embedding_model,
+                batch_size=batch_size,
+                started_at=started_at,
+            )
+            model_info = ensure_embedding_model_ready(embedding_model).as_dict()
+
+            def default_embedder(texts: list[str]) -> list[list[float]]:
+                return embed_texts(texts, model_name=embedding_model)
+
+            embedder = default_embedder
+        timeout_seconds = _embedding_timeout_seconds()
+        deadline = started_at + timeout_seconds if timeout_seconds is not None else None
+        embeddings: list[list[float]] = []
+        texts = [row["text"] for row in rows]
+        _emit_embedding_progress(
+            progress_callback,
+            stage="running",
+            total_chunks=len(rows),
+            embedded_chunks=0,
+            total_batches=total_batches,
+            embedded_batches=0,
+            embedding_model=embedding_model,
+            batch_size=batch_size,
+            started_at=started_at,
+            model_info=model_info,
+        )
+        for start in range(0, len(texts), batch_size):
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"Embedding stage timed out after {timeout_seconds:g} seconds "
+                    f"with {len(embeddings)}/{len(texts)} chunks embedded"
+                )
+            batch = embedder(texts[start:start + batch_size])
+            embeddings.extend(batch)
+            embedding_batches += 1
+            _emit_embedding_progress(
+                progress_callback,
+                stage="running",
+                total_chunks=len(rows),
+                embedded_chunks=len(embeddings),
+                total_batches=total_batches,
+                embedded_batches=embedding_batches,
+                embedding_model=embedding_model,
+                batch_size=batch_size,
+                started_at=started_at,
+                model_info=model_info,
+            )
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"Embedding stage timed out after {timeout_seconds:g} seconds "
+                    f"with {len(embeddings)}/{len(texts)} chunks embedded"
+                )
+    if len(embeddings) != len(rows):
+        raise ValueError("Embedding model returned an unexpected number of vectors")
+    expected_dimension = run.get("embedding_dimension")
+    if expected_dimension is not None:
+        expected_dimension = _positive_int(expected_dimension, "embedding_dimension")
+    _validate_embedding_dimensions(
+        embeddings,
+        expected_dimension=expected_dimension,
+        embedding_model=embedding_model,
+    )
+    gold_rows = []
+    for row, vector in zip(rows, embeddings):
+        gold_row = {
+            key: value
+            for key, value in row.items()
+            if key != "precomputed_dense_vector"
+        }
+        gold_row["dense_vector"] = [float(value) for value in vector]
+        gold_rows.append(gold_row)
+    bronze_path = run.get("bronze_path")
+    if not bronze_path:
+        raise ValueError("Ingestion metadata has no Bronze path")
+    gold_path = run.get("gold_path") or derive_artifact_path(
+        bronze_path,
+        os.environ.get("MINIO_BUCKET_GOLD", "gold"),
+        GOLD_FILENAME,
+    )
+    store.write_bytes(
+        gold_path,
+        _write_parquet(gold_rows, _gold_schema()),
+        "application/vnd.apache.parquet",
+    )
+    _emit_embedding_progress(
+        progress_callback,
+        stage="completed",
+        total_chunks=len(gold_rows),
+        embedded_chunks=len(gold_rows),
+        total_batches=total_batches,
+        embedded_batches=embedding_batches,
+        embedding_model=embedding_model,
+        batch_size=batch_size,
+        started_at=started_at,
+        model_info=model_info,
+    )
+    return {
+        "artifact_path": gold_path,
+        "chunks": len(gold_rows),
+        "embedding_batches": embedding_batches,
+        "reused_precomputed_embeddings": reused_precomputed_embeddings,
+    }
+
+
+def gold_chunks(run: dict[str, Any], *, store: ArtifactStore | None = None) -> list[dict]:
+    store = store or ArtifactStore()
+    gold_path = run.get("gold_path")
+    if not gold_path:
+        raise ValueError("Ingestion metadata has no Gold path")
+    rows = _read_parquet(store.read_bytes(gold_path))
+    chunks = []
+    for row in rows:
+        metadata = json.loads(row.pop("metadata_json") or "{}")
+        row["metadata"] = metadata
+        chunks.append(row)
+    if not chunks:
+        raise ValueError("Gold artifact contains no chunks")
+    return chunks

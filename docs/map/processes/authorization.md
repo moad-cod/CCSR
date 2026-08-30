@@ -3,9 +3,9 @@
 **Status:** Partially implemented with two different scopes.
 
 **Authoritative sources:**
-[`organizations.py`](../../../backend/app/api/organizations.py),
+[`organizations.py`](../../../backend/app/platform/organizations/api.py),
 [`projects.py`](../../../backend/app/repositories/projects.py), and
-[`core/auth.py`](../../../backend/app/core/auth.py).
+[`core/auth.py`](../../../backend/app/platform/access/authentication.py).
 
 **Current movement**
 

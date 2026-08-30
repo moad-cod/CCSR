@@ -9,7 +9,7 @@ from celery import chain
 
 from app.core.config import settings
 from app.core.db import AsyncSessionLocal
-from app.repositories.ingestion_runs import update_ingestion_status
+from app.modules.ragforge.repositories.ingestion_runs import update_ingestion_status
 from app.workers.celery_app import celery_app
 from app.services.event_stream import publish_ingestion_event
 from jobs.control_plane import RAGForgeControlPlane

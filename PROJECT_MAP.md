@@ -31,26 +31,26 @@ Next.js control-plane UI / Swagger UI
 | Frontend data | `frontend/src/lib/*` | Typed API client, SSE parser, shared control-plane types, session helpers |
 | App entry | `backend/app/main.py` | Creates the FastAPI app and mounts routers |
 | Config | `backend/app/core/config.py` | Loads `.env`, required URLs/secrets, optional LLM/R2 settings, limits |
-| Auth | `backend/app/core/auth.py`, `backend/app/api/auth.py` | JWT dependency, register, login, current-user read/update/delete |
+| Auth | `backend/app/platform/access/authentication.py`, `backend/app/platform/accounts/api.py` | JWT dependency, register, login, current-user read/update/delete |
 | Database | `backend/app/core/db.py` | Async SQLAlchemy engine, session dependency, declarative `Base` |
 | Models | `backend/app/models/*.py` | One SQLAlchemy model per control-plane table, relationships, constraints, and indexes; `tables.py` remains a compatibility export |
-| Organizations | `backend/app/api/organizations.py` | Organization CRUD and soft delete |
+| Organizations | `backend/app/platform/organizations/api.py` | Organization CRUD and soft delete |
 | Projects | `backend/app/api/projects.py` | Project CRUD, ownership checks, Qdrant collection lifecycle |
-| Documents | `backend/app/api/documents.py` | Document list/get/delete and document version listing |
-| Ingestion | `backend/app/api/ingest.py` | File, URL, Google Drive, and optional multimodal ingestion |
-| Pipeline control | `backend/app/api/internal_pipeline.py`, `backend/app/services/ingestion_orchestrator.py`, `backend/app/services/ingestion_planner.py` | Authenticated run metadata/status/progress boundary, Airflow/Celery selection, and deterministic technique-to-execution planning |
-| Batch artifacts | `backend/app/services/pipeline_artifacts.py`, `backend/jobs/*.py` | Bronze parsing/chunking, shared stage functions, Silver/Gold Parquet, bounded embedding batches/progress callbacks, and Qdrant indexing |
+| Documents | `backend/app/modules/ragforge/api/documents.py` | Document list/get/delete and document version listing |
+| Ingestion | `backend/app/modules/ragforge/api/ingest.py` | File, URL, Google Drive, and optional multimodal ingestion |
+| Pipeline control | `backend/app/modules/ragforge/api/internal_pipeline.py`, `backend/app/services/ingestion_orchestrator.py`, `backend/app/modules/ragforge/services/ingestion_planner.py` | Authenticated run metadata/status/progress boundary, Airflow/Celery selection, and deterministic technique-to-execution planning |
+| Batch artifacts | `backend/app/modules/ragforge/services/pipeline_artifacts.py`, `backend/jobs/*.py` | Bronze parsing/chunking, shared stage functions, Silver/Gold Parquet, bounded embedding batches/progress callbacks, and Qdrant indexing |
 | Airflow execution | `backend/airflow/dags/ragforge_ingestion.py`, `backend/jobs/ingestion_execution.py` | Detects the selected chunking technique, chooses profile-aware commands, exports resource hints, and applies embedding-stage subprocess timeouts |
 | Celery execution | `backend/app/workers/celery_app.py`, `backend/app/workers/tasks.py`, `backend/worker.py` | Configures the Celery app, publishes the ingestion chain, retries failed stages, and exposes the worker entry point |
 | Benchmarks | `backend/evaluation/airflow_benchmark/*`, `backend/evaluation/celery_benchmark/*` | Matched orchestration benchmark CLIs, clients, workloads, validators, metrics, and report writers |
-| Query | `backend/app/api/query.py` | Text and multimodal queries, query SSE, history, and retrieval trace responses |
-| Chunker catalog | `backend/app/api/chunkers.py`, `backend/app/services/chunkers/registry.py` | Public chunker metadata, validation, and lazy callable lookup |
-| Parsing | `backend/app/services/parser.py` | PDF, DOCX, XLSX, PPTX, CSV, HTML, text, URL, and Google Drive parsing |
-| Dense embeddings | `backend/app/services/embedder.py` | Configurable FastEmbed or deterministic embeddings with per-worker model caching and readiness metadata |
-| Indexing | `backend/app/services/indexer.py`, `backend/app/services/chunk_indexing.py` | Legacy/direct Qdrant writes plus deterministic PostgreSQL-Qdrant lineage for durable file ingestion |
-| Retrieval | `backend/app/services/retriever.py`, `backend/app/services/retrieval/*` | Dense/sparse hybrid search, BM25 sparse embeddings, optional reranking |
-| Realtime and cache | `backend/app/services/event_stream.py`, `backend/app/services/query_cache.py` | Redis-backed ingestion replay/fan-out and best-effort query response caching |
-| Storage | `backend/app/services/bronze_storage.py`, `backend/app/services/pipeline_artifacts.py`, `backend/app/services/storage.py` | MinIO Bronze/Silver/Gold objects with bounded S3 timeouts and Bronze bucket validation; Cloudflare R2 multimodal page images |
+| Query | `backend/app/modules/ragforge/api/query.py` | Text and multimodal queries, query SSE, history, and retrieval trace responses |
+| Chunker catalog | `backend/app/modules/ragforge/api/chunkers.py`, `backend/app/modules/ragforge/services/chunkers/registry.py` | Public chunker metadata, validation, and lazy callable lookup |
+| Parsing | `backend/app/modules/ragforge/services/parser.py` | PDF, DOCX, XLSX, PPTX, CSV, HTML, text, URL, and Google Drive parsing |
+| Dense embeddings | `backend/app/modules/ragforge/services/embedder.py` | Configurable FastEmbed or deterministic embeddings with per-worker model caching and readiness metadata |
+| Indexing | `backend/app/modules/ragforge/services/indexer.py`, `backend/app/modules/ragforge/services/chunk_indexing.py` | Legacy/direct Qdrant writes plus deterministic PostgreSQL-Qdrant lineage for durable file ingestion |
+| Retrieval | `backend/app/modules/ragforge/services/retriever.py`, `backend/app/modules/ragforge/services/retrieval/*` | Dense/sparse hybrid search, BM25 sparse embeddings, optional reranking |
+| Realtime and cache | `backend/app/services/event_stream.py`, `backend/app/modules/ragforge/services/query_cache.py` | Redis-backed ingestion replay/fan-out and best-effort query response caching |
+| Storage | `backend/app/modules/ragforge/services/bronze_storage.py`, `backend/app/modules/ragforge/services/pipeline_artifacts.py`, `backend/app/modules/ragforge/services/storage.py` | MinIO Bronze/Silver/Gold objects with bounded S3 timeouts and Bronze bucket validation; Cloudflare R2 multimodal page images |
 
 ## Repository Structure
 
@@ -61,62 +61,45 @@ backend/
   .dockerignore
   requirements.txt
   app/
+    platform/
+      access/authentication.py
+      accounts/
+        api.py
+        model.py
+      organizations/
+        api.py
+        membership.py
+        model.py
+        repository.py
+    modules/ragforge/
+      api/
+      models/
+      repositories/
+      services/
+        chunkers/
+        retrieval/
     api/
-      auth.py
-      chunkers.py
-      documents.py
-      ingest.py
-      internal_pipeline.py
-      organizations.py
       projects.py
-      query.py
+      # compatibility aliases for moved APIs
     core/
-      auth.py
       config.py
       db.py
+      auth.py  # compatibility alias
     repositories/
       projects.py
-      documents.py
-      document_versions.py
-      ingestion_runs.py
-      chunks.py
-      embedding_runs.py
-      query_logs.py
-      retrieval_logs.py
+      # compatibility aliases for moved repositories
     models/
       __init__.py
-      organization.py
-      user.py
       project.py
-      document.py
-      document_version.py
-      ingestion_run.py
-      chunk.py
-      embedding_run.py
-      query_log.py
-      retrieval_log.py
-      statuses.py
       tables.py
+      # compatibility aliases for moved models
     services/
-      chunkers/
-      retrieval/
-      embedder.py
-      indexer.py
-      parser.py
-      retriever.py
-      storage.py
-      bronze_storage.py
       airflow.py
       ingestion_orchestrator.py
       event_stream.py
-      chunk_indexing.py
-      query_cache.py
-      query_observability.py
-      pipeline_status.py
-      pipeline_artifacts.py
-      ingestion_planner.py
       control_plane_seed.py
       control_plane_validation.py
+      # compatibility aliases for moved RAG services
     workers/
       celery_app.py
       tasks.py
@@ -286,7 +269,7 @@ Airflow:    optional DAG scheduling; ingestion_runs.airflow_dag_run_id provides 
 Celery:     optional chain/work queue; currently reuses ingestion_runs.airflow_dag_run_id for workflow traceability
 ```
 
-Status validation is enforced twice: SQLAlchemy rejects invalid values before persistence, and PostgreSQL check constraints protect writes from any other client. Canonical values live in `backend/app/models/statuses.py`.
+Status validation is enforced twice: SQLAlchemy rejects invalid values before persistence, and PostgreSQL check constraints protect writes from any other client. Canonical values live in `backend/app/modules/ragforge/models/statuses.py`.
 
 ## Control-Plane Runtime (Tasks 12–23 and 25–27)
 
@@ -337,7 +320,7 @@ The `ragforge_ingestion` DAG runs `detect_ingestion_technique`, `bronze_to_silve
 
 ### Adaptive ingestion execution
 
-`backend/app/services/ingestion_planner.py` is the single policy layer that translates the persisted `DocumentVersion.chunker_id` and `Document.source_type` into execution hints. `GET /internal/pipeline/ingestion-runs/{id}` includes this plan without requiring a database migration; the decision is recomputed from durable metadata each time.
+`backend/app/modules/ragforge/services/ingestion_planner.py` is the single policy layer that translates the persisted `DocumentVersion.chunker_id` and `Document.source_type` into execution hints. `GET /internal/pipeline/ingestion-runs/{id}` includes this plan without requiring a database migration; the decision is recomputed from durable metadata each time.
 
 | Technique | Profile | Resource class | Embedding batch | Max parallelism | Optimization intent |
 |---|---|---|---:|---:|---|
@@ -359,16 +342,16 @@ The model package now follows one table per file:
 
 | Table | Model file |
 |---|---|
-| `organizations` | `backend/app/models/organization.py` |
-| `users` | `backend/app/models/user.py` |
+| `organizations` | `backend/app/platform/organizations/model.py` |
+| `users` | `backend/app/platform/accounts/model.py` |
 | `projects` | `backend/app/models/project.py` |
-| `documents` | `backend/app/models/document.py` |
-| `document_versions` | `backend/app/models/document_version.py` |
-| `ingestion_runs` | `backend/app/models/ingestion_run.py` |
-| `chunks` | `backend/app/models/chunk.py` |
-| `embedding_runs` | `backend/app/models/embedding_run.py` |
-| `query_logs` | `backend/app/models/query_log.py` |
-| `retrieval_logs` | `backend/app/models/retrieval_log.py` |
+| `documents` | `backend/app/modules/ragforge/models/document.py` |
+| `document_versions` | `backend/app/modules/ragforge/models/document_version.py` |
+| `ingestion_runs` | `backend/app/modules/ragforge/models/ingestion_run.py` |
+| `chunks` | `backend/app/modules/ragforge/models/chunk.py` |
+| `embedding_runs` | `backend/app/modules/ragforge/models/embedding_run.py` |
+| `query_logs` | `backend/app/modules/ragforge/models/query_log.py` |
+| `retrieval_logs` | `backend/app/modules/ragforge/models/retrieval_log.py` |
 
 `backend/app/models/tables.py` imports and re-exports all models to keep existing imports working:
 
@@ -575,7 +558,7 @@ Optional query controls:
 
 Reranking behavior:
 
-- If `sentence-transformers` is installed, `backend/app/services/retrieval/rerank.py` lazily loads `cross-encoder/ms-marco-MiniLM-L-6-v2`.
+- If `sentence-transformers` is installed, `backend/app/modules/ragforge/services/retrieval/rerank.py` lazily loads `cross-encoder/ms-marco-MiniLM-L-6-v2`.
 - If it is not installed, reranking degrades to the current Qdrant hybrid order rather than failing the backend import.
 
 Optional multimodal query flow:

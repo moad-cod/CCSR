@@ -1,10 +1,10 @@
 # Account
 
-**Status:** Implemented, platform ownership not yet separated.
+**Status:** Implemented with canonical platform ownership and legacy import aliases.
 
-**Authoritative sources:** [`user.py`](../../../backend/app/models/user.py),
-[`auth.py`](../../../backend/app/api/auth.py), and
-[`core/auth.py`](../../../backend/app/core/auth.py).
+**Authoritative sources:** [`model.py`](../../../backend/app/platform/accounts/model.py),
+[`api.py`](../../../backend/app/platform/accounts/api.py), and
+[`authentication.py`](../../../backend/app/platform/access/authentication.py).
 
 **Hits**
 

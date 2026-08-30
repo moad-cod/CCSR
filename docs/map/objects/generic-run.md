@@ -2,9 +2,9 @@
 
 **Status:** Planned; the durable run currently implemented is RAG ingestion.
 
-**Verification sources:** [`ingestion_run.py`](../../../backend/app/models/ingestion_run.py),
+**Verification sources:** [`ingestion_run.py`](../../../backend/app/modules/ragforge/models/ingestion_run.py),
 [`models/__init__.py`](../../../backend/app/models/__init__.py), and
-[`ingestion_runs.py`](../../../backend/app/repositories/ingestion_runs.py).
+[`ingestion_runs.py`](../../../backend/app/modules/ragforge/repositories/ingestion_runs.py).
 
 **Hits**
 

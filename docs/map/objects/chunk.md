@@ -2,9 +2,9 @@
 
 **Status:** Implemented; RAGForge ownership.
 
-**Authoritative sources:** [`chunk.py`](../../../backend/app/models/chunk.py),
-[`chunk_indexing.py`](../../../backend/app/services/chunk_indexing.py), and
-[`chunks.py`](../../../backend/app/repositories/chunks.py).
+**Authoritative sources:** [`chunk.py`](../../../backend/app/modules/ragforge/models/chunk.py),
+[`chunk_indexing.py`](../../../backend/app/modules/ragforge/services/chunk_indexing.py), and
+[`chunks.py`](../../../backend/app/modules/ragforge/repositories/chunks.py).
 
 **Hits**
 

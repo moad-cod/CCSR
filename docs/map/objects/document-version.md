@@ -3,9 +3,9 @@
 **Status:** Implemented; RAGForge ownership.
 
 **Authoritative sources:**
-[`document_version.py`](../../../backend/app/models/document_version.py),
-[`document_versions.py`](../../../backend/app/repositories/document_versions.py),
-and [`internal_pipeline.py`](../../../backend/app/api/internal_pipeline.py).
+[`document_version.py`](../../../backend/app/modules/ragforge/models/document_version.py),
+[`document_versions.py`](../../../backend/app/modules/ragforge/repositories/document_versions.py),
+and [`internal_pipeline.py`](../../../backend/app/modules/ragforge/api/internal_pipeline.py).
 
 **Hits**
 

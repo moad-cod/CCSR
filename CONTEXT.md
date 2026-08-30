@@ -6,8 +6,9 @@ The repository remains one deployable modular monolith.
 
 ## Current state
 
-- The backend is a flat FastAPI application whose generic project and account
-  lifecycle still imports RAG/Qdrant behavior.
+- The backend now has canonical platform authentication/organization and
+  RAGForge ownership packages. Generic project and account-deletion seams still
+  import RAG/Qdrant behavior.
 - The frontend is one Next.js application with shared UI primitives, but project
   navigation and data loading still assume RAG capabilities.
 - PostgreSQL is authoritative for durable application state. Redis is

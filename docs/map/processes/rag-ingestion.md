@@ -2,10 +2,10 @@
 
 **Status:** Implemented, with one durable batch path and older synchronous paths.
 
-**Authoritative sources:** [`ingest.py`](../../../backend/app/api/ingest.py),
+**Authoritative sources:** [`ingest.py`](../../../backend/app/modules/ragforge/api/ingest.py),
 [`ingestion_workflow.py`](../../../backend/jobs/ingestion_workflow.py),
-[`pipeline_artifacts.py`](../../../backend/app/services/pipeline_artifacts.py),
-and [`chunk_indexing.py`](../../../backend/app/services/chunk_indexing.py).
+[`pipeline_artifacts.py`](../../../backend/app/modules/ragforge/services/pipeline_artifacts.py),
+and [`chunk_indexing.py`](../../../backend/app/modules/ragforge/services/chunk_indexing.py).
 
 **Current movement**
 

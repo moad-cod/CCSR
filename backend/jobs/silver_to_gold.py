@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from app.services.pipeline_artifacts import silver_to_gold
+from app.modules.ragforge.services.pipeline_artifacts import silver_to_gold
 from jobs.control_plane import RAGForgeControlPlane
 
 

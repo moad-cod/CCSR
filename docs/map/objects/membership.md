@@ -3,9 +3,9 @@
 **Status:** Implemented for organizations.
 
 **Authoritative sources:**
-[`organization_membership.py`](../../../backend/app/models/organization_membership.py),
-[`organization_memberships.py`](../../../backend/app/repositories/organization_memberships.py),
-and [`organizations.py`](../../../backend/app/api/organizations.py).
+[`organization_membership.py`](../../../backend/app/platform/organizations/membership.py),
+[`organization_memberships.py`](../../../backend/app/platform/organizations/repository.py),
+and [`organizations.py`](../../../backend/app/platform/organizations/api.py).
 
 **Hits**
 

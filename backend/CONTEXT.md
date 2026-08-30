@@ -1,16 +1,22 @@
 # Backend context
 
-The backend is currently a FastAPI RAG control plane. It is the implementation
-source of truth for authentication, organization membership, owner-scoped
-projects, RAG ingestion/query behavior, and orchestration callbacks.
+The backend is a FastAPI modular monolith. Platform authentication and
+organization ownership and the pure RAGForge implementation have been
+separated mechanically; generic projects and several orchestration seams are
+still in their historical packages.
 
 ## Route by task
 
-- HTTP composition and routes: `app/main.py`, then `app/api/`
-- Authentication and settings: `app/core/`
-- Durable schema: `app/models/` and `alembic/versions/`
-- PostgreSQL operations: `app/repositories/`
-- RAG behavior and integration clients: `app/services/`
+- HTTP composition and routes: `app/main.py`; route implementations live with
+  their owning platform or product package.
+- Authentication and accounts: `app/platform/access/` and
+  `app/platform/accounts/`; settings remain in `app/core/`.
+- Organizations and memberships: `app/platform/organizations/`.
+- RAGForge APIs, models, repositories, and services:
+  `app/modules/ragforge/`.
+- Generic project and shared/mixed adapters: historical `app/api/`,
+  `app/models/`, `app/repositories/`, and `app/services/` paths.
+- Durable migrations: `alembic/versions/`.
 - Celery worker adapter: `app/workers/`
 - Shared ingestion stages and commands: `jobs/`
 - Airflow image, DAG, and callback plugin: `airflow/`
@@ -29,6 +35,10 @@ changing those execution or research paths.
 - `Project.qdrant_collection` is mandatory, so the project model is not generic.
 - `IngestionRun.airflow_dag_run_id` is also used for Celery workflow IDs.
 - Platform account/project deletion directly imports RAG/Qdrant cleanup.
+
+Historical authentication, organization, and RAG imports are compatibility
+aliases to the canonical ownership packages. Keep them until downstream code
+and operational entry points have migrated; new code must use canonical paths.
 
 Keep current table names, route prefixes, service-token behavior, task names,
 and event payloads stable until explicit compatibility work is approved.

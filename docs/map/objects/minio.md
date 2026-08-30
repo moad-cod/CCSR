@@ -3,8 +3,8 @@
 **Status:** Implemented for RAG ingestion artifacts.
 
 **Authoritative sources:**
-[`bronze_storage.py`](../../../backend/app/services/bronze_storage.py),
-[`pipeline_artifacts.py`](../../../backend/app/services/pipeline_artifacts.py),
+[`bronze_storage.py`](../../../backend/app/modules/ragforge/services/bronze_storage.py),
+[`pipeline_artifacts.py`](../../../backend/app/modules/ragforge/services/pipeline_artifacts.py),
 and [`docker-compose.yml`](../../../docker-compose.yml).
 
 **Hits**

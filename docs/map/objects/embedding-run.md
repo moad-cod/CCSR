@@ -3,9 +3,9 @@
 **Status:** Implemented for durable RAG file ingestion.
 
 **Authoritative sources:**
-[`embedding_run.py`](../../../backend/app/models/embedding_run.py),
-[`embedding_runs.py`](../../../backend/app/repositories/embedding_runs.py), and
-[`internal_pipeline.py`](../../../backend/app/api/internal_pipeline.py).
+[`embedding_run.py`](../../../backend/app/modules/ragforge/models/embedding_run.py),
+[`embedding_runs.py`](../../../backend/app/modules/ragforge/repositories/embedding_runs.py), and
+[`internal_pipeline.py`](../../../backend/app/modules/ragforge/api/internal_pipeline.py).
 
 **Hits**
 

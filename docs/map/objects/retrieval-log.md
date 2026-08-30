@@ -3,9 +3,9 @@
 **Status:** Implemented; RAGForge trace.
 
 **Authoritative sources:**
-[`retrieval_log.py`](../../../backend/app/models/retrieval_log.py),
-[`retrieval_logs.py`](../../../backend/app/repositories/retrieval_logs.py), and
-[`query_observability.py`](../../../backend/app/services/query_observability.py).
+[`retrieval_log.py`](../../../backend/app/modules/ragforge/models/retrieval_log.py),
+[`retrieval_logs.py`](../../../backend/app/modules/ragforge/repositories/retrieval_logs.py), and
+[`query_observability.py`](../../../backend/app/modules/ragforge/services/query_observability.py).
 
 **Hits**
 

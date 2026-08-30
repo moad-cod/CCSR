@@ -2,9 +2,9 @@
 
 **Status:** Implemented for RAG capabilities.
 
-**Authoritative sources:** [`indexer.py`](../../../backend/app/services/indexer.py),
-[`chunk_indexing.py`](../../../backend/app/services/chunk_indexing.py),
-[`retrieval/`](../../../backend/app/services/retrieval/), and
+**Authoritative sources:** [`indexer.py`](../../../backend/app/modules/ragforge/services/indexer.py),
+[`chunk_indexing.py`](../../../backend/app/modules/ragforge/services/chunk_indexing.py),
+[`retrieval/`](../../../backend/app/modules/ragforge/services/retrieval/), and
 [`docker-compose.yml`](../../../docker-compose.yml).
 
 **Hits**

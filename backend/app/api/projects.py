@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.core.auth import get_current_user
+from app.platform.access.authentication import get_current_user
 from app.core.db import get_db
-from app.models.tables import Project, Document
+from app.models.project import Project
+from app.modules.ragforge.models.document import Document
 from app.repositories import projects as project_repository
-from app.repositories import organization_memberships as membership_repository
-from app.services.indexer import delete_document_chunks, delete_collection
+from app.platform.organizations import repository as membership_repository
+from app.modules.ragforge.services.indexer import delete_document_chunks, delete_collection
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 import uuid
@@ -160,7 +161,7 @@ async def delete_project(
     for doc in docs:
         await asyncio.to_thread(delete_document_chunks, document_id=doc.id, collection=project.collection)
         if doc.source_type == "multimodal":
-            from app.services.storage import delete_document_images
+            from app.modules.ragforge.services.storage import delete_document_images
             try:
                 await asyncio.to_thread(delete_document_images, doc.id)
             except Exception:

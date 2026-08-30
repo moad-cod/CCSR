@@ -1,26 +1,7 @@
-"""Shared retrieval result types used by querying and observability."""
+"""Compatibility alias for app.modules.ragforge.services.retrieval.types."""
 
-from dataclasses import asdict, dataclass
-from typing import Any
+from app._compat import alias_module
+from app.modules.ragforge.services.retrieval import types as _implementation
 
 
-@dataclass
-class RetrievalHit:
-    text: str
-    chunk_id: str | None
-    qdrant_point_id: str | None
-    qdrant_score: float | None
-    rerank_score: float | None
-    rank: int
-    retrieval_strategy: str
-    used_in_answer: bool = False
-    payload: dict[str, Any] | None = None
-
-    def to_cache_dict(self) -> dict[str, Any]:
-        value = asdict(self)
-        value.pop("payload", None)
-        return value
-
-    @classmethod
-    def from_cache_dict(cls, value: dict[str, Any]) -> "RetrievalHit":
-        return cls(**value)
+alias_module(globals(), _implementation)
