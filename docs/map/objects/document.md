@@ -2,9 +2,9 @@
 
 **Status:** Implemented; RAGForge ownership.
 
-**Authoritative sources:** [`document.py`](../../../backend/app/models/document.py),
-[`documents.py`](../../../backend/app/api/documents.py), and
-[`documents repository`](../../../backend/app/repositories/documents.py).
+**Authoritative sources:** [`document.py`](../../../backend/app/modules/ragforge/models/document.py),
+[`documents.py`](../../../backend/app/modules/ragforge/api/documents.py), and
+[`documents repository`](../../../backend/app/modules/ragforge/repositories/documents.py).
 
 **Hits**
 

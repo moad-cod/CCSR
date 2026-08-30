@@ -3,8 +3,8 @@
 **Status:** RAG pipeline artifacts exist; a shared artifact registry does not.
 
 **Authoritative current sources:**
-[`pipeline_artifacts.py`](../../../backend/app/services/pipeline_artifacts.py),
-[`document_version.py`](../../../backend/app/models/document_version.py), and
+[`pipeline_artifacts.py`](../../../backend/app/modules/ragforge/services/pipeline_artifacts.py),
+[`document_version.py`](../../../backend/app/modules/ragforge/models/document_version.py), and
 [`docker-compose.yml`](../../../docker-compose.yml).
 
 **Hits**

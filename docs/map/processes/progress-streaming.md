@@ -3,8 +3,8 @@
 **Status:** Implemented for ingestion and query streaming.
 
 **Authoritative sources:** [`event_stream.py`](../../../backend/app/services/event_stream.py),
-[`ingest.py`](../../../backend/app/api/ingest.py),
-[`query.py`](../../../backend/app/api/query.py), and frontend
+[`ingest.py`](../../../backend/app/modules/ragforge/api/ingest.py),
+[`query.py`](../../../backend/app/modules/ragforge/api/query.py), and frontend
 [`use-ingestion-stream.ts`](../../../frontend/src/hooks/use-ingestion-stream.ts).
 
 **Current movement**

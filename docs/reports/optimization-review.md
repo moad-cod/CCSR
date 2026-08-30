@@ -18,7 +18,7 @@ This file summarizes the current optimized RAGForge backend after the recent arc
 
 ## Chunking System
 
-- `backend/app/services/chunkers/registry.py` is now the single source of truth.
+- `backend/app/modules/ragforge/services/chunkers/registry.py` is now the single source of truth.
 - `GET /chunkers` exposes SaaS-style chunker metadata for frontend product cards.
 - Public chunkers are `fixed_size`, `paragraph`, `sentence`, `semantic`, `hierarchical`, `late_chunking`, `proposition`, and `multimodal`.
 - `paragraph` remains the default text chunker.

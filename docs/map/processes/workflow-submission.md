@@ -2,9 +2,9 @@
 
 **Status:** Generic submission is planned; RAG ingestion submission exists.
 
-**Authoritative current sources:** [`ingest.py`](../../../backend/app/api/ingest.py),
+**Authoritative current sources:** [`ingest.py`](../../../backend/app/modules/ragforge/api/ingest.py),
 [`ingestion_orchestrator.py`](../../../backend/app/services/ingestion_orchestrator.py),
-and [`ingestion_run.py`](../../../backend/app/models/ingestion_run.py).
+and [`ingestion_run.py`](../../../backend/app/modules/ragforge/models/ingestion_run.py).
 
 **Current movement**
 

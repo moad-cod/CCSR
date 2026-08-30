@@ -47,13 +47,13 @@ The main application entry point is `app/main.py`. It creates the FastAPI applic
 | Path | Responsibility |
 | --- | --- |
 | `app/main.py` | FastAPI app construction and router registration. |
-| `app/api/` | HTTP request schemas, authorization checks, endpoint orchestration, and response shaping. |
-| `app/core/` | Environment settings, async SQLAlchemy engine/session, and JWT decoding. |
-| `app/models/` | SQLAlchemy control-plane models and lifecycle status constants. |
-| `app/repositories/` | Reusable async PostgreSQL operations. Repository functions flush but usually leave commit ownership to the caller. |
-| `app/services/` | Parsing, embedding, indexing, retrieval, caching, event streaming, artifact transformation, and integration clients. |
-| `app/services/chunkers/` | Chunking algorithms and the public chunker registry. |
-| `app/services/retrieval/` | Hybrid dense/sparse retrieval, optional reranking, and shared result types. |
+| `app/platform/` | Canonical account, authentication, organization, and membership ownership. |
+| `app/modules/ragforge/` | Canonical RAG APIs, models, repositories, chunking, ingestion, indexing, retrieval, generation, and trace behavior. |
+| `app/api/`, `app/models/`, `app/repositories/` | Generic project code plus compatibility aliases for mechanically moved modules. |
+| `app/core/` | Environment settings and async SQLAlchemy setup; `auth.py` is a compatibility alias. |
+| `app/services/` | Shared/mixed orchestration and event services plus compatibility aliases for moved RAG services. |
+| `app/modules/ragforge/services/chunkers/` | Chunking algorithms and the public chunker registry. |
+| `app/modules/ragforge/services/retrieval/` | Hybrid dense/sparse retrieval, optional reranking, and shared result types. |
 | `jobs/` | Shared ingestion workflow stages plus container-safe CLI commands used by the orchestration layer. |
 | `airflow/dags/` | The ingestion DAG and task ordering. |
 | `airflow/plugins/` | Airflow-to-control-plane callbacks. |
@@ -187,7 +187,7 @@ sequenceDiagram
     F->>P: Set current_version_id and indexed state
 ```
 
-### Landing phase (`app/api/ingest.py`)
+### Landing phase (`app/modules/ragforge/api/ingest.py`)
 
 1. Verify the caller owns the project.
 2. Validate the file extension/MIME type and chunker.
@@ -212,7 +212,7 @@ If MinIO succeeds but the SQL transaction fails, the endpoint attempts to delete
 
 ### Orchestrator boundary (`app/services/ingestion_orchestrator.py`)
 
-File ingestion no longer imports Airflow directly. `app/api/ingest.py` calls `ingestion_orchestration_enabled()` before scheduling a background enqueue and then calls `enqueue_ingestion(run.id)`. The boundary selects the implementation from `ORCHESTRATOR`:
+File ingestion no longer imports Airflow directly. `app/modules/ragforge/api/ingest.py` calls `ingestion_orchestration_enabled()` before scheduling a background enqueue and then calls `enqueue_ingestion(run.id)`. The boundary selects the implementation from `ORCHESTRATOR`:
 
 | Value | Behavior |
 | --- | --- |
@@ -246,7 +246,7 @@ The unscheduled `ragforge_ingestion` DAG permits four active runs and gives task
 
 The in-repository Bronze-to-Silver implementation is a regular Python/pyarrow CLI job, not a Spark implementation. Each configured command must print a JSON object as its final non-empty stdout line.
 
-`app/services/ingestion_planner.py` derives one of five profiles from the selected chunker's registry capabilities:
+`app/modules/ragforge/services/ingestion_planner.py` derives one of five profiles from the selected chunker's registry capabilities:
 
 | Profile | Techniques | Optimization |
 | --- | --- | --- |
@@ -280,7 +280,7 @@ Each task wraps one shared stage from `jobs/ingestion_workflow.py`. Stage failur
 
 Celery stores its workflow ID in the existing `IngestionRun.airflow_dag_run_id` field for now. That preserves schema compatibility during the comparison branch, but the field name is Airflow-specific.
 
-### Artifact transforms (`app/services/pipeline_artifacts.py`)
+### Artifact transforms (`app/modules/ragforge/services/pipeline_artifacts.py`)
 
 - **Bronze -> Silver:** read raw bytes, parse by file type, run the selected chunker, and write Zstandard-compressed Parquet.
 - **Silver schema:** chunk index, text, content hash, optional token/page/section fields, JSON metadata, and an optional precomputed dense vector.
@@ -290,7 +290,7 @@ Celery stores its workflow ID in the existing `IngestionRun.airflow_dag_run_id` 
 
 The pipeline currently accepts only `BAAI/bge-small-en-v1.5` as its artifact embedding model.
 
-### Idempotent chunk indexing (`app/services/chunk_indexing.py`)
+### Idempotent chunk indexing (`app/modules/ragforge/services/chunk_indexing.py`)
 
 For durable file ingestion, chunk and point identities are UUIDv5 values derived from `document_version_id:chunk_index`:
 
@@ -331,7 +331,7 @@ The default Docker image does not install PyTorch or `colpali_engine`; multimoda
 
 ## 6. Query flow
 
-The primary implementation is `_execute_query()` in `app/api/query.py`.
+The primary implementation is `_execute_query()` in `app/modules/ragforge/api/query.py`.
 
 ```mermaid
 flowchart TD
@@ -454,7 +454,7 @@ landed -> queued -> running -> silver_completed -> gold_completed -> indexed
                          \-> failed/cancelled from non-terminal stages
 ```
 
-`app/repositories/ingestion_runs.py` enforces allowed transitions. It also maps run status to document/version status:
+`app/modules/ragforge/repositories/ingestion_runs.py` enforces allowed transitions. It also maps run status to document/version status:
 
 | Run | Document/version |
 | --- | --- |
@@ -475,33 +475,33 @@ Embedding-run states are `queued`, `running`, `completed`, `failed`, and `cancel
 | --- | --- |
 | `app/core/config.py` | Pydantic environment settings and provider/R2 validation. |
 | `app/core/db.py` | Async SQLAlchemy engine, session factory, declarative base, and FastAPI dependency. |
-| `app/core/auth.py` | Decode HS256 JWT and expose `user_id`; database existence/soft-delete checks occur in endpoint code. |
-| `app/models/statuses.py` | Canonical status values, SQL check expression helper, and model-level validation. |
+| `app/platform/access/authentication.py` | Decode HS256 JWT and expose `user_id`; database existence/soft-delete checks occur in endpoint code. |
+| `app/modules/ragforge/models/statuses.py` | Canonical status values, SQL check expression helper, and model-level validation. |
 | `app/repositories/projects.py` | Project creation, ownership lookup/listing, and rename. |
-| `app/repositories/documents.py` | Logical-document lookup, ownership lookup, current version/status updates, and soft deletion. |
-| `app/repositories/document_versions.py` | Version allocation/lookups and artifact/status updates. |
-| `app/repositories/ingestion_runs.py` | Run transitions, retry, failure/stuck-run queries, and document/version synchronization. |
-| `app/repositories/chunks.py` | Bulk insert and idempotent replacement of version chunk lineage. |
-| `app/repositories/embedding_runs.py` | Embedding progress state helpers. |
-| `app/repositories/query_logs.py` | Query creation/finalization, scores, and history. |
-| `app/repositories/retrieval_logs.py` | Retrieval trace insertion, listing, and used-in-answer marking. |
+| `app/modules/ragforge/repositories/documents.py` | Logical-document lookup, ownership lookup, current version/status updates, and soft deletion. |
+| `app/modules/ragforge/repositories/document_versions.py` | Version allocation/lookups and artifact/status updates. |
+| `app/modules/ragforge/repositories/ingestion_runs.py` | Run transitions, retry, failure/stuck-run queries, and document/version synchronization. |
+| `app/modules/ragforge/repositories/chunks.py` | Bulk insert and idempotent replacement of version chunk lineage. |
+| `app/modules/ragforge/repositories/embedding_runs.py` | Embedding progress state helpers. |
+| `app/modules/ragforge/repositories/query_logs.py` | Query creation/finalization, scores, and history. |
+| `app/modules/ragforge/repositories/retrieval_logs.py` | Retrieval trace insertion, listing, and used-in-answer marking. |
 
 ### Ingestion/data plane
 
 | File | Responsibility |
 | --- | --- |
-| `app/services/parser.py` | File-type parsing plus URL and Google Drive acquisition. |
-| `app/services/bronze_storage.py` | MinIO/S3 client for raw Bronze upload/existence/delete. |
-| `app/services/pipeline_artifacts.py` | S3 artifact store, deterministic paths, Silver/Gold Parquet schemas and transformations. |
+| `app/modules/ragforge/services/parser.py` | File-type parsing plus URL and Google Drive acquisition. |
+| `app/modules/ragforge/services/bronze_storage.py` | MinIO/S3 client for raw Bronze upload/existence/delete. |
+| `app/modules/ragforge/services/pipeline_artifacts.py` | S3 artifact store, deterministic paths, Silver/Gold Parquet schemas and transformations. |
 | `app/services/ingestion_orchestrator.py` | Select Airflow or Celery enqueue behavior from `ORCHESTRATOR`. |
 | `app/services/airflow.py` | Authenticate to Airflow 3's REST API, trigger a DAG run, and persist its ID. |
 | `app/workers/celery_app.py` | Celery app configuration for ingestion workers. |
 | `app/workers/tasks.py` | Celery task chain and enqueue function for the durable ingestion pipeline. |
-| `app/services/ingestion_planner.py` | Classify chunker/source metadata into execution, resource, batching, and command-selection hints. |
-| `app/services/chunk_indexing.py` | Validate Gold chunks and maintain deterministic PostgreSQL-Qdrant lineage. |
-| `app/services/indexer.py` | Qdrant collection creation, legacy direct indexing/deletion, hierarchical points, and multimodal points. |
-| `app/services/storage.py` | Cloudflare R2 page-image upload/delete. |
-| `app/services/pipeline_status.py` | Direct DB sync/async status boundary retained for pipeline-style callers; the active in-repo jobs use HTTP instead. |
+| `app/modules/ragforge/services/ingestion_planner.py` | Classify chunker/source metadata into execution, resource, batching, and command-selection hints. |
+| `app/modules/ragforge/services/chunk_indexing.py` | Validate Gold chunks and maintain deterministic PostgreSQL-Qdrant lineage. |
+| `app/modules/ragforge/services/indexer.py` | Qdrant collection creation, legacy direct indexing/deletion, hierarchical points, and multimodal points. |
+| `app/modules/ragforge/services/storage.py` | Cloudflare R2 page-image upload/delete. |
+| `app/modules/ragforge/services/pipeline_status.py` | Direct DB sync/async status boundary retained for pipeline-style callers; the active in-repo jobs use HTTP instead. |
 | `jobs/control_plane.py` | Dependency-light `urllib` client for internal pipeline endpoints. |
 | `jobs/ingestion_workflow.py` | Orchestrator-neutral ingestion stage functions used by Celery and useful for future Airflow refactoring. |
 | `jobs/ingestion_execution.py` | Dependency-light profile command selection and subprocess resource environment hints. |
@@ -522,14 +522,14 @@ Embedding-run states are `queued`, `running`, `completed`, `failed`, and `cancel
 
 | File | Responsibility |
 | --- | --- |
-| `app/services/embedder.py` | Lazy FastEmbed BGE dense passage/query embeddings plus deterministic offline backend. |
-| `app/services/retrieval/sparse.py` | FastEmbed BM25 sparse vectors plus deterministic lexical backend. |
-| `app/services/retrieval/hybrid.py` | Qdrant dense+sparse prefetch, RRF, reranking, and parent-context resolution. |
-| `app/services/retrieval/rerank.py` | Lazy optional CrossEncoder with graceful no-dependency fallback. |
-| `app/services/retrieval/types.py` | `RetrievalHit` data exchanged between retrieval, cache, and logging. |
-| `app/services/retriever.py` | Public retrieval entry point and dense-only fallback path. |
-| `app/services/query_cache.py` | Best-effort Redis response cache. |
-| `app/services/query_observability.py` | Question normalization/hash and retrieval-log value construction. |
+| `app/modules/ragforge/services/embedder.py` | Lazy FastEmbed BGE dense passage/query embeddings plus deterministic offline backend. |
+| `app/modules/ragforge/services/retrieval/sparse.py` | FastEmbed BM25 sparse vectors plus deterministic lexical backend. |
+| `app/modules/ragforge/services/retrieval/hybrid.py` | Qdrant dense+sparse prefetch, RRF, reranking, and parent-context resolution. |
+| `app/modules/ragforge/services/retrieval/rerank.py` | Lazy optional CrossEncoder with graceful no-dependency fallback. |
+| `app/modules/ragforge/services/retrieval/types.py` | `RetrievalHit` data exchanged between retrieval, cache, and logging. |
+| `app/modules/ragforge/services/retriever.py` | Public retrieval entry point and dense-only fallback path. |
+| `app/modules/ragforge/services/query_cache.py` | Best-effort Redis response cache. |
+| `app/modules/ragforge/services/query_observability.py` | Question normalization/hash and retrieval-log value construction. |
 | `app/services/event_stream.py` | SSE formatting and Redis/PostgreSQL ingestion event support. |
 
 ### Control-plane utilities
@@ -546,7 +546,7 @@ Embedding-run states are `queued`, `running`, `completed`, `failed`, and `cancel
 
 ## 10. Chunkers
 
-`app/services/chunkers/registry.py` is the source of truth for chunker IDs and frontend-facing metadata.
+`app/modules/ragforge/services/chunkers/registry.py` is the source of truth for chunker IDs and frontend-facing metadata.
 
 | ID | Behavior | Runtime requirements |
 | --- | --- | --- |
@@ -806,17 +806,17 @@ These are important implementation facts, not necessarily defects in every deplo
 | --- | --- | --- |
 | Add an endpoint | `app/api/<domain>.py` | `app/main.py`, request/response tests. |
 | Add a database entity/column | `app/models/` | Alembic migration, repository, schema validation, model/database tests. |
-| Change ingestion statuses | `app/models/statuses.py` | `repositories/ingestion_runs.py`, migration checks, event mappings, DAG callbacks, API literals. |
-| Add a file format | `app/services/parser.py` | `SUPPORTED_MIME_TYPES`/`SUPPORTED_EXTENSIONS` in `app/api/ingest.py`, dependencies, tests. |
-| Add a chunker | `app/services/chunkers/` | Registry definition and registry/API tests. |
-| Change artifact schema | `app/services/pipeline_artifacts.py` | Gold payload model, chunk indexing, Airflow image dependencies, artifact tests. |
-| Change vector layout | `app/services/indexer.py` and `chunk_indexing.py` | Hybrid retrieval, Qdrant migration/rebuild plan, lineage tests. |
-| Change retrieval | `app/services/retrieval/hybrid.py` | `retriever.py`, query logs/cache serialization, observability tests. |
-| Add an LLM provider | `LLM_CONFIGS` and settings in `app/api/query.py`/`app/core/config.py` | `QueryRequest` literal, credentials, streaming tests. |
+| Change ingestion statuses | `app/modules/ragforge/models/statuses.py` | `repositories/ingestion_runs.py`, migration checks, event mappings, DAG callbacks, API literals. |
+| Add a file format | `app/modules/ragforge/services/parser.py` | `SUPPORTED_MIME_TYPES`/`SUPPORTED_EXTENSIONS` in `app/modules/ragforge/api/ingest.py`, dependencies, tests. |
+| Add a chunker | `app/modules/ragforge/services/chunkers/` | Registry definition and registry/API tests. |
+| Change artifact schema | `app/modules/ragforge/services/pipeline_artifacts.py` | Gold payload model, chunk indexing, Airflow image dependencies, artifact tests. |
+| Change vector layout | `app/modules/ragforge/services/indexer.py` and `chunk_indexing.py` | Hybrid retrieval, Qdrant migration/rebuild plan, lineage tests. |
+| Change retrieval | `app/modules/ragforge/services/retrieval/hybrid.py` | `retriever.py`, query logs/cache serialization, observability tests. |
+| Add an LLM provider | `LLM_CONFIGS` and settings in `app/modules/ragforge/api/query.py`/`app/core/config.py` | `QueryRequest` literal, credentials, streaming tests. |
 | Change realtime events | `app/services/event_stream.py` | Ingestion/query SSE routes and realtime tests. |
 | Change Airflow stages | `airflow/dags/ragforge_ingestion.py` | internal pipeline API, transition graph, jobs, event stage mappings. |
 | Change Celery stages | `app/workers/tasks.py` and `jobs/ingestion_workflow.py` | internal pipeline API, transition graph, retry behavior, benchmark tests. |
-| Change orchestrator selection | `app/services/ingestion_orchestrator.py` | `app/api/ingest.py`, settings, Compose profiles, Airflow/Celery service tests. |
+| Change orchestrator selection | `app/services/ingestion_orchestrator.py` | `app/modules/ragforge/api/ingest.py`, settings, Compose profiles, Airflow/Celery service tests. |
 | Change benchmark metrics | `evaluation/airflow_benchmark/` and `evaluation/celery_benchmark/` | paired benchmark tests so both orchestrators report comparable numbers. |
 
 When changing cross-store behavior, treat PostgreSQL as the authoritative control plane and make Qdrant/MinIO/Redis operations retryable or reconstructible from durable version/run data.

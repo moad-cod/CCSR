@@ -2,9 +2,9 @@
 
 **Status:** Implemented; RAGForge trace.
 
-**Authoritative sources:** [`query_log.py`](../../../backend/app/models/query_log.py),
-[`query.py`](../../../backend/app/api/query.py), and
-[`query_logs.py`](../../../backend/app/repositories/query_logs.py).
+**Authoritative sources:** [`query_log.py`](../../../backend/app/modules/ragforge/models/query_log.py),
+[`query.py`](../../../backend/app/modules/ragforge/api/query.py), and
+[`query_logs.py`](../../../backend/app/modules/ragforge/repositories/query_logs.py).
 
 **Hits**
 

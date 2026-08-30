@@ -3,7 +3,7 @@
 **Status:** Implemented as best-effort transport and cache.
 
 **Authoritative sources:** [`event_stream.py`](../../../backend/app/services/event_stream.py),
-[`query_cache.py`](../../../backend/app/services/query_cache.py), and
+[`query_cache.py`](../../../backend/app/modules/ragforge/services/query_cache.py), and
 [`docker-compose.yml`](../../../docker-compose.yml).
 
 **Hits**

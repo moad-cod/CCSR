@@ -2,8 +2,8 @@
 
 **Status:** Implemented JWT authentication; durable sessions are not implemented.
 
-**Authoritative sources:** [`auth.py`](../../../backend/app/api/auth.py),
-[`core/auth.py`](../../../backend/app/core/auth.py), and frontend auth route
+**Authoritative sources:** [`accounts/api.py`](../../../backend/app/platform/accounts/api.py),
+[`authentication.py`](../../../backend/app/platform/access/authentication.py), and frontend auth route
 handlers under [`frontend/src/app/api/auth`](../../../frontend/src/app/api/auth/).
 
 **Current movement**
