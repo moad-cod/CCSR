@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.services.pipeline_artifacts import (
+from app.modules.ragforge.services.pipeline_artifacts import (
     bronze_to_silver,
     gold_chunks,
     silver_to_gold,

@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from app.services.pipeline_artifacts import gold_chunks
+from app.modules.ragforge.services.pipeline_artifacts import gold_chunks
 from jobs.control_plane import RAGForgeControlPlane
 
 
