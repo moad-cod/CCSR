@@ -1,14 +1,16 @@
-from app.models.chunk import Chunk
-from app.models.document import Document
-from app.models.document_version import DocumentVersion
-from app.models.embedding_run import EmbeddingRun
-from app.models.ingestion_run import IngestionRun
-from app.models.organization import Organization
-from app.models.organization_membership import OrganizationMembership
 from app.models.project import Project
-from app.models.query_log import QueryLog
-from app.models.retrieval_log import RetrievalLog
-from app.models.user import User
+from app.modules.ragforge.models import (
+    Chunk,
+    Document,
+    DocumentVersion,
+    EmbeddingRun,
+    IngestionRun,
+    QueryLog,
+    RetrievalLog,
+)
+from app.platform.accounts.model import User
+from app.platform.organizations.membership import OrganizationMembership
+from app.platform.organizations.model import Organization
 
 
 __all__ = [
