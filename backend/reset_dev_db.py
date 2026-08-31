@@ -7,4 +7,4 @@ from scripts import reset_dev_db
 
 
 if __name__ == "__main__":
-    reset_dev_db.main()
+    raise SystemExit(reset_dev_db.main())
