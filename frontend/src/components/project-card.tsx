@@ -2,8 +2,9 @@
 
 import {Activity, ArrowRight, FileStack, FolderKanban, MoreHorizontal, Pencil, Trash2} from "lucide-react";
 import Link from "next/link";
-import {useState} from "react";
 import {StatusBadge} from "@/components/status-badge";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import type {Project} from "@/lib/types";
 import {cn, relativeTime} from "@/lib/utils";
 
@@ -15,7 +16,6 @@ export function ProjectCard({project, documentCount, activeRuns, view, onRename,
   onRename: () => void;
   onDelete: () => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const status = activeRuns ? "processing" : "ready";
   return <article className={cn("group relative rounded-xl border border-[var(--border)] bg-[var(--surface)] transition hover:border-[var(--accent-border)]", view === "grid" ? "p-5" : "flex items-center gap-4 p-4")}>
     <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]"><FolderKanban className="size-5" /></span>
@@ -24,9 +24,9 @@ export function ProjectCard({project, documentCount, activeRuns, view, onRename,
       <p className={cn("text-[11px] leading-5 text-[var(--ink-secondary)]", view === "grid" ? "mt-3 line-clamp-2 min-h-10" : "mt-1 line-clamp-1")}>An isolated research workspace for sources, playground queries, pipeline runs, traces, and reproducible evaluations.</p>
       <div className="mt-4 flex flex-wrap items-center gap-4 text-[10px] text-[var(--ink-muted)]"><span className="flex items-center gap-1.5"><FileStack className="size-3" />{documentCount === null ? "…" : documentCount} sources</span><span className="flex items-center gap-1.5"><Activity className="size-3" />{activeRuns === null ? "…" : activeRuns ? `${activeRuns} active` : "No active runs"}</span></div>
     </div>
-    <div className={cn("flex items-center gap-2", view === "grid" ? "mt-5 border-t border-[var(--border)] pt-4" : "shrink-0")}>
+      <div className={cn("flex items-center gap-2", view === "grid" ? "mt-5 border-t border-[var(--border)] pt-4" : "shrink-0")}>
       <Link href={`/projects/${project.project_id}/overview`} className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--accent-soft)] px-3 text-[11px] font-medium text-[var(--accent-hover)] hover:bg-[var(--accent-muted)]">Open project<ArrowRight className="size-3.5" /></Link>
-      <div className="relative"><button className="icon-button" onClick={() => setMenuOpen((value) => !value)} aria-label={`Actions for ${project.name}`} aria-expanded={menuOpen}><MoreHorizontal className="size-4" /></button>{menuOpen ? <div className="popover bottom-11 right-0 w-40 p-1"><button className="menu-item w-full" onClick={() => {setMenuOpen(false); onRename();}}><Pencil className="size-3.5" />Rename</button><button className="menu-item w-full text-[var(--danger)]" onClick={() => {setMenuOpen(false); onDelete();}}><Trash2 className="size-3.5" />Delete</button></div> : null}</div>
+      <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild><button className="icon-button" aria-label={`Actions for ${project.name}`}><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger></TooltipTrigger><TooltipContent>Project actions</TooltipContent></Tooltip><DropdownMenuContent align="end"><DropdownMenuItem onSelect={onRename}><Pencil className="size-3.5" />Rename</DropdownMenuItem><DropdownMenuItem className="text-[var(--danger)] data-[highlighted]:text-[var(--danger)]" onSelect={onDelete}><Trash2 className="size-3.5" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
     </div>
   </article>;
 }

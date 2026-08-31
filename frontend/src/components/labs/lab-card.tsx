@@ -2,8 +2,9 @@
 
 import {Activity, ArrowRight, FileStack, MoreHorizontal, Pencil, Trash2} from "lucide-react";
 import Link from "next/link";
-import {useState} from "react";
 import {StatusBadge} from "@/components/status-badge";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import type {Project} from "@/lib/types";
 import {relativeTime} from "@/lib/utils";
 import type {LabDomain, LabStats} from "./lab-domain";
@@ -18,7 +19,6 @@ type LabCardProps = {
 };
 
 export function LabCard({project, stats, domain, onRename, onDelete}: LabCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const Icon = domain.icon;
   const status = readiness(stats);
 
@@ -31,10 +31,7 @@ export function LabCard({project, stats, domain, onRename, onDelete}: LabCardPro
         </div>
         <h2 className="mt-4 line-clamp-2 text-lg font-semibold leading-6 text-[var(--ink)]">{project.name}</h2>
       </div>
-      <div className="relative shrink-0">
-        <button className="icon-button size-8" onClick={() => setMenuOpen((value) => !value)} aria-label={`Actions for ${project.name}`} aria-expanded={menuOpen}><MoreHorizontal className="size-4" /></button>
-        {menuOpen ? <div className="popover right-0 top-9 w-40 p-1"><button className="menu-item w-full" onClick={() => {setMenuOpen(false); onRename();}}><Pencil className="size-3.5" />Rename</button><button className="menu-item w-full text-[var(--danger)]" onClick={() => {setMenuOpen(false); onDelete();}}><Trash2 className="size-3.5" />Delete</button></div> : null}
-      </div>
+      <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild><button className="icon-button size-8" aria-label={`Actions for ${project.name}`}><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger></TooltipTrigger><TooltipContent>Lab actions</TooltipContent></Tooltip><DropdownMenuContent align="end"><DropdownMenuItem onSelect={onRename}><Pencil className="size-3.5" />Rename</DropdownMenuItem><DropdownMenuItem className="text-[var(--danger)] data-[highlighted]:text-[var(--danger)]" onSelect={onDelete}><Trash2 className="size-3.5" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
     </div>
 
     <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--ink-secondary)]">
