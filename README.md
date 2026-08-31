@@ -329,9 +329,14 @@ Development utilities:
 python -m scripts.seed_control_plane --namespace development
 python -m scripts.validate_control_plane
 python -m scripts.reset_dev_db
+# Non-interactive automation:
+python -m scripts.reset_dev_db --yes
+# Reset PostgreSQL when Qdrant is intentionally unavailable:
+python -m scripts.reset_dev_db --yes --skip-qdrant
 ```
 
-`reset_dev_db` is destructive and intended only for local development.
+`reset_dev_db` is destructive and intended only for local development. It asks
+for an explicit `RESET` confirmation unless `--yes` is provided.
 
 ### Frontend
 

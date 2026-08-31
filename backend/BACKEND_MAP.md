@@ -541,7 +541,7 @@ Embedding-run states are `queued`, `running`, `completed`, `failed`, and `cancel
 | `scripts/create_tables.py` | Create missing tables directly from ORM metadata; useful as a convenience, but Alembic is the schema authority. |
 | `scripts/seed_control_plane.py` | CLI for deterministic seed data. |
 | `scripts/validate_control_plane.py` | CLI for schema validation. |
-| `scripts/reset_dev_db.py` | Destructively delete all Qdrant collections, drop app tables, and migrate to Alembic head. |
+| `scripts/reset_dev_db.py` | Confirm and reset local Qdrant/PostgreSQL state, with an explicit `--skip-qdrant` recovery mode, then migrate to Alembic head. |
 | `scripts/check_data.py`, `scripts/cleanup.py` | Hard-coded/manual diagnostic scripts, not general operational commands. |
 
 ## 10. Chunkers
