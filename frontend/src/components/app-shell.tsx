@@ -30,6 +30,7 @@ import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
 import {useEffect, useMemo, useRef, useState} from "react";
 import {toast} from "sonner";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {apiFetch, authFetch} from "@/lib/api";
 import type {Organization, Project, User} from "@/lib/types";
 import {cn, initials} from "@/lib/utils";
@@ -346,21 +347,17 @@ export function AppShell({children}: {children: React.ReactNode}) {
             <Search className="size-3.5" /><span className="flex-1">Search projects</span><kbd className="rounded border border-[var(--border)] px-1.5 py-0.5 text-[8px]">⌘ K</kbd>
           </button>
           <button className="icon-button lg:hidden" onClick={openPalette} aria-label="Open global search"><Search className="size-4" /></button>
-          <div className="relative">
-            <button className="icon-button" onClick={() => {setNotificationsOpen((value) => !value); setUserMenuOpen(false);}} aria-label="Notifications" aria-expanded={notificationsOpen}><Bell className="size-4" /></button>
-            {notificationsOpen ? <div className="popover right-0 top-11 w-72 p-4"><p className="text-xs font-semibold">Notifications</p><div className="mt-4 rounded-lg bg-[var(--surface)] p-4 text-center"><Bell className="mx-auto size-4 text-[var(--ink-disabled)]" /><p className="mt-2 text-[10px] text-[var(--ink-secondary)]">No new notifications</p><p className="mt-1 text-[8px] text-[var(--ink-disabled)]">Pipeline failures remain visible in ingestion runs.</p></div></div> : null}
-          </div>
-          <div className="relative">
-            <button onClick={() => {setUserMenuOpen((value) => !value); setNotificationsOpen(false);}} className="flex h-9 items-center gap-2 rounded-[10px] px-1.5 hover:bg-[var(--surface-hover)]" aria-label="User menu" aria-expanded={userMenuOpen}>
+          <DropdownMenu open={notificationsOpen} onOpenChange={(nextOpen) => {setNotificationsOpen(nextOpen); if (nextOpen) setUserMenuOpen(false);}}>
+            <DropdownMenuTrigger asChild><button className="icon-button" aria-label="Notifications"><Bell className="size-4" /></button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 p-4"><p className="text-xs font-semibold">Notifications</p><div className="mt-4 rounded-lg bg-[var(--surface)] p-4 text-center"><Bell className="mx-auto size-4 text-[var(--ink-disabled)]" /><p className="mt-2 text-[10px] text-[var(--ink-secondary)]">No new notifications</p><p className="mt-1 text-[8px] text-[var(--ink-disabled)]">Pipeline failures remain visible in ingestion runs.</p></div></DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu open={userMenuOpen} onOpenChange={(nextOpen) => {setUserMenuOpen(nextOpen); if (nextOpen) setNotificationsOpen(false);}}>
+            <DropdownMenuTrigger asChild><button className="flex h-9 items-center gap-2 rounded-[10px] px-1.5 hover:bg-[var(--surface-hover)]" aria-label="User menu">
               <span className="flex size-7 items-center justify-center rounded-full bg-[var(--surface-raised)] text-[9px] font-semibold text-[var(--accent-hover)]">{user ? initials(user.full_name, user.email) : "…"}</span>
               <ChevronDown className="hidden size-3 text-[var(--ink-muted)] sm:block" />
-            </button>
-            {userMenuOpen ? <div className="popover right-0 top-11 w-56 p-1.5">
-              <div className="border-b border-[var(--border)] px-2.5 py-2"><p className="truncate text-[11px] font-medium">{user?.full_name || "CCSR user"}</p><p className="mt-0.5 truncate text-[9px] text-[var(--ink-muted)]">{user?.email}</p></div>
-              <Link href="/settings/profile" onClick={() => setUserMenuOpen(false)} className="menu-item"><UserRound className="size-3.5" />Profile settings</Link>
-              <button onClick={logout} className="menu-item w-full"><LogOut className="size-3.5" />Sign out</button>
-            </div> : null}
-          </div>
+            </button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 p-1.5"><DropdownMenuLabel className="border-b border-[var(--border)]"><p className="truncate text-[11px] font-medium">{user?.full_name || "CCSR user"}</p><p className="mt-0.5 truncate text-[9px] font-normal text-[var(--ink-muted)]">{user?.email}</p></DropdownMenuLabel><DropdownMenuSeparator /><DropdownMenuItem asChild><Link href="/settings/profile"><UserRound className="size-3.5" />Profile settings</Link></DropdownMenuItem><DropdownMenuItem onSelect={() => void logout()}><LogOut className="size-3.5" />Sign out</DropdownMenuItem></DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
       <main id="main-content" tabIndex={-1} className={cn(isWorkspaceRoute ? "h-[calc(100dvh-4rem)] overflow-hidden" : "app-page-container")}>{children}</main>
