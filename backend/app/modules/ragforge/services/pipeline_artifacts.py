@@ -151,9 +151,18 @@ def _embedding_batch_size(run: dict[str, Any], chunk_count: int) -> int:
             os.environ.get("RAGFORGE_EMBEDDING_BATCH_SIZE")
             or os.environ.get("EMBEDDING_BATCH_SIZE")
         )
-    if configured is None:
-        return chunk_count
-    return _positive_int(configured, "ingestion_plan.embedding_batch_size")
+    requested_batch_size = (
+        chunk_count
+        if configured is None
+        else _positive_int(configured, "ingestion_plan.embedding_batch_size")
+    )
+    maximum_batch_size = _positive_int(
+        os.environ.get("RAGFORGE_EMBEDDING_MAX_BATCH_SIZE")
+        or os.environ.get("EMBEDDING_MAX_BATCH_SIZE")
+        or "64",
+        "EMBEDDING_MAX_BATCH_SIZE",
+    )
+    return min(requested_batch_size, maximum_batch_size)
 
 
 def _embedding_timeout_seconds() -> float | None:
