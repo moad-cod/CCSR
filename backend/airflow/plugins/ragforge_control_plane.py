@@ -28,11 +28,16 @@ def record_task_status(
 
 
 def mark_task_failure(context: dict) -> None:
+    exception = context.get("exception")
+    # Every task records its own exception. Airflow may invoke the DAG callback
+    # later without one; skipping that second update preserves the useful task
+    # failure instead of replacing it with a generic message.
+    if exception is None:
+        return
     run_id = ingestion_run_id_from_context(context)
-    error = str(context.get("exception") or "Airflow task failed")
     RAGForgeControlPlane().update_status(
         run_id,
         "failed",
         airflow_dag_run_id=context["dag_run"].run_id,
-        error_message=error,
+        error_message=str(exception),
     )
