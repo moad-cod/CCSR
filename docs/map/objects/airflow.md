@@ -9,7 +9,8 @@ and [`docker-compose.yml`](../../../docker-compose.yml).
 **Hits**
 
 - Long, ordered RAG ingestion stages, callbacks through the internal API,
-  configured job commands, and Airflow-oriented E2E coverage.
+  configured job commands, signal-aware subprocess failures, detail-preserving
+  callbacks, and Airflow-oriented E2E coverage.
 
 **Does not hit**
 
