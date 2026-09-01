@@ -139,6 +139,45 @@ class PipelineArtifactTests(unittest.TestCase):
         self.assertEqual(gold["chunks"], 5)
         self.assertEqual(batch_sizes, [2, 2, 1])
 
+    def test_embedding_batch_cap_limits_larger_planner_batch(self):
+        silver = bronze_to_silver(
+            self.run,
+            store=self.store,
+            parser=lambda _data, _filename: ["source"],
+            chunker_loader=lambda _chunker_id: (
+                lambda _text: [f"chunk {index}" for index in range(5)]
+            ),
+        )
+        self.run["silver_path"] = silver["artifact_path"]
+        self.run["ingestion_plan"] = {"embedding_batch_size": 192}
+        batch_sizes = []
+
+        def embed(texts):
+            batch_sizes.append(len(texts))
+            return [[float(len(text)), 0.5] for text in texts]
+
+        with patch.dict(os.environ, {"EMBEDDING_MAX_BATCH_SIZE": "2"}):
+            gold = silver_to_gold(self.run, store=self.store, embedder=embed)
+
+        self.assertEqual(gold["chunks"], 5)
+        self.assertEqual(batch_sizes, [2, 2, 1])
+
+    def test_invalid_embedding_batch_cap_fails_cleanly(self):
+        silver = bronze_to_silver(
+            self.run,
+            store=self.store,
+            parser=lambda _data, _filename: ["source"],
+            chunker_loader=lambda _chunker_id: lambda _text: ["indexable chunk"],
+        )
+        self.run["silver_path"] = silver["artifact_path"]
+
+        with patch.dict(os.environ, {"EMBEDDING_MAX_BATCH_SIZE": "0"}):
+            with self.assertRaisesRegex(
+                ValueError,
+                "EMBEDDING_MAX_BATCH_SIZE must be positive",
+            ):
+                silver_to_gold(self.run, store=self.store, embedder=lambda _texts: [])
+
     def test_gold_embedding_reports_actual_batch_progress(self):
         silver = bronze_to_silver(
             self.run,

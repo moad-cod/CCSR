@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     EMBEDDING_DIMENSION: int = 384
     EMBEDDING_DEVICE: str = "auto"
     EMBEDDING_BATCH_SIZE: int = 192
+    EMBEDDING_MAX_BATCH_SIZE: int = 64
     EMBEDDING_TIMEOUT_SECONDS: float = 900.0
     EMBEDDING_ALLOW_MODEL_DOWNLOAD: bool = True
     EMBEDDING_CACHE_DIR: str = "/models/fastembed"

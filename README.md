@@ -246,7 +246,7 @@ Requirements: Docker, Docker Compose, and a copy of `.env.example`.
 
 ```bash
 cp .env.example .env
-docker compose up -d --build
+docker compose --profile celery up -d --build
 docker compose exec fastapi alembic upgrade head
 ```
 
@@ -257,7 +257,10 @@ Open:
 - Qdrant: `http://localhost:6333/dashboard`
 - MinIO console: `http://localhost:9001`
 
-The base stack starts the frontend, FastAPI, PostgreSQL, Qdrant, MinIO, Redis, and MinIO bucket initialization. Set `GEMINI_API_KEY` or `GROQ_API_KEY` in `.env` before asking hosted-model questions.
+The recommended local stack starts the frontend, FastAPI, PostgreSQL, Qdrant,
+MinIO, Redis, MinIO bucket initialization, and one memory-isolated Celery
+ingestion worker. Set `GEMINI_API_KEY` or `GROQ_API_KEY` in `.env` before asking
+hosted-model questions.
 
 ### Airflow Profile
 
@@ -290,7 +293,9 @@ Open Airflow at `http://localhost:8080`.
 
 ### Celery Profile
 
-Use this when you want uploads to trigger Celery workers instead of Airflow.
+This is the recommended local ingestion mode. It keeps model loading outside
+the API and Airflow scheduler, runs one ingestion task at a time, and gives the
+embedding worker a dedicated 3 GiB memory limit.
 
 ```dotenv
 ORCHESTRATOR=celery
@@ -307,7 +312,7 @@ docker compose exec fastapi alembic upgrade head
 The worker entry point is:
 
 ```bash
-celery -A app.workers.celery_app:celery_app worker --loglevel=INFO
+celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=1
 ```
 
 ## Local Development
@@ -367,6 +372,7 @@ Use `.env.example` as the source of truth. Important variables:
 | LLM | `GEMINI_API_KEY`, `GROQ_API_KEY` | Required per provider | Hosted generation credentials. |
 | LLM | `GEMINI_BASE_URL`, `GROQ_BASE_URL`, `LLM_*` | Optional | Provider base URLs, retries, and timeout. |
 | Embeddings | `EMBEDDING_BACKEND` | Optional | `fastembed` for runtime, `deterministic` for offline tests. |
+| Embeddings | `EMBEDDING_BATCH_SIZE`, `EMBEDDING_MAX_BATCH_SIZE` | Optional | Requested default batch size and the hard post-planner safety cap. |
 | Orchestration | `ORCHESTRATOR` | Optional | `airflow`, `celery`, or disabled by using another value. |
 | Airflow | `AIRFLOW_API_URL`, `AIRFLOW_USERNAME`, `AIRFLOW_PASSWORD`, `AIRFLOW_INGESTION_DAG_ID` | Required for Airflow trigger | FastAPI-to-Airflow REST trigger settings. |
 | Celery | `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `CELERY_TASK_*` | Required for Celery trigger | Worker broker, results, retry, eager, and prefetch settings. |

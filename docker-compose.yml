@@ -36,6 +36,7 @@ x-airflow-common: &airflow-common
     EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-384}
     EMBEDDING_DEVICE: ${EMBEDDING_DEVICE:-auto}
     EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-192}
+    EMBEDDING_MAX_BATCH_SIZE: ${EMBEDDING_MAX_BATCH_SIZE:-64}
     EMBEDDING_TIMEOUT_SECONDS: ${EMBEDDING_TIMEOUT_SECONDS:-900}
     EMBEDDING_ALLOW_MODEL_DOWNLOAD: ${EMBEDDING_ALLOW_MODEL_DOWNLOAD:-true}
     EMBEDDING_CACHE_DIR: ${EMBEDDING_CACHE_DIR:-/models/fastembed}
@@ -166,6 +167,7 @@ services:
       EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-384}
       EMBEDDING_DEVICE: ${EMBEDDING_DEVICE:-auto}
       EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-192}
+      EMBEDDING_MAX_BATCH_SIZE: ${EMBEDDING_MAX_BATCH_SIZE:-64}
       EMBEDDING_TIMEOUT_SECONDS: ${EMBEDDING_TIMEOUT_SECONDS:-900}
       EMBEDDING_ALLOW_MODEL_DOWNLOAD: ${EMBEDDING_ALLOW_MODEL_DOWNLOAD:-true}
       EMBEDDING_CACHE_DIR: ${EMBEDDING_CACHE_DIR:-/models/fastembed}
@@ -234,6 +236,7 @@ services:
       - app.workers.celery_app:celery_app
       - worker
       - --loglevel=INFO
+      - --concurrency=1
     environment:
       DATABASE_URL: postgresql+asyncpg://ragforge:ragforge@postgres:5432/ragforge
       SECRET_KEY: ${SECRET_KEY:-ragforge-celery-local-only}
@@ -249,6 +252,7 @@ services:
       EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-384}
       EMBEDDING_DEVICE: ${EMBEDDING_DEVICE:-auto}
       EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-192}
+      EMBEDDING_MAX_BATCH_SIZE: ${EMBEDDING_MAX_BATCH_SIZE:-64}
       EMBEDDING_TIMEOUT_SECONDS: ${EMBEDDING_TIMEOUT_SECONDS:-900}
       EMBEDDING_ALLOW_MODEL_DOWNLOAD: ${EMBEDDING_ALLOW_MODEL_DOWNLOAD:-true}
       EMBEDDING_CACHE_DIR: ${EMBEDDING_CACHE_DIR:-/models/fastembed}
@@ -285,7 +289,7 @@ services:
       minio-init:
         condition: service_completed_successfully
     restart: unless-stopped
-    mem_limit: 1g
+    mem_limit: 3g
 
   # =========================
   # Next.js Control Plane UI

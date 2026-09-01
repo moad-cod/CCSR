@@ -1,6 +1,10 @@
 import unittest
 
-from jobs.ingestion_execution import build_job_environment, profile_environment_name
+from jobs.ingestion_execution import (
+    build_job_environment,
+    profile_environment_name,
+    subprocess_failure_message,
+)
 
 
 PLAN = {
@@ -48,7 +52,22 @@ class IngestionExecutionTests(unittest.TestCase):
         self.assertEqual(environment["RAGFORGE_INGESTION_PROFILE"], "embedding_aware")
         self.assertEqual(environment["RAGFORGE_INGESTION_TECHNIQUE"], "semantic")
         self.assertEqual(environment["RAGFORGE_EMBEDDING_BATCH_SIZE"], "48")
+        self.assertEqual(environment["RAGFORGE_EMBEDDING_MAX_BATCH_SIZE"], "64")
         self.assertEqual(environment["RAGFORGE_INGESTION_MAX_PARALLELISM"], "1")
+
+    def test_job_environment_preserves_configured_embedding_batch_cap(self):
+        environment = build_job_environment(
+            PLAN,
+            base_environment={"EMBEDDING_MAX_BATCH_SIZE": "32"},
+        )
+
+        self.assertEqual(environment["RAGFORGE_EMBEDDING_MAX_BATCH_SIZE"], "32")
+
+    def test_sigkill_failure_message_identifies_possible_container_oom(self):
+        message = subprocess_failure_message("RAGFORGE_SILVER_TO_GOLD_CMD", -9)
+
+        self.assertIn("SIGKILL", message)
+        self.assertIn("memory limit", message)
 
 
 if __name__ == "__main__":

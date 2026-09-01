@@ -7,7 +7,11 @@ import shlex
 import subprocess
 
 from airflow.sdk import dag, get_current_context, task
-from jobs.ingestion_execution import build_job_environment, profile_environment_name
+from jobs.ingestion_execution import (
+    build_job_environment,
+    profile_environment_name,
+    subprocess_failure_message,
+)
 
 from ragforge_control_plane import (
     RAGForgeControlPlane,
@@ -61,10 +65,13 @@ def _run_configured_job(
             f"{selected_environment} timed out after {timeout_seconds:g} seconds"
         ) from exc
     except subprocess.CalledProcessError as exc:
-        detail = (exc.stderr or exc.stdout or "").strip()
-        suffix = f": {detail}" if detail else ""
         raise RuntimeError(
-            f"{selected_environment} failed with exit code {exc.returncode}{suffix}"
+            subprocess_failure_message(
+                selected_environment,
+                exc.returncode,
+                stdout=exc.stdout,
+                stderr=exc.stderr,
+            )
         ) from exc
     if completed.stderr.strip():
         logger.info("%s stderr:\n%s", selected_environment, completed.stderr.rstrip())

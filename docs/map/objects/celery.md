@@ -1,6 +1,6 @@
 # Celery
 
-**Status:** Implemented RAG ingestion engine and optional Compose profile.
+**Status:** Implemented RAG ingestion engine and recommended local Compose profile.
 
 **Authoritative sources:**
 [`celery_app.py`](../../../backend/app/workers/celery_app.py),
@@ -10,7 +10,9 @@
 **Hits**
 
 - The shared RAG ingestion stage chain, retries, Redis broker/results, benchmark
-  coverage, and focused integration tests.
+  coverage, focused integration tests, and the isolated single-concurrency
+  embedding worker. Planner batch requests are bounded by the runtime embedding
+  batch cap.
 
 **Does not hit**
 
