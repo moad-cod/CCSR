@@ -629,7 +629,7 @@ RAGFORGE_BRONZE_TO_SILVER_LLM_ENRICHED_CMD
 RAGFORGE_BRONZE_TO_SILVER_MULTIMODAL_CMD
 ```
 
-The same suffix convention applies to `RAGFORGE_SILVER_TO_GOLD_*_CMD` and `RAGFORGE_UPSERT_QDRANT_*_CMD`. If an override is absent, the original generic command is used. Subprocesses also receive `RAGFORGE_INGESTION_PROFILE`, `RAGFORGE_INGESTION_TECHNIQUE`, `RAGFORGE_INGESTION_RESOURCE_CLASS`, `RAGFORGE_EMBEDDING_BATCH_SIZE`, and `RAGFORGE_INGESTION_MAX_PARALLELISM`.
+The same suffix convention applies to `RAGFORGE_SILVER_TO_GOLD_*_CMD` and `RAGFORGE_UPSERT_QDRANT_*_CMD`. If an override is absent, the original generic command is used. Subprocesses also receive `RAGFORGE_INGESTION_PROFILE`, `RAGFORGE_INGESTION_TECHNIQUE`, `RAGFORGE_INGESTION_RESOURCE_CLASS`, `RAGFORGE_EMBEDDING_BATCH_SIZE`, `RAGFORGE_EMBEDDING_MAX_BATCH_SIZE`, and `RAGFORGE_INGESTION_MAX_PARALLELISM`. Negative subprocess return codes are reported with their Unix signal; a `SIGKILL` message identifies the container memory limit as a likely cause. A DAG-level callback without an exception does not overwrite the task's detailed failure.
 
 ### Celery ingestion workers
 
@@ -641,6 +641,11 @@ The same suffix convention applies to `RAGFORGE_SILVER_TO_GOLD_*_CMD` and `RAGFO
 | `CELERY_WORKER_PREFETCH_MULTIPLIER` | `1`, chosen to keep long ingestion tasks from being over-prefetched by one worker. |
 | `CELERY_TASK_RETRY_DELAY_SECONDS` | `10`. |
 | `CELERY_TASK_MAX_RETRIES` | `2`. |
+
+The local Compose worker has `--concurrency=1`, a prefetch multiplier of one,
+and a 3 GiB memory limit so embedding model memory is isolated from FastAPI and
+Airflow. Planner-selected embedding batches are additionally capped by
+`EMBEDDING_MAX_BATCH_SIZE`, which defaults to `64`.
 
 ### Redis/realtime
 
@@ -701,24 +706,24 @@ Seed deterministic development records:
 python -m scripts.seed_control_plane --namespace development
 ```
 
-Run the local Compose stack with Airflow orchestration from the repository root:
-
-```bash
-ORCHESTRATOR=airflow AIRFLOW_API_URL=http://airflow-apiserver:8080 \
-  docker compose --profile airflow up --build
-```
-
-Run the local Compose stack with Celery orchestration from the repository root:
+Run the recommended local Compose stack with Celery orchestration from the repository root:
 
 ```bash
 PIPELINE_SERVICE_TOKEN=<shared-secret> ORCHESTRATOR=celery \
   docker compose --profile celery up --build
 ```
 
+Run the compatibility Airflow stack from the repository root:
+
+```bash
+ORCHESTRATOR=airflow AIRFLOW_API_URL=http://airflow-apiserver:8080 \
+  docker compose --profile airflow up --build
+```
+
 Run a Celery worker directly from the backend directory when dependencies and services are already available:
 
 ```bash
-celery -A app.workers.celery_app:celery_app worker --loglevel=INFO
+celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=1
 ```
 
 Run the Airflow benchmark CLI from the repository root:
