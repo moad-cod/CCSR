@@ -29,13 +29,14 @@ Next.js control-plane UI / Swagger UI
 | Frontend app | `frontend/src/app/*` | Authenticated App Router pages, layouts, proxy routes, and responsive workspace |
 | Frontend features | `frontend/src/components/*`, `frontend/src/hooks/*` | Projects, documents, ingestion SSE recovery, streaming chat, query history, retrieval traces |
 | Frontend data | `frontend/src/lib/*` | Typed API client, SSE parser, shared control-plane types, session helpers |
-| App entry | `backend/app/main.py` | Creates the FastAPI app and mounts routers |
+| App entry | `backend/app/main.py` | Registers built-in capabilities, creates the FastAPI app, and mounts routers |
 | Config | `backend/app/core/config.py` | Loads `.env`, required URLs/secrets, optional LLM/R2 settings, limits |
 | Auth | `backend/app/platform/access/authentication.py`, `backend/app/platform/accounts/api.py` | JWT dependency, register, login, current-user read/update/delete |
 | Database | `backend/app/core/db.py` | Async SQLAlchemy engine, session dependency, declarative `Base` |
 | Models | `backend/app/models/*.py` | One SQLAlchemy model per control-plane table, relationships, constraints, and indexes; `tables.py` remains a compatibility export |
 | Organizations | `backend/app/platform/organizations/api.py` | Organization CRUD and soft delete |
-| Projects | `backend/app/api/projects.py` | Project CRUD, ownership checks, Qdrant collection lifecycle |
+| Projects | `backend/app/api/projects.py`, `backend/app/platform/capabilities/*` | Project CRUD and ownership checks; deletion dispatches registered module lifecycle hooks |
+| RAGForge lifecycle | `backend/app/modules/ragforge/capability.py`, `backend/app/modules/ragforge/lifecycle.py` | Contributes existing document, R2, and Qdrant cleanup without platform-to-RAG imports |
 | Documents | `backend/app/modules/ragforge/api/documents.py` | Document list/get/delete and document version listing |
 | Ingestion | `backend/app/modules/ragforge/api/ingest.py` | File, URL, Google Drive, and optional multimodal ingestion |
 | Pipeline control | `backend/app/modules/ragforge/api/internal_pipeline.py`, `backend/app/services/ingestion_orchestrator.py`, `backend/app/modules/ragforge/services/ingestion_planner.py` | Authenticated run metadata/status/progress boundary, Airflow/Celery selection, and deterministic technique-to-execution planning |

@@ -6,9 +6,9 @@ from jose import jwt
 from app.core.config import settings
 from app.core.db import get_db
 from app.models.project import Project
-from app.modules.ragforge.models.document import Document
 from app.platform.access.authentication import get_current_user
 from app.platform.accounts.model import User
+from app.platform.capabilities import AccountDeletionContext, capability_registry
 from app.platform.organizations import repository as membership_repository
 from app.platform.organizations.model import Organization
 from datetime import datetime, timedelta
@@ -267,8 +267,6 @@ async def delete_me(
     if not u:
         raise HTTPException(404, "User not found")
 
-    # delete all Qdrant collections for this user's projects
-    from app.modules.ragforge.services.indexer import delete_collection
     projects_result = await db.execute(
         select(Project).where(
             Project.created_by == user["user_id"],
@@ -276,9 +274,10 @@ async def delete_me(
         )
     )
     projects = projects_result.scalars().all()
+    await capability_registry.before_account_delete(
+        AccountDeletionContext(db=db, account=u, projects=projects)
+    )
     for project in projects:
-        delete_collection(project.collection)
-        delete_collection(f"{project.collection}_multimodal")
         project.deleted_at = datetime.utcnow()
 
     u.deleted_at = datetime.utcnow()

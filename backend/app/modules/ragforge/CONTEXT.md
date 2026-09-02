@@ -8,3 +8,8 @@ The extraction is mechanical: public routes and payloads, SQL table names,
 background task names, Redis keys, and environment variables are unchanged.
 Mixed orchestration and shared infrastructure remain in their historical
 locations until a later phase can separate them without changing behavior.
+
+`capability.py` exposes the RAGForge capability definition and `lifecycle.py`
+implements its project/account pre-delete cleanup hooks. `app/main.py` registers
+that definition with the platform registry; platform routes do not import these
+RAG-specific implementations.

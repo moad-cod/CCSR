@@ -1,17 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from app.platform.access.authentication import get_current_user
+from app.platform.capabilities import ProjectDeletionContext, capability_registry
 from app.core.db import get_db
 from app.models.project import Project
-from app.modules.ragforge.models.document import Document
 from app.repositories import projects as project_repository
 from app.platform.organizations import repository as membership_repository
-from app.modules.ragforge.services.indexer import delete_document_chunks, delete_collection
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 import uuid
-import asyncio
 
 router = APIRouter()
 
@@ -151,26 +148,9 @@ async def delete_project(
     if not project:
         raise HTTPException(404, "Project not found")
 
-    docs_result = await db.execute(
-        select(Document).where(
-            Document.project_id == project_id,
-            Document.deleted_at.is_(None),
-        )
+    lifecycle_result = await capability_registry.before_project_delete(
+        ProjectDeletionContext(db=db, project=project)
     )
-    docs = docs_result.scalars().all()
-    for doc in docs:
-        await asyncio.to_thread(delete_document_chunks, document_id=doc.id, collection=project.collection)
-        if doc.source_type == "multimodal":
-            from app.modules.ragforge.services.storage import delete_document_images
-            try:
-                await asyncio.to_thread(delete_document_images, doc.id)
-            except Exception:
-                pass
-        doc.status = "deleted"
-        doc.deleted_at = datetime.utcnow()
-
-    await asyncio.to_thread(delete_collection, project.collection)
-    await asyncio.to_thread(delete_collection, f"{project.collection}_multimodal")
 
     project.deleted_at = datetime.utcnow()
     await db.commit()
@@ -178,5 +158,5 @@ async def delete_project(
     return {
         "deleted_project": project_id,
         "deleted_collection": project.collection,
-        "deleted_documents": len(docs),
+        "deleted_documents": lifecycle_result.count("documents"),
     }

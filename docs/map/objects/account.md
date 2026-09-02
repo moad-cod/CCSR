@@ -10,7 +10,8 @@
 
 - Authentication, current-user profile, active organization selection, owned
   projects, ingestion runs, and query logs.
-- Account deletion currently triggers RAG/Qdrant project cleanup.
+- Account deletion triggers registered capability hooks; RAGForge contributes
+  the existing Qdrant project-collection cleanup.
 
 **Does not hit**
 

@@ -7,6 +7,11 @@ from app.modules.ragforge.api.documents import router as documents_router
 from app.modules.ragforge.api.chunkers import router as chunkers_router
 from app.platform.organizations.api import router as organizations_router
 from app.modules.ragforge.api.internal_pipeline import router as internal_pipeline_router
+from app.modules.ragforge.capability import register_ragforge_capability
+from app.platform.capabilities import capability_registry
+
+
+register_ragforge_capability(capability_registry)
 
 app = FastAPI(
     title="RAGForge API",
