@@ -9,10 +9,12 @@
 **Hits**
 
 - Creator ownership, optional organization association, documents, ingestion,
-  chunks, embeddings, query history, and Qdrant collection lifecycle.
+  chunks, embeddings, query history, and lifecycle cleanup dispatched through
+  the capability registry.
 - Most project-scoped frontend routes and types.
 
 **Does not hit**
 
-- Capabilities, description, visibility, publication state, research studies,
-  generic workflows, or generic runs; these are not modeled yet.
+- Durable capability associations, description, visibility, publication state,
+  research studies, generic workflows, or generic runs; these are not modeled
+  yet.
