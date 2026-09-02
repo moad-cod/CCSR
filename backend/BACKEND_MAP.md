@@ -112,6 +112,13 @@ not implemented.
 
 Project/document tenancy is ownership-based (`Project.created_by`), not organization-role-based.
 
+Project and account deletion call the platform capability registry before
+committing their soft-delete state. The application root registers RAGForge's
+hooks, which preserve the existing Qdrant cleanup, document status updates, and
+best-effort multimodal image deletion. The platform routes do not import
+RAGForge models or services. This is an in-process lifecycle seam, not a durable
+project-capability association.
+
 ### Ingestion endpoints
 
 | Method | Route | Purpose |
@@ -476,6 +483,8 @@ Embedding-run states are `queued`, `running`, `completed`, `failed`, and `cancel
 | `app/core/config.py` | Pydantic environment settings and provider/R2 validation. |
 | `app/core/db.py` | Async SQLAlchemy engine, session factory, declarative base, and FastAPI dependency. |
 | `app/platform/access/authentication.py` | Decode HS256 JWT and expose `user_id`; database existence/soft-delete checks occur in endpoint code. |
+| `app/platform/capabilities/` | Capability definitions, deterministic registry ordering, lifecycle contexts, and aggregated cleanup results. |
+| `app/modules/ragforge/capability.py`, `app/modules/ragforge/lifecycle.py` | RAGForge registration plus project/account cleanup contributed through platform contracts. |
 | `app/modules/ragforge/models/statuses.py` | Canonical status values, SQL check expression helper, and model-level validation. |
 | `app/repositories/projects.py` | Project creation, ownership lookup/listing, and rename. |
 | `app/modules/ragforge/repositories/documents.py` | Logical-document lookup, ownership lookup, current version/status updates, and soft deletion. |
