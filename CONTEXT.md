@@ -7,8 +7,8 @@ The repository remains one deployable modular monolith.
 ## Current state
 
 - The backend now has canonical platform authentication/organization and
-  RAGForge ownership packages. Generic project and account-deletion seams still
-  import RAG/Qdrant behavior.
+  RAGForge ownership packages. Project and account deletion invoke registered
+  capability lifecycle hooks instead of importing RAGForge cleanup directly.
 - The frontend is one Next.js application with shared UI primitives, but project
   navigation and data loading still assume RAG capabilities.
 - PostgreSQL is authoritative for durable application state. Redis is
