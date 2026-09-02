@@ -34,7 +34,9 @@ changing those execution or research paths.
   `Project.created_by`.
 - `Project.qdrant_collection` is mandatory, so the project model is not generic.
 - `IngestionRun.airflow_dag_run_id` is also used for Celery workflow IDs.
-- Platform account/project deletion directly imports RAG/Qdrant cleanup.
+- The application root registers RAGForge in the platform capability registry;
+  project/account deletion invokes its lifecycle hooks without importing RAG
+  code from platform routes.
 
 Historical authentication, organization, and RAG imports are compatibility
 aliases to the canonical ownership packages. Keep them until downstream code
