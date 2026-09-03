@@ -12,6 +12,8 @@ CORE_TABLES = frozenset(
         "organization_memberships",
         "users",
         "projects",
+        "project_capabilities",
+        "rag_project_configs",
         "documents",
         "document_versions",
         "ingestion_runs",
@@ -29,6 +31,8 @@ REQUIRED_FOREIGN_KEYS = frozenset(
         ("organization_memberships", ("user_id",), "users"),
         ("projects", ("organization_id",), "organizations"),
         ("projects", ("created_by",), "users"),
+        ("project_capabilities", ("project_id",), "projects"),
+        ("rag_project_configs", ("project_id",), "projects"),
         ("documents", ("project_id",), "projects"),
         ("documents", ("created_by",), "users"),
         ("documents", ("current_version_id",), "document_versions"),
@@ -55,6 +59,7 @@ REQUIRED_UNIQUE_CONSTRAINTS = frozenset(
         ("users", "uq_users_email"),
         ("organization_memberships", "uq_organization_memberships_org_user"),
         ("projects", "uq_projects_qdrant_collection"),
+        ("rag_project_configs", "uq_rag_project_configs_qdrant_collection"),
         ("document_versions", "uq_document_versions_document_version_number"),
         ("document_versions", "uq_document_versions_document_content_hash"),
         ("chunks", "uq_chunks_qdrant_point_id"),
@@ -75,6 +80,7 @@ REQUIRED_CHECK_CONSTRAINTS = frozenset(
 REQUIRED_INDEXES = frozenset(
     {
         ("documents", "ix_documents_project_id"),
+        ("project_capabilities", "ix_project_capabilities_capability_key"),
         ("organization_memberships", "ix_organization_memberships_organization_id"),
         ("organization_memberships", "ix_organization_memberships_user_id"),
         ("documents", "ix_documents_current_version_id"),
