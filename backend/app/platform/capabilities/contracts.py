@@ -15,7 +15,6 @@ class ProjectLifecycleRecord(Protocol):
 
     id: str
     created_by: str
-    collection: str
     deleted_at: datetime | None
 
 
@@ -26,10 +25,22 @@ class AccountLifecycleRecord(Protocol):
     deleted_at: datetime | None
 
 
+class ProjectProvisioningRecord(ProjectLifecycleRecord, Protocol):
+    """Temporary legacy fields available while project creation dual-writes."""
+
+    qdrant_collection: str
+
+
 @dataclass(frozen=True)
 class ProjectDeletionContext:
     db: AsyncSession
     project: ProjectLifecycleRecord
+
+
+@dataclass(frozen=True)
+class ProjectProvisioningContext:
+    db: AsyncSession
+    project: ProjectProvisioningRecord
 
 
 @dataclass(frozen=True)
@@ -53,6 +64,10 @@ ProjectDeletionHook = Callable[
     [ProjectDeletionContext],
     Awaitable[LifecycleResult | None],
 ]
+ProjectProvisioningHook = Callable[
+    [ProjectProvisioningContext],
+    Awaitable[None],
+]
 AccountDeletionHook = Callable[
     [AccountDeletionContext],
     Awaitable[LifecycleResult | None],
@@ -61,6 +76,7 @@ AccountDeletionHook = Callable[
 
 @dataclass(frozen=True)
 class CapabilityLifecycle:
+    after_project_create: ProjectProvisioningHook | None = None
     before_project_delete: ProjectDeletionHook | None = None
     before_account_delete: AccountDeletionHook | None = None
 
@@ -68,4 +84,5 @@ class CapabilityLifecycle:
 @dataclass(frozen=True)
 class CapabilityDefinition:
     key: str
+    enabled_by_default: bool = False
     lifecycle: CapabilityLifecycle = field(default_factory=CapabilityLifecycle)
