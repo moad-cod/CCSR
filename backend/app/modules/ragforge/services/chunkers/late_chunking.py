@@ -52,6 +52,7 @@ def chunk_with_embeddings(
     text: str,
     chunk_size: int = 5,
     min_chunk_len: int = 50,
+    model_name: str | None = None,
 ) -> tuple[list[str], list[list[float]]]:
     """Return sentence groups and normalized mean-pooled sentence vectors."""
     groups = _sentence_groups(text, chunk_size, min_chunk_len)
@@ -59,7 +60,10 @@ def chunk_with_embeddings(
         return [], []
 
     sentences = [sentence for group in groups for sentence in group]
-    all_embeddings = np.asarray(embed_texts(sentences), dtype=np.float32)
+    all_embeddings = np.asarray(
+        embed_texts(sentences, model_name=model_name),
+        dtype=np.float32,
+    )
     if all_embeddings.ndim != 2 or all_embeddings.shape[0] != len(sentences):
         raise ValueError("embedding backend returned an unexpected number of vectors")
 
