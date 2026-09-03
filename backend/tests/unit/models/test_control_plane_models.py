@@ -10,7 +10,9 @@ from app.models import (
     EmbeddingRun,
     IngestionRun,
     OrganizationMembership,
+    ProjectCapability,
     QueryLog,
+    RAGProjectConfig,
 )
 
 
@@ -28,7 +30,32 @@ class ControlPlaneModelTests(unittest.TestCase):
                 "embedding_runs",
                 "query_logs",
                 "retrieval_logs",
+                "project_capabilities",
+                "rag_project_configs",
             }.issubset(Base.metadata.tables)
+        )
+
+    def test_capability_and_rag_configuration_constraints_are_registered(self):
+        capability_primary_key = tuple(
+            ProjectCapability.__table__.primary_key.columns.keys()
+        )
+        self.assertEqual(
+            capability_primary_key,
+            ("project_id", "capability_key"),
+        )
+
+        config_unique_columns = {
+            tuple(constraint.columns.keys())
+            for constraint in RAGProjectConfig.__table__.constraints
+            if isinstance(constraint, UniqueConstraint)
+        }
+        self.assertIn(("qdrant_collection",), config_unique_columns)
+        config_foreign_key = next(
+            iter(RAGProjectConfig.__table__.c.project_id.foreign_keys)
+        )
+        self.assertEqual(
+            config_foreign_key.ondelete,
+            "CASCADE",
         )
 
     def test_current_version_foreign_key_targets_document_versions(self):
