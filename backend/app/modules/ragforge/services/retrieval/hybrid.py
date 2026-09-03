@@ -70,6 +70,7 @@ def hybrid_search(
     document_id: str | None = None,
     use_parent_context: bool = False,
     use_rerank: bool = True,
+    sparse_model: str = "Qdrant/bm25",
 ) -> list[RetrievalHit]:
 
     must_conditions = [FieldCondition(key="project_id", match=MatchValue(value=project_id))]
@@ -79,7 +80,7 @@ def hybrid_search(
         must_conditions.append(FieldCondition(key="chunk_type", match=MatchValue(value="child")))
 
     query_filter = Filter(must=must_conditions)
-    sparse_embedding = embed_sparse_query(query_text)
+    sparse_embedding = embed_sparse_query(query_text, model_name=sparse_model)
 
     results = _query_points(
         dense_embedding=dense_embedding,
