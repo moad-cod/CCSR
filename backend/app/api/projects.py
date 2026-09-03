@@ -1,13 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.platform.access.authentication import get_current_user
-from app.platform.capabilities import ProjectDeletionContext, capability_registry
+from app.platform.capabilities import (
+    ProjectDeletionContext,
+    ProjectProvisioningContext,
+    capability_registry,
+)
 from app.core.db import get_db
 from app.models.project import Project
 from app.repositories import projects as project_repository
 from app.platform.organizations import repository as membership_repository
 from pydantic import BaseModel, field_validator
 from datetime import datetime
+from typing import Any
 import uuid
 
 router = APIRouter()
@@ -44,6 +49,14 @@ class ProjectUpdate(BaseModel):
     def validate_name(cls, value: str) -> str:
         return ProjectCreate.validate_name(value)
 
+class RAGProjectConfigResponse(BaseModel):
+    qdrant_collection: str
+    embedding_model: str
+    sparse_model: str
+    default_chunker: str
+    retrieval_configuration: dict[str, Any]
+
+
 class ProjectResponse(BaseModel):
     project_id: str
     organization_id: str | None
@@ -53,18 +66,42 @@ class ProjectResponse(BaseModel):
     created_by: str
     created_at: datetime
     updated_at: datetime
+    capabilities: list[str]
+    rag_config: RAGProjectConfigResponse | None
 
 
 def _project_payload(project: Project) -> ProjectResponse:
+    rag_config = project.__dict__.get("rag_config")
+    collection = (
+        rag_config.qdrant_collection
+        if rag_config is not None
+        else project.qdrant_collection
+    )
+    capabilities = sorted(
+        association.capability_key
+        for association in project.__dict__.get("capabilities", ())
+    )
     return ProjectResponse(
         project_id=project.id,
         organization_id=project.organization_id,
         name=project.name,
-        collection=project.collection,
-        qdrant_collection=project.qdrant_collection,
+        collection=collection,
+        qdrant_collection=collection,
         created_by=project.created_by,
         created_at=project.created_at,
         updated_at=project.updated_at,
+        capabilities=capabilities,
+        rag_config=(
+            RAGProjectConfigResponse(
+                qdrant_collection=rag_config.qdrant_collection,
+                embedding_model=rag_config.embedding_model,
+                sparse_model=rag_config.sparse_model,
+                default_chunker=rag_config.default_chunker,
+                retrieval_configuration=dict(rag_config.retrieval_configuration),
+            )
+            if rag_config is not None
+            else None
+        ),
     )
 
 
@@ -93,8 +130,17 @@ async def create_project(
         name=body.name,
         qdrant_collection=collection,
     )
+    await capability_registry.provision_project(
+        ProjectProvisioningContext(db=db, project=project)
+    )
     await db.commit()
-    await db.refresh(project)
+    project = await project_repository.get_owned_project(
+        db,
+        project_id,
+        user["user_id"],
+    )
+    if project is None:
+        raise HTTPException(500, "Created project could not be reloaded")
     return _project_payload(project)
 
 
@@ -133,7 +179,13 @@ async def update_project(
     # only update display name — collection name stays the same
     # changing collection would require re-indexing all documents
     await db.commit()
-    await db.refresh(project)
+    project = await project_repository.get_owned_project(
+        db,
+        project_id,
+        user["user_id"],
+    )
+    if project is None:
+        raise HTTPException(500, "Updated project could not be reloaded")
 
     return _project_payload(project)
 
@@ -148,6 +200,7 @@ async def delete_project(
     if not project:
         raise HTTPException(404, "Project not found")
 
+    deleted_collection = project.collection
     lifecycle_result = await capability_registry.before_project_delete(
         ProjectDeletionContext(db=db, project=project)
     )
@@ -157,6 +210,6 @@ async def delete_project(
 
     return {
         "deleted_project": project_id,
-        "deleted_collection": project.collection,
+        "deleted_collection": deleted_collection,
         "deleted_documents": lifecycle_result.count("documents"),
     }
