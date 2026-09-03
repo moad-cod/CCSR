@@ -68,7 +68,12 @@ class Document(Base):
 
     @property
     def collection(self) -> str | None:
-        return self.project.collection if self.project else None
+        if self.project is None:
+            return None
+        rag_config = self.project.__dict__.get("rag_config")
+        if rag_config is not None:
+            return rag_config.qdrant_collection
+        return self.project.qdrant_collection
 
     __table_args__ = (
         CheckConstraint(
