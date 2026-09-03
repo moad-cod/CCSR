@@ -1,6 +1,7 @@
 # Capability lifecycle
 
-**Status:** Implemented for project and account pre-delete cleanup.
+**Status:** Implemented for project provisioning and project/account pre-delete
+cleanup, gated by durable capability associations.
 
 **Authoritative current sources:** platform contracts and registry in
 [`capabilities/`](../../../backend/app/platform/capabilities), RAGForge hooks in
@@ -10,17 +11,21 @@ registration in [`main.py`](../../../backend/app/main.py).
 **Current movement**
 
 ```text
+project creation -> persist default-enabled capability association
+-> registered provisioning hook -> capability-owned configuration -> commit
+
 project/account deletion route -> platform capability registry
--> registered RAGForge pre-delete hook -> external cleanup
+-> enabled capability lookup -> registered RAGForge pre-delete hook -> external cleanup
 -> platform soft-delete fields -> PostgreSQL commit
 ```
 
 **Hits**
 
-- Project document/vector/image cleanup, account-owned Qdrant collection
-  cleanup, lifecycle failure propagation, and compatibility response counts.
+- RAG configuration provisioning, project document/vector/image cleanup,
+  account-owned Qdrant collection cleanup, lifecycle failure propagation, and
+  compatibility response counts.
 
 **Does not hit**
 
-- Durable project-capability associations, project creation, capability-driven
-  frontend navigation, generic workflows/runs, or database schema.
+- Capability-driven frontend navigation, generic workflows/runs, capability
+  removal hooks, or user-selectable project capabilities.

@@ -195,6 +195,17 @@ Project
   belongs to Organization
   belongs to creator User
   has many Documents
+  has many ProjectCapabilities
+  optionally has one RAGProjectConfig
+
+ProjectCapability
+  project_id, capability_key, created_at
+  belongs to Project
+
+RAGProjectConfig
+  project_id, qdrant_collection, embedding_model, sparse_model
+  default_chunker, retrieval_configuration, created_at, updated_at
+  belongs to Project
 
 Document
   id, project_id, current_version_id, source_type, filename
@@ -385,7 +396,7 @@ Registration, login, the health check, and the chunker catalog are unauthenticat
 
 | Domain | Supported | Not currently supported |
 |---|---|---|
-| Projects | Create, owner-scoped list/read, rename, soft delete, stable UUID collection name | Description, default chunker, advanced project settings, status/count/activity aggregates |
+| Projects | Create, owner-scoped list/read, rename, soft delete, durable capability associations, configured RAG defaults | Description, capability selection UI, status/count/activity aggregates |
 | Documents | Project list, read, version list, soft delete, new version through re-upload | Update metadata, read one version by ID, rollback, delete one version, direct chunk editing |
 | Ingestion runs | Project list, read, failed-run retry, SSE snapshot/replay/recovery | Cancel endpoint, retry history, per-stage duration/timestamp records, structured diagnostics |
 | Queries | Synchronous/streaming answer, document filter, provider/model choice, history, ranked trace | Regenerate endpoint, feedback endpoint, structured citations in the answer response |
@@ -396,6 +407,11 @@ membership. Organization endpoints enforce active membership for list/read and
 owner/admin membership for mutations. Registration can still create a member
 record for a supplied existing organization UUID. A project create/update
 payload only supports `name` plus optional `organization_id` on create.
+
+Project responses temporarily preserve the legacy `collection` and
+`qdrant_collection` fields and also expose `capabilities` and `rag_config`.
+RAG ingestion, document, query, pipeline, indexing, and cleanup paths resolve
+the durable `ragforge` association with `rag_project_configs` before operating.
 
 `DocumentVersion` is exposed only through `GET /documents/{document_id}/versions`. Query responses return `query_log_id` and optionally bare `retrieved_chunks`; linked document/version/rank/score details require the follow-up query-trace endpoint. Fully linked traces are available only for points that have PostgreSQL `Chunk` lineage.
 

@@ -13,11 +13,11 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import FieldCondition, Filter, MatchValue, PointStruct, SparseVector
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.project import Project
 from app.modules.ragforge.models.chunk import Chunk
 from app.modules.ragforge.models.document import Document
 from app.modules.ragforge.models.document_version import DocumentVersion
 from app.modules.ragforge.models.ingestion_run import IngestionRun
+from app.modules.ragforge.repositories.project_configs import RAGProject
 from app.modules.ragforge.repositories.chunks import replace_chunks_for_document_version
 from app.modules.ragforge.services.indexer import ensure_collection, qdrant
 from app.modules.ragforge.services.retrieval.sparse import embed_sparse
@@ -85,7 +85,7 @@ def _validate_chunks(chunks: Sequence[GoldChunk]) -> None:
 
 def _chunk_values(
     *,
-    project: Project,
+    project: RAGProject,
     document: Document,
     version: DocumentVersion,
     ingestion_run: IngestionRun | None,
@@ -111,7 +111,7 @@ def _chunk_values(
 
 def _payload(
     *,
-    project: Project,
+    project: RAGProject,
     document: Document,
     version: DocumentVersion,
     chunk: GoldChunk,
@@ -163,13 +163,14 @@ def _replace_qdrant_version(
 async def index_document_version_chunks(
     db: AsyncSession,
     *,
-    project: Project,
+    project: RAGProject,
     document: Document,
     version: DocumentVersion,
     ingestion_run: IngestionRun | None,
     chunks: Sequence[GoldChunk],
     client: QdrantClient | None = None,
-    sparse_embedder: Callable[[list[str]], list[SparseVector]] = embed_sparse,
+    sparse_model: str = "Qdrant/bm25",
+    sparse_embedder: Callable[[list[str]], list[SparseVector]] | None = None,
 ) -> list[Chunk]:
     """Rebuild one version in Qdrant and replace its PostgreSQL chunk rows.
 
@@ -184,7 +185,17 @@ async def index_document_version_chunks(
     if ingestion_run is not None and ingestion_run.document_version_id != version.id:
         raise ValueError("Ingestion run does not belong to the supplied document version")
 
-    sparse_vectors = await asyncio.to_thread(sparse_embedder, [chunk.text for chunk in chunks])
+    if sparse_embedder is None:
+        sparse_vectors = await asyncio.to_thread(
+            embed_sparse,
+            [chunk.text for chunk in chunks],
+            model_name=sparse_model,
+        )
+    else:
+        sparse_vectors = await asyncio.to_thread(
+            sparse_embedder,
+            [chunk.text for chunk in chunks],
+        )
     if len(sparse_vectors) != len(chunks):
         raise ValueError("Sparse embedder returned an unexpected number of vectors")
 
@@ -216,7 +227,7 @@ async def index_document_version_chunks(
     await asyncio.to_thread(
         _replace_qdrant_version,
         client=client or qdrant,
-        collection=project.qdrant_collection,
+        collection=project.config.qdrant_collection,
         version_id=version.id,
         points=points,
         vector_size=len(chunks[0].dense_vector),

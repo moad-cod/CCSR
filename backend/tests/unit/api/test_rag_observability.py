@@ -20,12 +20,28 @@ class _ScalarResult:
     def scalar_one_or_none(self):
         return self.value
 
+    def one_or_none(self):
+        return self.value
+
 
 class RagObservabilityTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.project = SimpleNamespace(id="project-id", collection="project_collection")
+        self.project = SimpleNamespace(id="project-id")
+        self.config = SimpleNamespace(
+            qdrant_collection="project_collection",
+            embedding_model="configured-embedding-model",
+            sparse_model="configured-sparse-model",
+            retrieval_configuration={
+                "strategy": "hybrid",
+                "top_k": 5,
+                "fetch_k": 30,
+                "use_rerank": True,
+            },
+        )
         self.db = SimpleNamespace(
-            execute=AsyncMock(return_value=_ScalarResult(self.project)),
+            execute=AsyncMock(
+                return_value=_ScalarResult((self.project, self.config))
+            ),
             commit=AsyncMock(),
             rollback=AsyncMock(),
         )
@@ -121,7 +137,7 @@ class RagObservabilityTests(unittest.IsolatedAsyncioTestCase):
             patch(
                 "app.api.query.asyncio.to_thread",
                 AsyncMock(side_effect=[[0.1, 0.2], [self.hit], llm_response]),
-            ),
+            ) as to_thread,
         ):
             response = await query(self.request, self.db, {"user_id": "user-id"})
 
@@ -145,6 +161,19 @@ class RagObservabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(finish_log.await_args.kwargs["latency_ms"], 0)
         self.db.commit.assert_awaited_once()
         set_cache.assert_awaited_once()
+        embedding_call = to_thread.await_args_list[0]
+        self.assertEqual(
+            embedding_call.kwargs["model_name"],
+            "configured-embedding-model",
+        )
+        retrieval_call = to_thread.await_args_list[1]
+        self.assertEqual(retrieval_call.kwargs["collection"], "project_collection")
+        self.assertEqual(
+            retrieval_call.kwargs["sparse_model"],
+            "configured-sparse-model",
+        )
+        self.assertEqual(retrieval_call.kwargs["top_k"], 5)
+        self.assertEqual(retrieval_call.kwargs["fetch_k"], 30)
 
     async def test_cache_hit_is_logged_with_cached_retrieval_trace(self):
         cached_hit = self.hit.to_cache_dict()

@@ -6,15 +6,12 @@ FASTAPI_AVAILABLE = find_spec("fastapi") is not None
 
 
 @unittest.skipUnless(FASTAPI_AVAILABLE, "FastAPI is not installed")
-class ChunkersApiTests(unittest.TestCase):
-    def test_get_chunkers_response_does_not_expose_callable_path(self):
-        from fastapi.testclient import TestClient
-        from app.main import app
+class ChunkersApiTests(unittest.IsolatedAsyncioTestCase):
+    async def test_get_chunkers_response_does_not_expose_callable_path(self):
+        from app.modules.ragforge.api.chunkers import get_chunkers
 
-        response = TestClient(app).get("/chunkers")
+        body = await get_chunkers()
 
-        self.assertEqual(response.status_code, 200)
-        body = response.json()
         self.assertEqual(len(body), 8)
         self.assertTrue(all("callable_path" not in chunker for chunker in body))
 

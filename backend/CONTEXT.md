@@ -32,11 +32,15 @@ changing those execution or research paths.
 - Organization list/read and mutations enforce membership and owner/admin roles.
 - Project, document, ingestion, and query access remains creator-owned through
   `Project.created_by`.
-- `Project.qdrant_collection` is mandatory, so the project model is not generic.
+- `project_capabilities` is the durable enablement boundary and
+  `rag_project_configs` owns Qdrant identity, embedding/sparse models, the
+  default chunker, and retrieval settings. `Project.qdrant_collection` remains
+  mandatory and dual-written temporarily for API/schema compatibility.
 - `IngestionRun.airflow_dag_run_id` is also used for Celery workflow IDs.
 - The application root registers RAGForge in the platform capability registry;
-  project/account deletion invokes its lifecycle hooks without importing RAG
-  code from platform routes.
+  project creation provisions its default association/configuration, and
+  project/account deletion invokes hooks only for enabled projects without
+  importing RAG code from platform routes.
 
 Historical authentication, organization, and RAG imports are compatibility
 aliases to the canonical ownership packages. Keep them until downstream code

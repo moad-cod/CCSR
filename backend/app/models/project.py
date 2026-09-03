@@ -27,9 +27,23 @@ class Project(Base):
     chunks = relationship("Chunk", back_populates="project", cascade="all, delete-orphan")
     embedding_runs = relationship("EmbeddingRun", back_populates="project", cascade="all, delete-orphan")
     query_logs = relationship("QueryLog", back_populates="project", cascade="all, delete-orphan")
+    capabilities = relationship(
+        "ProjectCapability",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    rag_config = relationship(
+        "RAGProjectConfig",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
     @property
     def collection(self) -> str:
+        rag_config = self.__dict__.get("rag_config")
+        if rag_config is not None:
+            return rag_config.qdrant_collection
         return self.qdrant_collection
 
     @collection.setter

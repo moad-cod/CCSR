@@ -5,7 +5,11 @@ import unittest
 from unittest.mock import AsyncMock, Mock, call, patch
 
 from app.modules.ragforge import lifecycle
-from app.platform.capabilities import AccountDeletionContext, ProjectDeletionContext
+from app.platform.capabilities import (
+    AccountDeletionContext,
+    ProjectDeletionContext,
+    ProjectProvisioningContext,
+)
 
 
 class _DocumentsResult:
@@ -43,6 +47,15 @@ class RAGForgeLifecycleTests(unittest.IsolatedAsyncioTestCase):
         project = SimpleNamespace(id="project-id", collection="project_collection")
 
         with (
+            patch.object(
+                lifecycle.project_config_repository,
+                "get_rag_project_config",
+                AsyncMock(
+                    return_value=SimpleNamespace(
+                        qdrant_collection="project_collection"
+                    )
+                ),
+            ),
             patch.object(
                 lifecycle.asyncio,
                 "to_thread",
@@ -87,6 +100,15 @@ class RAGForgeLifecycleTests(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch.object(
+                lifecycle.project_config_repository,
+                "get_rag_project_config",
+                AsyncMock(
+                    return_value=SimpleNamespace(
+                        qdrant_collection="project_collection"
+                    )
+                ),
+            ),
+            patch.object(
                 lifecycle.asyncio,
                 "to_thread",
                 AsyncMock(side_effect=_run_inline),
@@ -108,11 +130,27 @@ class RAGForgeLifecycleTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_account_hook_preserves_collection_only_cleanup(self):
         projects = [
-            SimpleNamespace(collection="project_one"),
-            SimpleNamespace(collection="project_two"),
+            SimpleNamespace(id="project-one"),
+            SimpleNamespace(id="project-two"),
         ]
 
-        with patch.object(lifecycle, "_delete_collection", Mock()) as delete_collection:
+        with (
+            patch.object(
+                lifecycle.project_config_repository,
+                "list_rag_project_configs",
+                AsyncMock(
+                    return_value={
+                        "project-one": SimpleNamespace(
+                            qdrant_collection="project_one"
+                        ),
+                        "project-two": SimpleNamespace(
+                            qdrant_collection="project_two"
+                        ),
+                    }
+                ),
+            ),
+            patch.object(lifecycle, "_delete_collection", Mock()) as delete_collection,
+        ):
             await lifecycle.before_account_delete(
                 AccountDeletionContext(
                     db=SimpleNamespace(),
@@ -129,6 +167,24 @@ class RAGForgeLifecycleTests(unittest.IsolatedAsyncioTestCase):
                 call("project_two_multimodal"),
             ]
         )
+
+    async def test_project_provisioning_creates_rag_configuration(self):
+        db = SimpleNamespace(add=Mock(), flush=AsyncMock())
+        project = SimpleNamespace(
+            id="project-id",
+            qdrant_collection="project_collection",
+        )
+
+        await lifecycle.after_project_create(
+            ProjectProvisioningContext(db=db, project=project)
+        )
+
+        config = db.add.call_args.args[0]
+        self.assertEqual(config.project_id, "project-id")
+        self.assertEqual(config.qdrant_collection, "project_collection")
+        self.assertEqual(config.default_chunker, "paragraph")
+        self.assertEqual(config.retrieval_configuration["strategy"], "hybrid")
+        db.flush.assert_awaited_once()
 
 
 if __name__ == "__main__":

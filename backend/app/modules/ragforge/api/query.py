@@ -24,6 +24,8 @@ from app.modules.ragforge.models.query_log import QueryLog
 from app.modules.ragforge.models.retrieval_log import RetrievalLog
 from app.modules.ragforge.repositories import query_logs as query_log_repository
 from app.modules.ragforge.repositories import retrieval_logs as retrieval_log_repository
+from app.modules.ragforge.repositories import project_configs as project_config_repository
+from app.modules.ragforge.repositories.project_configs import RAGProject
 from app.modules.ragforge.services.embedder import embed_query
 from app.modules.ragforge.services.query_cache import cache_key, get_cached_query, set_cached_query
 from app.modules.ragforge.services.query_observability import normalized_question_hash, retrieval_log_values
@@ -125,14 +127,11 @@ async def _authorize_query(
     db: AsyncSession,
     user_id: str,
 ):
-    result = await db.execute(
-        select(Project).where(
-            Project.id == request.project_id,
-            Project.created_by == user_id,
-            Project.deleted_at.is_(None),
-        )
+    project = await project_config_repository.get_rag_project(
+        db,
+        request.project_id,
+        user_id=user_id,
     )
-    project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(403, "Project not found or access denied")
 
@@ -149,15 +148,16 @@ async def _authorize_query(
     return project
 
 
-async def _get_owned_project(db: AsyncSession, project_id: str, user_id: str) -> Project:
-    result = await db.execute(
-        select(Project).where(
-            Project.id == project_id,
-            Project.created_by == user_id,
-            Project.deleted_at.is_(None),
-        )
+async def _get_owned_project(
+    db: AsyncSession,
+    project_id: str,
+    user_id: str,
+) -> RAGProject:
+    project = await project_config_repository.get_rag_project(
+        db,
+        project_id,
+        user_id=user_id,
     )
-    project = result.scalar_one_or_none()
     if project is None:
         raise HTTPException(404, "Project not found")
     return project
@@ -208,7 +208,7 @@ def _response_payload(
         "query_log_id": query_log_id,
         "question": request.question,
         "project_id": request.project_id,
-        "collection": project.collection,
+        "collection": project.config.qdrant_collection,
         "provider": request.provider,
         "model": model,
         "use_parent_context": request.use_parent_context,
@@ -321,16 +321,25 @@ async def _execute_query(
             return response_payload
 
         await _notify(emit, "query.embedding")
-        query_embedding = await asyncio.to_thread(embed_query, request.question)
+        query_embedding = await asyncio.to_thread(
+            embed_query,
+            request.question,
+            model_name=project.config.embedding_model,
+        )
         await _notify(emit, "query.retrieving")
         hits = await asyncio.to_thread(
             search,
             embedding=query_embedding,
             project_id=request.project_id,
-            collection=project.collection,
+            collection=project.config.qdrant_collection,
             query_text=request.question,
+            top_k=project.retrieval_top_k,
+            fetch_k=project.retrieval_fetch_k,
             document_id=request.document_id,
             use_parent_context=request.use_parent_context,
+            use_hybrid=project.retrieval_strategy == "hybrid",
+            use_rerank=project.use_rerank,
+            sparse_model=project.config.sparse_model,
         )
         await _notify(emit, "query.reranking", retrieved_chunks=len(hits))
 
@@ -632,21 +641,18 @@ async def multimodal_query(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Project).where(
-            Project.id == request.project_id,
-            Project.created_by == user["user_id"],
-            Project.deleted_at.is_(None),
-        )
+    project = await project_config_repository.get_rag_project(
+        db,
+        request.project_id,
+        user_id=user["user_id"],
     )
-    project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(403, "Project not found or access denied")
 
     from app.modules.ragforge.services.chunkers.multimodal import embed_query_tokens
 
     query_vectors = await asyncio.to_thread(embed_query_tokens, request.question)
-    collection = f"{project.collection}_multimodal"
+    collection = f"{project.config.qdrant_collection}_multimodal"
 
     results = await asyncio.to_thread(
         qdrant.query_points,

@@ -34,7 +34,12 @@ def _merge_short_chunks(chunks: list[str], min_chunk_len: int) -> list[str]:
     return merged
 
 
-def chunk(text: str, threshold: float = 0.5, min_chunk_len: int = 50) -> list[str]:
+def chunk(
+    text: str,
+    threshold: float = 0.5,
+    min_chunk_len: int = 50,
+    model_name: str | None = None,
+) -> list[str]:
     """Split text when adjacent sentence embeddings indicate a topic shift."""
     if not -1.0 <= threshold <= 1.0:
         raise ValueError("threshold must be between -1.0 and 1.0")
@@ -47,7 +52,10 @@ def chunk(text: str, threshold: float = 0.5, min_chunk_len: int = 50) -> list[st
     if len(sentences) == 1:
         return sentences
 
-    embeddings = np.asarray(embed_texts(sentences), dtype=np.float32)
+    embeddings = np.asarray(
+        embed_texts(sentences, model_name=model_name),
+        dtype=np.float32,
+    )
     if embeddings.ndim != 2 or embeddings.shape[0] != len(sentences):
         raise ValueError("embedding backend returned an unexpected number of vectors")
 

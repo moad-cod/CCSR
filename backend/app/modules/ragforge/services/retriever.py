@@ -19,6 +19,9 @@ def search(
     document_id: str | None = None,
     use_parent_context: bool = False,
     use_hybrid: bool = True,
+    fetch_k: int = 30,
+    use_rerank: bool = True,
+    sparse_model: str = "Qdrant/bm25",
 ) -> list[RetrievalHit]:
 
     if use_hybrid:
@@ -28,8 +31,11 @@ def search(
             project_id=project_id,
             collection=collection,
             top_k=top_k,
+            fetch_k=fetch_k,
             document_id=document_id,
             use_parent_context=use_parent_context,
+            use_rerank=use_rerank,
+            sparse_model=sparse_model,
         )
 
     # dense-only fallback (old behavior)

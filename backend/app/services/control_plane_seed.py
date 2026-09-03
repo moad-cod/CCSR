@@ -17,10 +17,18 @@ from app.modules.ragforge.models import (
     IngestionRun,
     QueryLog,
     RetrievalLog,
+    RAGProjectConfig,
+)
+from app.modules.ragforge.models.project_config import (
+    DEFAULT_CHUNKER,
+    DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_RETRIEVAL_CONFIGURATION,
+    DEFAULT_SPARSE_MODEL,
 )
 from app.modules.ragforge.services.chunk_indexing import qdrant_point_id
 from app.modules.ragforge.services.query_observability import normalized_question_hash
 from app.platform.accounts.model import User
+from app.platform.capabilities.model import ProjectCapability
 from app.platform.organizations.membership import OrganizationMembership
 from app.platform.organizations.model import Organization
 
@@ -113,15 +121,41 @@ async def seed_control_plane(
         user_id=ids["user"],
         role="owner",
     )
+    collection = f"ragforge_seed_{slug.replace('-', '_')}"
     await _get_or_add(
         db,
         Project,
         ids["project"],
         organization_id=ids["organization"],
         name=f"Seed Project {namespace}",
-        qdrant_collection=f"ragforge_seed_{slug.replace('-', '_')}",
+        qdrant_collection=collection,
         created_by=ids["user"],
     )
+    capability = await db.get(
+        ProjectCapability,
+        (ids["project"], "ragforge"),
+    )
+    if capability is None:
+        db.add(
+            ProjectCapability(
+                project_id=ids["project"],
+                capability_key="ragforge",
+            )
+        )
+        await db.flush()
+    rag_config = await db.get(RAGProjectConfig, ids["project"])
+    if rag_config is None:
+        db.add(
+            RAGProjectConfig(
+                project_id=ids["project"],
+                qdrant_collection=collection,
+                embedding_model=DEFAULT_EMBEDDING_MODEL,
+                sparse_model=DEFAULT_SPARSE_MODEL,
+                default_chunker=DEFAULT_CHUNKER,
+                retrieval_configuration=dict(DEFAULT_RETRIEVAL_CONFIGURATION),
+            )
+        )
+        await db.flush()
     document = await _get_or_add(
         db,
         Document,

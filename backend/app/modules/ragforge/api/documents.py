@@ -5,12 +5,12 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.platform.access.authentication import get_current_user
 from app.core.db import get_db
-from app.models.project import Project
 from app.modules.ragforge.models.document import Document
 from app.modules.ragforge.models.document_version import DocumentVersion
 from app.modules.ragforge.repositories import document_versions as version_repository
 from app.modules.ragforge.repositories import documents as document_repository
-from app.repositories import projects as project_repository
+from app.modules.ragforge.repositories import project_configs as project_config_repository
+from app.modules.ragforge.repositories.project_configs import RAGProject
 import asyncio
 
 router = APIRouter()
@@ -82,8 +82,12 @@ def _document_version_payload(version: DocumentVersion) -> DocumentVersionRespon
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-async def _get_project(project_id: str, user_id: str, db: AsyncSession) -> Project:
-    project = await project_repository.get_owned_project(db, project_id, user_id)
+async def _get_project(project_id: str, user_id: str, db: AsyncSession) -> RAGProject:
+    project = await project_config_repository.get_rag_project(
+        db,
+        project_id,
+        user_id=user_id,
+    )
     if not project:
         raise HTTPException(403, "Project not found or access denied")
     return project
@@ -92,6 +96,7 @@ async def _get_document(document_id: str, user_id: str, db: AsyncSession) -> Doc
     doc = await document_repository.get_owned_document(db, document_id, user_id)
     if not doc:
         raise HTTPException(404, "Document not found")
+    await _get_project(doc.project_id, user_id, db)
     return doc
 
 
@@ -145,7 +150,11 @@ async def delete_document(
     # delete from Qdrant first
     from app.modules.ragforge.services.indexer import delete_document_chunks
     project = await _get_project(doc.project_id, user["user_id"], db)
-    await asyncio.to_thread(delete_document_chunks, document_id=doc.id, collection=project.collection)
+    await asyncio.to_thread(
+        delete_document_chunks,
+        document_id=doc.id,
+        collection=project.config.qdrant_collection,
+    )
 
     if doc.source_type == "multimodal":
         from app.modules.ragforge.services.storage import delete_document_images

@@ -6,15 +6,14 @@ from qdrant_client.models import SparseVector
 
 from app.core.config import settings
 
-_sparse_model = None
+_sparse_models: dict[str, SparseTextEmbedding] = {}
 _TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_]+")
 
 
-def _get_sparse_model() -> SparseTextEmbedding:
-    global _sparse_model
-    if _sparse_model is None:
-        _sparse_model = SparseTextEmbedding(model_name="Qdrant/bm25")
-    return _sparse_model
+def _get_sparse_model(model_name: str) -> SparseTextEmbedding:
+    if model_name not in _sparse_models:
+        _sparse_models[model_name] = SparseTextEmbedding(model_name=model_name)
+    return _sparse_models[model_name]
 
 
 def _deterministic_sparse(text: str) -> SparseVector:
@@ -30,19 +29,27 @@ def _deterministic_sparse(text: str) -> SparseVector:
     )
 
 
-def embed_sparse(texts: list[str]) -> list[SparseVector]:
+def embed_sparse(
+    texts: list[str],
+    *,
+    model_name: str = "Qdrant/bm25",
+) -> list[SparseVector]:
     if not texts:
         return []
     if settings.EMBEDDING_BACKEND == "deterministic":
         return [_deterministic_sparse(text) for text in texts]
     if settings.EMBEDDING_BACKEND != "fastembed":
         raise ValueError(f"Unsupported embedding backend {settings.EMBEDDING_BACKEND!r}")
-    embeddings = list(_get_sparse_model().embed(texts))
+    embeddings = list(_get_sparse_model(model_name).embed(texts))
     return [
         SparseVector(indices=e.indices.tolist(), values=e.values.tolist())
         for e in embeddings
     ]
 
 
-def embed_sparse_query(query: str) -> SparseVector:
-    return embed_sparse([query])[0]
+def embed_sparse_query(
+    query: str,
+    *,
+    model_name: str = "Qdrant/bm25",
+) -> SparseVector:
+    return embed_sparse([query], model_name=model_name)[0]

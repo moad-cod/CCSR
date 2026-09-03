@@ -29,9 +29,10 @@ def index_chunks(
     project_id: str,
     document_id: str,
     collection: str,
+    sparse_model: str = "Qdrant/bm25",
 ):
     ensure_collection(collection)
-    sparse_vectors = embed_sparse(chunks)
+    sparse_vectors = embed_sparse(chunks, model_name=sparse_model)
 
     points = [
         PointStruct(
@@ -54,13 +55,15 @@ def index_hierarchical_chunks(
     project_id: str,
     document_id: str,
     collection: str,
+    embedding_model: str | None = None,
+    sparse_model: str = "Qdrant/bm25",
 ):
     from app.modules.ragforge.services.embedder import embed_texts
     ensure_collection(collection)
 
     texts = [c.text for c in chunks]
-    embeddings = embed_texts(texts)
-    sparse_vectors = embed_sparse(texts)
+    embeddings = embed_texts(texts, model_name=embedding_model)
+    sparse_vectors = embed_sparse(texts, model_name=sparse_model)
 
     points = [
         PointStruct(

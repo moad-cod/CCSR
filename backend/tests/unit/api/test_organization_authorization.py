@@ -15,6 +15,7 @@ from app.api.organizations import (
     update_organization,
 )
 from app.api.projects import ProjectCreate, create_project
+from app.platform.capabilities import capability_registry
 from app.models import Organization, OrganizationMembership
 from app.models.organization_membership import (
     ORGANIZATION_ROLE_MEMBER,
@@ -156,6 +157,59 @@ class OrganizationAuthorizationTests(unittest.IsolatedAsyncioTestCase):
                 )
 
         self.assertEqual(context.exception.status_code, 403)
+
+    async def test_project_creation_provisions_capabilities_and_preserves_legacy_fields(self):
+        now = datetime(2026, 9, 3)
+        project = SimpleNamespace(
+            id="project-id",
+            organization_id=None,
+            name="Research Project",
+            qdrant_collection="project_project-id",
+            created_by="user-id",
+            created_at=now,
+            updated_at=now,
+        )
+        loaded_project = SimpleNamespace(
+            **project.__dict__,
+            capabilities=[SimpleNamespace(capability_key="ragforge")],
+            rag_config=SimpleNamespace(
+                qdrant_collection="project_project-id",
+                embedding_model="embedding-model",
+                sparse_model="sparse-model",
+                default_chunker="paragraph",
+                retrieval_configuration={"strategy": "hybrid"},
+            ),
+        )
+        db = SimpleNamespace(commit=AsyncMock())
+
+        with (
+            patch(
+                "app.api.projects.project_repository.create_project",
+                AsyncMock(return_value=project),
+            ),
+            patch(
+                "app.api.projects.project_repository.get_owned_project",
+                AsyncMock(return_value=loaded_project),
+            ),
+            patch.object(
+                capability_registry,
+                "provision_project",
+                AsyncMock(return_value=("ragforge",)),
+            ) as provision_project,
+        ):
+            result = await create_project(
+                ProjectCreate(name="Research Project"),
+                db=db,
+                user={"user_id": "user-id"},
+            )
+
+        context = provision_project.await_args.args[0]
+        self.assertIs(context.project, project)
+        self.assertEqual(result.collection, "project_project-id")
+        self.assertEqual(result.qdrant_collection, result.collection)
+        self.assertEqual(result.capabilities, ["ragforge"])
+        self.assertEqual(result.rag_config.embedding_model, "embedding-model")
+        db.commit.assert_awaited_once()
 
     async def test_profile_update_requires_organization_membership(self):
         account = SimpleNamespace(id="user-id", deleted_at=None)

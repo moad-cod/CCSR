@@ -158,9 +158,9 @@ def embed_texts(texts: list[str], *, model_name: str | None = None) -> list[list
     return [_normalize(vector) for vector in model.passage_embed(texts)]
 
 
-def embed_query(query: str) -> list[float]:
+def embed_query(query: str, *, model_name: str | None = None) -> list[float]:
     if settings.EMBEDDING_BACKEND == "deterministic":
         return _deterministic_embedding(query)
     if settings.EMBEDDING_BACKEND != "fastembed":
         raise ValueError(f"Unsupported embedding backend {settings.EMBEDDING_BACKEND!r}")
-    return _normalize(next(get_embedding_model().query_embed([query])))
+    return _normalize(next(get_embedding_model(model_name).query_embed([query])))

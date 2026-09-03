@@ -29,7 +29,9 @@ from app.models import (
     Organization,
     OrganizationMembership,
     Project,
+    ProjectCapability,
     QueryLog,
+    RAGProjectConfig,
     RetrievalLog,
     User,
 )
@@ -40,12 +42,15 @@ from app.services.control_plane_seed import seed_control_plane
 from app.services.control_plane_validation import CORE_TABLES, validate_control_plane_schema
 
 
-BACKEND_DIR = Path(__file__).resolve().parents[1]
+BACKEND_DIR = Path(__file__).resolve().parents[3]
 RUN_DATABASE_TESTS = os.getenv("RUN_DATABASE_TESTS") == "1"
 TEST_ENGINE = None
 TEST_SESSION_FACTORY = None
 MIGRATION_UP_TABLES = set()
 MIGRATION_DOWN_TABLES = set()
+MIGRATION_BACKFILL = None
+LEGACY_PROJECT_ID = "90000000-0000-0000-0000-000000000001"
+LEGACY_USER_ID = "90000000-0000-0000-0000-000000000002"
 
 
 def _test_database_url() -> str:
@@ -101,15 +106,84 @@ async def _table_names(database_url: str) -> set[str]:
     return set(names)
 
 
+async def _insert_legacy_project(database_url: str) -> None:
+    engine = create_async_engine(database_url, poolclass=NullPool)
+    async with engine.begin() as connection:
+        await connection.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, organization_id, email, full_name, hashed_password,
+                    created_at, updated_at, deleted_at
+                ) VALUES (
+                    :user_id, NULL, 'migration-backfill@ragforge.test',
+                    'Migration Backfill', 'not-for-authentication',
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL
+                )
+                """
+            ),
+            {"user_id": LEGACY_USER_ID},
+        )
+        await connection.execute(
+            text(
+                """
+                INSERT INTO projects (
+                    id, organization_id, name, qdrant_collection, created_by,
+                    created_at, updated_at, deleted_at
+                ) VALUES (
+                    :project_id, NULL, 'Legacy project',
+                    'legacy_project_collection', :user_id,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL
+                )
+                """
+            ),
+            {"project_id": LEGACY_PROJECT_ID, "user_id": LEGACY_USER_ID},
+        )
+    await engine.dispose()
+
+
+async def _read_migration_backfill(database_url: str):
+    engine = create_async_engine(database_url, poolclass=NullPool)
+    async with engine.connect() as connection:
+        row = (
+            await connection.execute(
+                text(
+                    """
+                    SELECT
+                        capability.capability_key,
+                        config.qdrant_collection,
+                        config.embedding_model,
+                        config.sparse_model,
+                        config.default_chunker,
+                        config.retrieval_configuration
+                    FROM project_capabilities AS capability
+                    JOIN rag_project_configs AS config
+                      ON config.project_id = capability.project_id
+                    WHERE capability.project_id = :project_id
+                    """
+                ),
+                {"project_id": LEGACY_PROJECT_ID},
+            )
+        ).mappings().one_or_none()
+    await engine.dispose()
+    return dict(row) if row is not None else None
+
+
 def setUpModule() -> None:
     if not RUN_DATABASE_TESTS:
         raise unittest.SkipTest("set RUN_DATABASE_TESTS=1 to run PostgreSQL integration tests")
 
-    global TEST_ENGINE, TEST_SESSION_FACTORY, MIGRATION_UP_TABLES, MIGRATION_DOWN_TABLES
+    global TEST_ENGINE, TEST_SESSION_FACTORY
+    global MIGRATION_UP_TABLES, MIGRATION_DOWN_TABLES, MIGRATION_BACKFILL
     database_url = _test_database_url()
     asyncio.run(_ensure_test_database(database_url))
 
     _run_alembic(database_url, "upgrade", "head")
+    _run_alembic(database_url, "downgrade", "base")
+    _run_alembic(database_url, "upgrade", "20260823_0005")
+    asyncio.run(_insert_legacy_project(database_url))
+    _run_alembic(database_url, "upgrade", "head")
+    MIGRATION_BACKFILL = asyncio.run(_read_migration_backfill(database_url))
     MIGRATION_UP_TABLES = asyncio.run(_table_names(database_url))
     _run_alembic(database_url, "downgrade", "base")
     MIGRATION_DOWN_TABLES = asyncio.run(_table_names(database_url))
@@ -131,6 +205,24 @@ class AlembicRoundTripTests(unittest.TestCase):
     def test_upgrade_creates_and_downgrade_removes_all_core_tables(self):
         self.assertTrue(CORE_TABLES.issubset(MIGRATION_UP_TABLES))
         self.assertTrue(CORE_TABLES.isdisjoint(MIGRATION_DOWN_TABLES))
+
+    def test_existing_projects_are_backfilled_as_configured_rag_projects(self):
+        self.assertIsNotNone(MIGRATION_BACKFILL)
+        self.assertEqual(MIGRATION_BACKFILL["capability_key"], "ragforge")
+        self.assertEqual(
+            MIGRATION_BACKFILL["qdrant_collection"],
+            "legacy_project_collection",
+        )
+        self.assertEqual(
+            MIGRATION_BACKFILL["embedding_model"],
+            "BAAI/bge-small-en-v1.5",
+        )
+        self.assertEqual(MIGRATION_BACKFILL["sparse_model"], "Qdrant/bm25")
+        self.assertEqual(MIGRATION_BACKFILL["default_chunker"], "paragraph")
+        self.assertEqual(
+            MIGRATION_BACKFILL["retrieval_configuration"]["strategy"],
+            "hybrid",
+        )
 
 
 class ControlPlaneDatabaseTests(unittest.IsolatedAsyncioTestCase):
@@ -183,6 +275,17 @@ class ControlPlaneDatabaseTests(unittest.IsolatedAsyncioTestCase):
             query_log.answer,
             "PostgreSQL stores durable control-plane state.",
         )
+        capability = await self.db.get(
+            ProjectCapability,
+            (self.seed.project_id, "ragforge"),
+        )
+        rag_config = await self.db.get(RAGProjectConfig, self.seed.project_id)
+        project = await self.db.get(Project, self.seed.project_id)
+        self.assertIsNotNone(capability)
+        self.assertIsNotNone(rag_config)
+        self.assertEqual(rag_config.qdrant_collection, project.qdrant_collection)
+        self.assertEqual(rag_config.default_chunker, "paragraph")
+        self.assertEqual(rag_config.retrieval_configuration["strategy"], "hybrid")
 
     async def test_document_current_version_and_lake_paths_are_linked(self):
         document = await self.db.get(Document, self.seed.document_id)
@@ -240,6 +343,28 @@ class ControlPlaneDatabaseTests(unittest.IsolatedAsyncioTestCase):
                 name="Duplicate collection",
                 qdrant_collection=project.qdrant_collection,
                 created_by=self.seed.user_id,
+            )
+        )
+        with self.assertRaises(IntegrityError):
+            await self.db.flush()
+
+    async def test_duplicate_rag_configuration_collection_is_rejected(self):
+        rag_config = await self.db.get(RAGProjectConfig, self.seed.project_id)
+        second_project_id = str(uuid.uuid4())
+        self.db.add(
+            Project(
+                id=second_project_id,
+                organization_id=self.seed.organization_id,
+                name="Second RAG project",
+                qdrant_collection=f"legacy_{second_project_id}",
+                created_by=self.seed.user_id,
+            )
+        )
+        await self.db.flush()
+        self.db.add(
+            RAGProjectConfig(
+                project_id=second_project_id,
+                qdrant_collection=rag_config.qdrant_collection,
             )
         )
         with self.assertRaises(IntegrityError):

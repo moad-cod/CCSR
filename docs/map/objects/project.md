@@ -1,6 +1,7 @@
 # Project
 
-**Status:** Implemented, but currently RAG-specific.
+**Status:** Implemented with durable capability associations; a legacy RAG
+collection column remains temporarily.
 
 **Authoritative sources:** [`project.py`](../../../backend/app/models/project.py),
 [`projects.py`](../../../backend/app/api/projects.py), and
@@ -11,10 +12,10 @@
 - Creator ownership, optional organization association, documents, ingestion,
   chunks, embeddings, query history, and lifecycle cleanup dispatched through
   the capability registry.
+- Durable capability associations and optional one-to-one RAG configuration.
 - Most project-scoped frontend routes and types.
 
 **Does not hit**
 
-- Durable capability associations, description, visibility, publication state,
-  research studies, generic workflows, or generic runs; these are not modeled
-  yet.
+- Description, visibility, publication state, research studies, generic
+  workflows, or generic runs; these are not modeled yet.

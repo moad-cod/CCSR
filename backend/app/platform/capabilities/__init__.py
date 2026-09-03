@@ -6,6 +6,7 @@ from app.platform.capabilities.contracts import (
     CapabilityLifecycle,
     LifecycleResult,
     ProjectDeletionContext,
+    ProjectProvisioningContext,
 )
 from app.platform.capabilities.registry import CapabilityRegistry, capability_registry
 
@@ -17,5 +18,6 @@ __all__ = [
     "CapabilityRegistry",
     "LifecycleResult",
     "ProjectDeletionContext",
+    "ProjectProvisioningContext",
     "capability_registry",
 ]
