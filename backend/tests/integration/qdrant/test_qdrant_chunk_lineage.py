@@ -15,12 +15,26 @@ from app.services.chunk_indexing import (
 )
 
 
+async def _run_inline(function, *args, **kwargs):
+    return function(*args, **kwargs)
+
+
 class QdrantChunkLineageTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
+        self.to_thread_patcher = patch(
+            "app.services.chunk_indexing.asyncio.to_thread",
+            AsyncMock(side_effect=_run_inline),
+        )
+        self.to_thread_patcher.start()
+        self.addCleanup(self.to_thread_patcher.stop)
         self.project = SimpleNamespace(
             id="10000000-0000-0000-0000-000000000001",
             organization_id="10000000-0000-0000-0000-000000000002",
-            qdrant_collection="project_10000000_0000_0000_0000_000000000001",
+            config=SimpleNamespace(
+                qdrant_collection=(
+                    "project_10000000_0000_0000_0000_000000000001"
+                )
+            ),
         )
         self.document = SimpleNamespace(
             id="20000000-0000-0000-0000-000000000001",

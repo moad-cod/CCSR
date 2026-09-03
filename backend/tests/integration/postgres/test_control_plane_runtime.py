@@ -24,7 +24,14 @@ from app.services.bronze_storage import object_key
 
 class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
     async def test_file_upload_lands_in_bronze_and_returns_run(self):
-        project = SimpleNamespace(id="project-id", organization_id=None)
+        project = SimpleNamespace(
+            id="project-id",
+            organization_id=None,
+            config=SimpleNamespace(
+                default_chunker="paragraph",
+                embedding_model="configured-embedding-model",
+            ),
+        )
         document = SimpleNamespace(id="document-id")
         version = SimpleNamespace(id="version-id")
         run = SimpleNamespace(id="run-id")
@@ -75,6 +82,10 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertIs(to_thread.await_args.args[0], upload_raw)
         self.assertEqual(create_version.await_args.kwargs["status"], "landed")
         self.assertIsNone(create_version.await_args.kwargs["silver_path"])
+        self.assertEqual(
+            create_version.await_args.kwargs["embedding_model"],
+            "configured-embedding-model",
+        )
         self.assertEqual(create_run.await_args.kwargs["status"], "landed")
         db.commit.assert_awaited_once()
         publish_event.assert_awaited_once_with(
@@ -315,7 +326,7 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
         project = SimpleNamespace(
             id="project-id",
             organization_id="organization-id",
-            qdrant_collection="project_collection",
+            config=SimpleNamespace(qdrant_collection="project_collection"),
         )
         document = SimpleNamespace(
             id="document-id",
@@ -338,18 +349,22 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
         async def get_model(model, _identifier):
             from app.models import Document as DocumentModel
             from app.models import DocumentVersion as VersionModel
-            from app.models import Project as ProjectModel
 
             return {
-                ProjectModel: project,
                 DocumentModel: document,
                 VersionModel: version,
             }[model]
 
         db.get.side_effect = get_model
-        with patch(
-            "app.api.internal_pipeline.ingestion_repository.get_ingestion_run",
-            AsyncMock(return_value=run),
+        with (
+            patch(
+                "app.api.internal_pipeline.ingestion_repository.get_ingestion_run",
+                AsyncMock(return_value=run),
+            ),
+            patch(
+                "app.api.internal_pipeline.project_config_repository.get_rag_project",
+                AsyncMock(return_value=project),
+            ),
         ):
             response = await read_ingestion_run("run-id", db)
 
@@ -368,7 +383,13 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
             document_version_id="version-id",
             status="gold_completed",
         )
-        project = SimpleNamespace(id="project-id", qdrant_collection="project_collection")
+        project = SimpleNamespace(
+            id="project-id",
+            config=SimpleNamespace(
+                qdrant_collection="project_collection",
+                sparse_model="configured-sparse-model",
+            ),
+        )
         document = SimpleNamespace(id="document-id")
         version = SimpleNamespace(id="version-id")
         db = SimpleNamespace(get=AsyncMock(), commit=AsyncMock())
@@ -376,10 +397,8 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
         async def get_model(model, _identifier):
             from app.models import Document as DocumentModel
             from app.models import DocumentVersion as VersionModel
-            from app.models import Project as ProjectModel
 
             return {
-                ProjectModel: project,
                 DocumentModel: document,
                 VersionModel: version,
             }[model]
@@ -400,6 +419,10 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
                 AsyncMock(return_value=run),
             ),
             patch(
+                "app.api.internal_pipeline.project_config_repository.get_rag_project",
+                AsyncMock(return_value=project),
+            ),
+            patch(
                 "app.api.internal_pipeline.index_document_version_chunks",
                 AsyncMock(return_value=[SimpleNamespace(id="chunk-id")]),
             ) as index_chunks,
@@ -410,6 +433,10 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response["qdrant_collection"], "project_collection")
         self.assertEqual(index_chunks.await_args.kwargs["version"], version)
         self.assertEqual(index_chunks.await_args.kwargs["chunks"][0].chunk_index, 0)
+        self.assertEqual(
+            index_chunks.await_args.kwargs["sparse_model"],
+            "configured-sparse-model",
+        )
         db.commit.assert_awaited_once()
 
 

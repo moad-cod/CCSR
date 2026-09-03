@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from app.api.ingest import stream_ingestion_run_events
 from app.api.internal_pipeline import PipelineStatusUpdate, update_ingestion_run
 from app.api.query import QueryRequest, _execute_query, stream_query
+from app.modules.ragforge.repositories.project_configs import RAGProject
 from app.services.event_stream import (
     ReplayResult,
     StreamEvent,
@@ -28,6 +29,9 @@ class _ScalarResult:
         self.value = value
 
     def scalar_one_or_none(self):
+        return self.value
+
+    def one_or_none(self):
         return self.value
 
 
@@ -328,9 +332,27 @@ class IngestionStreamingTests(unittest.IsolatedAsyncioTestCase):
 
 class QueryStreamingTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.project = SimpleNamespace(id="project-1", collection="project_collection")
+        project_record = SimpleNamespace(
+            id="project-1",
+            organization_id=None,
+            created_by="user-1",
+        )
+        config = SimpleNamespace(
+            qdrant_collection="project_collection",
+            embedding_model="configured-embedding-model",
+            sparse_model="configured-sparse-model",
+            retrieval_configuration={
+                "strategy": "hybrid",
+                "top_k": 5,
+                "fetch_k": 30,
+                "use_rerank": True,
+            },
+        )
+        self.project = RAGProject(project=project_record, config=config)
         self.db = SimpleNamespace(
-            execute=AsyncMock(return_value=_ScalarResult(self.project)),
+            execute=AsyncMock(
+                return_value=_ScalarResult((project_record, config))
+            ),
             commit=AsyncMock(),
             rollback=AsyncMock(),
         )

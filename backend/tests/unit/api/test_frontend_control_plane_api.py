@@ -41,11 +41,17 @@ class FrontendControlPlaneApiTests(unittest.IsolatedAsyncioTestCase):
             route="rag-stream",
             created_at=datetime(2026, 7, 16),
         )
-        db = SimpleNamespace(execute=AsyncMock(return_value=_ScalarResult(project)))
+        db = SimpleNamespace()
 
-        with patch(
-            "app.api.query.query_log_repository.get_project_query_history",
-            AsyncMock(return_value=[query_log]),
+        with (
+            patch(
+                "app.api.query.project_config_repository.get_rag_project",
+                AsyncMock(return_value=project),
+            ),
+            patch(
+                "app.api.query.query_log_repository.get_project_query_history",
+                AsyncMock(return_value=[query_log]),
+            ),
         ):
             result = await query_history(
                 "project-id",
