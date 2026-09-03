@@ -100,7 +100,7 @@ not implemented.
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| `POST` | `/projects/` | Create an owner-scoped project and reserve a `project_<uuid>` Qdrant collection name. |
+| `POST` | `/projects/` | Create an owner-scoped project, persist default capability associations, and provision its RAG configuration. |
 | `GET` | `/projects/` | List projects created by the current user. |
 | `GET` | `/projects/{project_id}` | Fetch an owned project. |
 | `PATCH` | `/projects/{project_id}` | Rename a project without changing its Qdrant collection. |
@@ -112,12 +112,12 @@ not implemented.
 
 Project/document tenancy is ownership-based (`Project.created_by`), not organization-role-based.
 
-Project and account deletion call the platform capability registry before
-committing their soft-delete state. The application root registers RAGForge's
-hooks, which preserve the existing Qdrant cleanup, document status updates, and
-best-effort multimodal image deletion. The platform routes do not import
-RAGForge models or services. This is an in-process lifecycle seam, not a durable
-project-capability association.
+Project creation persists default-enabled associations in
+`project_capabilities` and invokes capability provisioning hooks; RAGForge adds
+its row in `rag_project_configs`. Project and account deletion query those
+associations before dispatching registered hooks. The RAGForge hooks preserve
+Qdrant cleanup, document status updates, and best-effort multimodal image
+deletion. Platform routes do not import RAGForge models or services.
 
 ### Ingestion endpoints
 
@@ -416,6 +416,8 @@ erDiagram
     ORGANIZATIONS ||--o{ USERS : contains
     ORGANIZATIONS ||--o{ PROJECTS : groups
     USERS ||--o{ PROJECTS : creates
+    PROJECTS ||--o{ PROJECT_CAPABILITIES : enables
+    PROJECTS ||--o| RAG_PROJECT_CONFIGS : configures
     USERS ||--o{ INGESTION_RUNS : starts
     USERS ||--o{ QUERY_LOGS : asks
     PROJECTS ||--o{ DOCUMENTS : contains
@@ -435,7 +437,9 @@ erDiagram
 | --- | --- |
 | `Organization` / `organizations` | Optional grouping for users/projects. Soft-deleted. |
 | `User` / `users` | Login identity, bcrypt password hash, optional organization. Soft-deleted. |
-| `Project` / `projects` | Owner-scoped RAG workspace with a unique Qdrant collection. Soft-deleted. |
+| `Project` / `projects` | Owner-scoped workspace. Soft-deleted; its legacy unique collection column is retained during expansion. |
+| `ProjectCapability` / `project_capabilities` | Durable many-capability enablement association keyed by project and capability. |
+| `RAGProjectConfig` / `rag_project_configs` | RAG-owned collection, model, chunker, and retrieval configuration for an enabled project. |
 | `Document` / `documents` | Logical source within a project. Tracks source type, current version, and lifecycle. Soft-deleted. |
 | `DocumentVersion` / `document_versions` | Immutable content identity and version number plus artifact, parser, chunker, model, status, and error metadata. |
 | `IngestionRun` / `ingestion_runs` | One pipeline attempt for a specific document version, including timestamps and a legacy `airflow_dag_run_id` orchestration ID field used by both Airflow and Celery in the current branch. |
@@ -444,7 +448,11 @@ erDiagram
 | `QueryLog` / `query_logs` | Durable question, answer, provider/model, latency, cache, route, and optional evaluation scores. |
 | `RetrievalLog` / `retrieval_logs` | Ranked retrieval evidence, scores, strategy, and optional link to a durable chunk. |
 
-Important uniqueness rules include user email, project collection, `(document, version_number)`, `(document, content_hash)`, `(version, chunk_index)`, Qdrant point ID, and `(version, embedding_model)`. Chunk content hashes are indexed but not unique.
+Important uniqueness rules include user email, the temporary legacy project
+collection, the RAG configuration collection, `(project, capability)`,
+`(document, version_number)`, `(document, content_hash)`, `(version,
+chunk_index)`, Qdrant point ID, and `(version, embedding_model)`. Chunk content
+hashes are indexed but not unique.
 
 ### Lifecycle states
 
@@ -483,8 +491,9 @@ Embedding-run states are `queued`, `running`, `completed`, `failed`, and `cancel
 | `app/core/config.py` | Pydantic environment settings and provider/R2 validation. |
 | `app/core/db.py` | Async SQLAlchemy engine, session factory, declarative base, and FastAPI dependency. |
 | `app/platform/access/authentication.py` | Decode HS256 JWT and expose `user_id`; database existence/soft-delete checks occur in endpoint code. |
-| `app/platform/capabilities/` | Capability definitions, deterministic registry ordering, lifecycle contexts, and aggregated cleanup results. |
-| `app/modules/ragforge/capability.py`, `app/modules/ragforge/lifecycle.py` | RAGForge registration plus project/account cleanup contributed through platform contracts. |
+| `app/platform/capabilities/` | Capability definitions, durable project associations, deterministic lifecycle dispatch, contexts, and aggregated cleanup results. |
+| `app/modules/ragforge/capability.py`, `app/modules/ragforge/lifecycle.py` | RAGForge registration plus project configuration provisioning and project/account cleanup contributed through platform contracts. |
+| `app/modules/ragforge/models/project_config.py`, `app/modules/ragforge/repositories/project_configs.py` | RAG-owned settings and the enabled/configured project aggregate used by RAG readers. |
 | `app/modules/ragforge/models/statuses.py` | Canonical status values, SQL check expression helper, and model-level validation. |
 | `app/repositories/projects.py` | Project creation, ownership lookup/listing, and rename. |
 | `app/modules/ragforge/repositories/documents.py` | Logical-document lookup, ownership lookup, current version/status updates, and soft deletion. |
