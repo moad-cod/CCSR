@@ -9,6 +9,10 @@ The repository remains one deployable modular monolith.
 - The backend now has canonical platform authentication/organization and
   RAGForge ownership packages. Project and account deletion invoke registered
   capability lifecycle hooks instead of importing RAGForge cleanup directly.
+- Project capability enablement is durable in `project_capabilities`, while
+  RAG-owned project settings live in `rag_project_configs`. Existing projects
+  are backfilled as RAGForge-enabled; legacy collection fields remain during
+  the compatibility window.
 - The frontend is one Next.js application with shared UI primitives, but project
   navigation and data loading still assume RAG capabilities.
 - PostgreSQL is authoritative for durable application state. Redis is
@@ -29,8 +33,8 @@ RAGForge module -> stable platform contracts
 platform core -X-> RAGForge business logic
 ```
 
-Do not introduce `project.type` branching. Projects will enable capabilities
-through associations, and infrastructure selection will belong to registered
+Do not introduce `project.type` branching. Projects enable capabilities
+through associations, and infrastructure selection belongs to registered
 workflow definitions rather than browser input.
 
 ## Authoritative navigation
