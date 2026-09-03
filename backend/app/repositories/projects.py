@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models import Project
 
@@ -12,7 +13,15 @@ async def create_project(db: AsyncSession, **values) -> Project:
 
 
 async def get_project(db: AsyncSession, project_id: str) -> Project | None:
-    return await db.get(Project, project_id)
+    result = await db.execute(
+        select(Project)
+        .options(
+            selectinload(Project.capabilities),
+            selectinload(Project.rag_config),
+        )
+        .where(Project.id == project_id)
+    )
+    return result.scalar_one_or_none()
 
 
 async def get_owned_project(db: AsyncSession, project_id: str, user_id: str) -> Project | None:
@@ -21,6 +30,9 @@ async def get_owned_project(db: AsyncSession, project_id: str, user_id: str) -> 
             Project.id == project_id,
             Project.created_by == user_id,
             Project.deleted_at.is_(None),
+        ).options(
+            selectinload(Project.capabilities),
+            selectinload(Project.rag_config),
         )
     )
     return result.scalar_one_or_none()
@@ -29,6 +41,10 @@ async def get_owned_project(db: AsyncSession, project_id: str, user_id: str) -> 
 async def list_user_projects(db: AsyncSession, user_id: str) -> list[Project]:
     result = await db.execute(
         select(Project)
+        .options(
+            selectinload(Project.capabilities),
+            selectinload(Project.rag_config),
+        )
         .where(Project.created_by == user_id, Project.deleted_at.is_(None))
         .order_by(Project.created_at.desc())
     )
