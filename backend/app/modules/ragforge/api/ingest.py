@@ -7,25 +7,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 from app.platform.access.authentication import get_current_user
 from app.core.db import AsyncSessionLocal, get_db
-from app.models.project import Project
 from app.modules.ragforge.models.document import Document
 from app.modules.ragforge.models.document_version import DocumentVersion
 from app.modules.ragforge.repositories import document_versions as version_repository
 from app.modules.ragforge.repositories import documents as document_repository
 from app.modules.ragforge.repositories import embedding_runs as embedding_repository
 from app.modules.ragforge.repositories import ingestion_runs as ingestion_repository
-from app.repositories import projects as project_repository
+from app.modules.ragforge.repositories import project_configs as project_config_repository
+from app.modules.ragforge.repositories.project_configs import RAGProject
 from app.modules.ragforge.services.parser import parse_document, parse_url, parse_gdrive
 from app.modules.ragforge.services.embedder import embed_texts
 from app.modules.ragforge.services.indexer import index_chunks, index_hierarchical_chunks, index_multimodal_pages
 from app.modules.ragforge.services.chunkers.registry import (
     get_chunker,
     get_chunker_definition,
-    get_default_chunker,
     validate_chunker,
 )
 from app.modules.ragforge.services.chunkers import late_chunking as late_chunking_module
 from app.modules.ragforge.services.chunkers import hierarchical as hierarchical_module
+from app.modules.ragforge.services.chunkers import semantic as semantic_module
 from app.core.config import settings
 from app.modules.ragforge.services.storage import delete_document_images
 from app.modules.ragforge.services.bronze_storage import delete_raw_file, upload_raw_file
@@ -70,42 +70,88 @@ STALE_DISPATCH_MESSAGE = (
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-async def _get_project(project_id: str, user_id: str, db: AsyncSession) -> Project:
-    project = await project_repository.get_owned_project(db, project_id, user_id)
+async def _get_project(project_id: str, user_id: str, db: AsyncSession) -> RAGProject:
+    project = await project_config_repository.get_rag_project(
+        db,
+        project_id,
+        user_id=user_id,
+    )
     if not project:
         raise HTTPException(403, "Project not found or access denied")
     return project
 
-def _build_chunks(raw_text: list[str], chunker_id: str) -> list[str]:
+def _build_chunks(
+    raw_text: list[str],
+    chunker_id: str,
+    embedding_model: str,
+) -> list[str]:
+    if chunker_id == "semantic":
+        return semantic_module.chunk(
+            "\n\n".join(raw_text),
+            model_name=embedding_model,
+        )
     chunker = get_chunker(chunker_id)
     return chunker("\n\n".join(raw_text))
 
-def _index(chunks: list[str], project_id: str, document_id: str, collection: str):
+def _index(
+    chunks: list[str],
+    project_id: str,
+    document_id: str,
+    collection: str,
+    embedding_model: str,
+    sparse_model: str,
+):
     if not chunks:
         raise HTTPException(400, "No indexable text was extracted from the document")
-    embeddings = embed_texts(chunks)
+    embeddings = embed_texts(chunks, model_name=embedding_model)
     index_chunks(
         chunks=chunks,
         embeddings=embeddings,
         project_id=project_id,
         document_id=document_id,
         collection=collection,
+        sparse_model=sparse_model,
     )
 
-def _index_late_chunking(text: str, project_id: str, document_id: str, collection: str) -> list[str]:
-    chunks, embeddings = late_chunking_module.chunk_with_embeddings(text)
+def _index_late_chunking(
+    text: str,
+    project_id: str,
+    document_id: str,
+    collection: str,
+    embedding_model: str,
+    sparse_model: str,
+) -> list[str]:
+    chunks, embeddings = late_chunking_module.chunk_with_embeddings(
+        text,
+        model_name=embedding_model,
+    )
     index_chunks(
         chunks=chunks,
         embeddings=embeddings,
         project_id=project_id,
         document_id=document_id,
         collection=collection,
+        sparse_model=sparse_model,
     )
     return chunks
 
-def _index_hierarchical(text: str, project_id: str, document_id: str, collection: str) -> list[str]:
+def _index_hierarchical(
+    text: str,
+    project_id: str,
+    document_id: str,
+    collection: str,
+    embedding_model: str,
+    sparse_model: str,
+) -> list[str]:
     chunks = hierarchical_module.chunk_hierarchical(text, namespace=document_id)
-    index_hierarchical_chunks(chunks, project_id, document_id, collection)
+    index_hierarchical_chunks(
+        chunks,
+        project_id,
+        document_id,
+        collection,
+        embedding_model=embedding_model,
+        sparse_model=sparse_model,
+    )
     return [c.text for c in chunks if c.chunk_type == "child"]
 
 def _process_and_index(
@@ -114,19 +160,40 @@ def _process_and_index(
     project_id: str,
     document_id: str,
     collection: str,
+    embedding_model: str,
+    sparse_model: str,
 ) -> list[str]:
     """Single entry point for all chunking strategies."""
     full_text = "\n\n".join(raw_text)
     if chunker == "late_chunking":
-        return _index_late_chunking(full_text, project_id, document_id, collection)
+        return _index_late_chunking(
+            full_text,
+            project_id,
+            document_id,
+            collection,
+            embedding_model,
+            sparse_model,
+        )
     elif chunker == "hierarchical":
-        return _index_hierarchical(full_text, project_id, document_id, collection)
+        return _index_hierarchical(
+            full_text,
+            project_id,
+            document_id,
+            collection,
+            embedding_model,
+            sparse_model,
+        )
     else:
-        chunks = _build_chunks(raw_text, chunker)
-        _index(chunks, project_id, document_id, collection)
+        chunks = _build_chunks(raw_text, chunker, embedding_model)
+        _index(
+            chunks,
+            project_id,
+            document_id,
+            collection,
+            embedding_model,
+            sparse_model,
+        )
         return chunks
-
-EMBEDDING_MODEL = settings.EMBEDDING_MODEL
 
 
 def _content_hash(data: bytes | str | list[str]) -> str:
@@ -139,13 +206,13 @@ def _content_hash(data: bytes | str | list[str]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def _object_prefix(project: Project, document_id: str, version_number: int) -> str:
+def _object_prefix(project: RAGProject, document_id: str, version_number: int) -> str:
     org_id = project.organization_id or "none"
     return f"org_id={org_id}/project_id={project.id}/document_id={document_id}/version={version_number}"
 
 
 def _version_paths(
-    project: Project,
+    project: RAGProject,
     document_id: str,
     version_number: int,
     filename: str | None,
@@ -165,7 +232,7 @@ async def _next_version_number(db: AsyncSession, document_id: str) -> int:
 
 async def _get_or_create_document(
     db: AsyncSession,
-    project: Project,
+    project: RAGProject,
     filename: str,
     source_type: str,
     created_by: str,
@@ -195,7 +262,7 @@ async def _get_or_create_document(
 
 async def _add_document_version(
     db: AsyncSession,
-    project: Project,
+    project: RAGProject,
     document: Document,
     content_hash: str,
     source_type: str,
@@ -232,7 +299,7 @@ async def _add_document_version(
         gold_path=gold_path,
         parser_name=parser_name,
         chunker_id=chunker_id,
-        embedding_model=EMBEDDING_MODEL,
+        embedding_model=project.config.embedding_model,
         status=status,
         error_message=error_message,
     )
@@ -253,7 +320,7 @@ async def _ensure_new_content(db: AsyncSession, document_id: str, content_hash: 
 
 async def _save_document_version(
     db: AsyncSession,
-    project: Project,
+    project: RAGProject,
     document: Document,
     filename: str,
     source_type: str,
@@ -299,9 +366,19 @@ def _ingest_text_document(
     project_id: str,
     document_id: str,
     collection: str,
+    embedding_model: str,
+    sparse_model: str,
 ) -> list[str]:
     raw_text = parse_document(file_bytes, filename)
-    return _process_and_index(raw_text, chunker, project_id, document_id, collection)
+    return _process_and_index(
+        raw_text,
+        chunker,
+        project_id,
+        document_id,
+        collection,
+        embedding_model,
+        sparse_model,
+    )
 
 def _validate_text_chunker(chunker_id: str) -> str:
     try:
@@ -367,7 +444,7 @@ async def upload_multimodal(
             ingest_pdf_multimodal, file_bytes, doc.id, settings.MAX_MULTIMODAL_PAGES
         )
 
-        collection = f"{project.collection}_multimodal"
+        collection = f"{project.config.qdrant_collection}_multimodal"
         await asyncio.to_thread(
             index_multimodal_pages,
             page_embeddings=page_embeddings,
@@ -388,10 +465,18 @@ async def upload_multimodal(
             chunker_id="multimodal",
         )
     except ValueError as exc:
-        await _cleanup_document_artifacts(doc.id, f"{project.collection}_multimodal", "multimodal")
+        await _cleanup_document_artifacts(
+            doc.id,
+            f"{project.config.qdrant_collection}_multimodal",
+            "multimodal",
+        )
         raise HTTPException(413, str(exc))
     except Exception:
-        await _cleanup_document_artifacts(doc.id, f"{project.collection}_multimodal", "multimodal")
+        await _cleanup_document_artifacts(
+            doc.id,
+            f"{project.config.qdrant_collection}_multimodal",
+            "multimodal",
+        )
         raise
 
     return {
@@ -543,13 +628,15 @@ async def upload_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     project_id: str = Form(...),
-    chunker: str = Form(default=get_default_chunker().id),
+    chunker: str | None = Form(default=None),
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
     project = await _get_project(project_id, user["user_id"], db)
     _validate_file(file)
-    chunker = _validate_text_chunker(chunker)
+    chunker = _validate_text_chunker(
+        chunker or project.config.default_chunker
+    )
 
     filename = file.filename or "upload"
     file_bytes = await _read_upload(file)
@@ -594,7 +681,7 @@ async def upload_file(
             gold_path=None,
             parser_name=_extension(file.filename).lstrip(".") or "auto",
             chunker_id=chunker,
-            embedding_model=EMBEDDING_MODEL,
+            embedding_model=project.config.embedding_model,
             status="landed",
             error_message=None,
         )
@@ -889,7 +976,7 @@ async def stream_ingestion_run_events(
 class URLPayload(BaseModel):
     url: str
     project_id: str
-    chunker: str = get_default_chunker().id
+    chunker: str | None = None
 
 @router.post("/url")
 async def upload_url(
@@ -898,7 +985,9 @@ async def upload_url(
     user: dict = Depends(get_current_user),
 ):
     project = await _get_project(payload.project_id, user["user_id"], db)
-    chunker = _validate_text_chunker(payload.chunker)
+    chunker = _validate_text_chunker(
+        payload.chunker or project.config.default_chunker
+    )
     raw_text = await parse_url(payload.url)
     source_hash = _content_hash(raw_text)
     doc = await _get_or_create_document(
@@ -917,7 +1006,9 @@ async def upload_url(
             chunker,
             payload.project_id,
             doc.id,
-            project.collection,
+            project.config.qdrant_collection,
+            project.config.embedding_model,
+            project.config.sparse_model,
         )
         doc, version = await _save_document_version(
             db=db,
@@ -930,7 +1021,11 @@ async def upload_url(
             chunker_id=chunker,
         )
     except Exception:
-        await _cleanup_document_artifacts(doc.id, project.collection, "url")
+        await _cleanup_document_artifacts(
+            doc.id,
+            project.config.qdrant_collection,
+            "url",
+        )
         raise
 
     return {
@@ -938,7 +1033,7 @@ async def upload_url(
         "document_version_id": version.id,
         "version_number": version.version_number,
         "project_id": payload.project_id,
-        "collection": project.collection,
+        "collection": project.config.qdrant_collection,
         "url": payload.url,
         "source_type": "url",
         "status": "indexed",
@@ -954,7 +1049,7 @@ class GDrivePayload(BaseModel):
     file_id: str
     access_token: str
     project_id: str
-    chunker: str = get_default_chunker().id
+    chunker: str | None = None
 
 @router.post("/gdrive")
 async def upload_gdrive(
@@ -963,7 +1058,9 @@ async def upload_gdrive(
     user: dict = Depends(get_current_user),
 ):
     project = await _get_project(payload.project_id, user["user_id"], db)
-    chunker = _validate_text_chunker(payload.chunker)
+    chunker = _validate_text_chunker(
+        payload.chunker or project.config.default_chunker
+    )
     raw_text = await parse_gdrive(payload.file_id, payload.access_token)
     source_hash = _content_hash(raw_text)
     doc = await _get_or_create_document(
@@ -982,7 +1079,9 @@ async def upload_gdrive(
             chunker,
             payload.project_id,
             doc.id,
-            project.collection,
+            project.config.qdrant_collection,
+            project.config.embedding_model,
+            project.config.sparse_model,
         )
         doc, version = await _save_document_version(
             db=db,
@@ -995,7 +1094,11 @@ async def upload_gdrive(
             chunker_id=chunker,
         )
     except Exception:
-        await _cleanup_document_artifacts(doc.id, project.collection, "gdrive")
+        await _cleanup_document_artifacts(
+            doc.id,
+            project.config.qdrant_collection,
+            "gdrive",
+        )
         raise
 
     return {
@@ -1003,7 +1106,7 @@ async def upload_gdrive(
         "document_version_id": version.id,
         "version_number": version.version_number,
         "project_id": payload.project_id,
-        "collection": project.collection,
+        "collection": project.config.qdrant_collection,
         "file_id": payload.file_id,
         "source_type": "gdrive",
         "status": "indexed",
