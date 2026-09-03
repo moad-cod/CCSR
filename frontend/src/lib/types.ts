@@ -23,6 +23,22 @@ export type Project = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  /** Present after the capability expansion; optional during rolling deploys. */
+  capabilities?: string[];
+  /** RAG-owned configuration. Legacy collection fields remain above temporarily. */
+  rag_config?: {
+    qdrant_collection: string;
+    embedding_model: string;
+    sparse_model: string;
+    default_chunker: string;
+    retrieval_configuration: {
+      strategy?: string;
+      top_k?: number;
+      fetch_k?: number;
+      use_rerank?: boolean;
+      [key: string]: unknown;
+    };
+  } | null;
 };
 
 export type Document = {
