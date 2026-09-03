@@ -7,11 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_db
-from app.models.project import Project
 from app.modules.ragforge.models.document import Document
 from app.modules.ragforge.models.document_version import DocumentVersion
 from app.modules.ragforge.repositories import embedding_runs as embedding_repository
 from app.modules.ragforge.repositories import ingestion_runs as ingestion_repository
+from app.modules.ragforge.repositories import project_configs as project_config_repository
 from app.modules.ragforge.services.chunk_indexing import GoldChunk, index_document_version_chunks
 from app.services.event_stream import publish_ingestion_event
 from app.modules.ragforge.services.ingestion_planner import build_ingestion_plan
@@ -133,7 +133,7 @@ def _run_payload(run, *, project=None, document=None, version=None) -> dict:
         payload.update(
             {
                 "organization_id": project.organization_id,
-                "qdrant_collection": project.qdrant_collection,
+                "qdrant_collection": project.config.qdrant_collection,
             }
         )
     if document is not None:
@@ -173,7 +173,10 @@ async def read_ingestion_run(
     run = await ingestion_repository.get_ingestion_run(db, ingestion_run_id)
     if run is None:
         raise HTTPException(404, "Ingestion run not found")
-    project = await db.get(Project, run.project_id)
+    project = await project_config_repository.get_rag_project(
+        db,
+        run.project_id,
+    )
     document = await db.get(Document, run.document_id)
     version = await db.get(DocumentVersion, run.document_version_id)
     if project is None or document is None or version is None:
@@ -231,7 +234,10 @@ async def update_ingestion_run_embedding_progress(
     if run.status not in {"running", "silver_completed", "gold_completed", "indexed"}:
         raise HTTPException(409, f"Embedding progress cannot be recorded from status {run.status!r}")
 
-    project = await db.get(Project, run.project_id)
+    project = await project_config_repository.get_rag_project(
+        db,
+        run.project_id,
+    )
     version = await db.get(DocumentVersion, run.document_version_id)
     if project is None or version is None:
         raise HTTPException(409, "Ingestion run lineage is incomplete")
@@ -286,7 +292,10 @@ async def index_ingestion_run_chunks(
     if run.status not in {"gold_completed", "indexed"}:
         raise HTTPException(409, f"Chunks cannot be indexed from status {run.status!r}")
 
-    project = await db.get(Project, run.project_id)
+    project = await project_config_repository.get_rag_project(
+        db,
+        run.project_id,
+    )
     document = await db.get(Document, run.document_id)
     version = await db.get(DocumentVersion, run.document_version_id)
     if project is None or document is None or version is None:
@@ -300,6 +309,7 @@ async def index_ingestion_run_chunks(
             version=version,
             ingestion_run=run,
             chunks=[GoldChunk(**chunk.model_dump()) for chunk in payload.chunks],
+            sparse_model=project.config.sparse_model,
         )
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
@@ -308,6 +318,6 @@ async def index_ingestion_run_chunks(
     return {
         "ingestion_run_id": run.id,
         "document_version_id": version.id,
-        "qdrant_collection": project.qdrant_collection,
+        "qdrant_collection": project.config.qdrant_collection,
         "chunks_indexed": len(records),
     }
