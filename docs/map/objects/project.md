@@ -9,7 +9,8 @@ collection column remains temporarily.
 
 **Hits**
 
-- Creator ownership, optional organization association, documents, ingestion,
+- Personal-project creator ownership, organization-member read access,
+  creator/organization-admin write access, documents, ingestion,
   chunks, embeddings, query history, and lifecycle cleanup dispatched through
   the capability registry.
 - Durable capability associations and optional one-to-one RAG configuration.
@@ -17,5 +18,5 @@ collection column remains temporarily.
 
 **Does not hit**
 
-- Description, visibility, publication state, research studies, generic
+- Per-project custom roles, description, visibility, publication state, research studies, generic
   workflows, or generic runs; these are not modeled yet.
