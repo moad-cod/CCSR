@@ -1,6 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.platform.access.authentication import get_current_user
+from app.platform.access.policies import (
+    PROJECT_ACTION_MANAGE,
+    PROJECT_ACTION_READ,
+    PROJECT_ACTION_WRITE,
+    authorize_organization,
+    authorize_project,
+)
 from app.platform.capabilities import (
     ProjectDeletionContext,
     ProjectProvisioningContext,
@@ -9,7 +16,6 @@ from app.platform.capabilities import (
 from app.core.db import get_db
 from app.models.project import Project
 from app.repositories import projects as project_repository
-from app.platform.organizations import repository as membership_repository
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import Any
@@ -112,13 +118,7 @@ async def create_project(
     user: dict = Depends(get_current_user),
 ):
     if body.organization_id:
-        membership = await membership_repository.get_active_membership(
-            db,
-            organization_id=body.organization_id,
-            user_id=user["user_id"],
-        )
-        if membership is None:
-            raise HTTPException(403, "Organization membership required")
+        await authorize_organization(db, body.organization_id, user)
 
     project_id = str(uuid.uuid4())
     collection = f"project_{project_id}"
@@ -134,11 +134,7 @@ async def create_project(
         ProjectProvisioningContext(db=db, project=project)
     )
     await db.commit()
-    project = await project_repository.get_owned_project(
-        db,
-        project_id,
-        user["user_id"],
-    )
+    project = await project_repository.get_project(db, project_id)
     if project is None:
         raise HTTPException(500, "Created project could not be reloaded")
     return _project_payload(project)
@@ -149,7 +145,11 @@ async def list_projects(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    projects = await project_repository.list_user_projects(db, user["user_id"])
+    projects = await project_repository.list_accessible_projects(
+        db,
+        user_id=user["user_id"],
+        global_role=user["global_role"],
+    )
     return [_project_payload(p) for p in projects]
 
 
@@ -159,9 +159,9 @@ async def get_project(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    project = await project_repository.get_owned_project(db, project_id, user["user_id"])
-    if not project:
-        raise HTTPException(404, "Project not found")
+    project = await authorize_project(
+        db, project_id, user, action=PROJECT_ACTION_READ
+    )
     return _project_payload(project)
 
 
@@ -172,18 +172,16 @@ async def update_project(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    project = await project_repository.rename_project(db, project_id, user["user_id"], body.name)
-    if not project:
-        raise HTTPException(404, "Project not found")
+    project = await authorize_project(
+        db, project_id, user, action=PROJECT_ACTION_WRITE
+    )
+    project.name = body.name
+    await db.flush()
 
     # only update display name — collection name stays the same
     # changing collection would require re-indexing all documents
     await db.commit()
-    project = await project_repository.get_owned_project(
-        db,
-        project_id,
-        user["user_id"],
-    )
+    project = await project_repository.get_project(db, project_id)
     if project is None:
         raise HTTPException(500, "Updated project could not be reloaded")
 
@@ -196,9 +194,9 @@ async def delete_project(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    project = await project_repository.get_owned_project(db, project_id, user["user_id"])
-    if not project:
-        raise HTTPException(404, "Project not found")
+    project = await authorize_project(
+        db, project_id, user, action=PROJECT_ACTION_MANAGE
+    )
 
     deleted_collection = project.collection
     lifecycle_result = await capability_registry.before_project_delete(
