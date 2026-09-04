@@ -97,6 +97,7 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
     async def test_status_endpoint_reports_durable_pipeline_progress(self):
         run = SimpleNamespace(
             id="run-id",
+            project_id="project-id",
             document_id="document-id",
             document_version_id="version-id",
             status="gold_completed",
@@ -106,9 +107,11 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
         version = SimpleNamespace(bronze_path="bronze/key", silver_path=None, gold_path=None)
         with (
             patch(
-                "app.api.ingest.ingestion_repository.get_owned_ingestion_run",
+                "app.api.ingest.ingestion_repository.get_ingestion_run",
                 AsyncMock(return_value=run),
             ),
+            patch("app.api.ingest.authorize_project", AsyncMock()),
+            patch("app.api.ingest._get_embedding_progress_run", AsyncMock(return_value=None)),
             patch(
                 "app.api.ingest.version_repository.get_document_version",
                 AsyncMock(return_value=version),
@@ -117,7 +120,7 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
             response = await get_ingestion_run_status(
                 "run-id",
                 db=SimpleNamespace(),
-                user={"user_id": "user-id"},
+                user={"user_id": "user-id", "global_role": "member"},
             )
 
         self.assertEqual(
@@ -257,6 +260,7 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
     async def test_status_endpoint_reconciles_stale_dispatch_run(self):
         run = SimpleNamespace(
             id="run-id",
+            project_id="project-id",
             document_id="document-id",
             document_version_id="version-id",
             status="queued",
@@ -276,9 +280,11 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch(
-                "app.api.ingest.ingestion_repository.get_owned_ingestion_run",
+                "app.api.ingest.ingestion_repository.get_ingestion_run",
                 AsyncMock(return_value=run),
             ),
+            patch("app.api.ingest.authorize_project", AsyncMock()),
+            patch("app.api.ingest._get_embedding_progress_run", AsyncMock(return_value=None)),
             patch(
                 "app.api.ingest.ingestion_repository.reconcile_stale_dispatch",
                 AsyncMock(return_value=failed),
@@ -292,7 +298,7 @@ class ControlPlaneRuntimeTests(unittest.IsolatedAsyncioTestCase):
             response = await get_ingestion_run_status(
                 "run-id",
                 db=db,
-                user={"user_id": "user-id"},
+                user={"user_id": "user-id", "global_role": "member"},
             )
 
         self.assertEqual(response["status"], "failed")
