@@ -4,6 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.platform.access.authentication import get_current_user
+from app.platform.access.policies import (
+    PROJECT_ACTION_READ,
+    PROJECT_ACTION_WRITE,
+    ProjectAction,
+    authorize_project,
+)
 from app.core.db import get_db
 from app.modules.ragforge.models.document import Document
 from app.modules.ragforge.models.document_version import DocumentVersion
@@ -82,21 +88,33 @@ def _document_version_payload(version: DocumentVersion) -> DocumentVersionRespon
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-async def _get_project(project_id: str, user_id: str, db: AsyncSession) -> RAGProject:
+async def _get_project(
+    project_id: str,
+    principal: dict,
+    db: AsyncSession,
+    *,
+    action: ProjectAction = PROJECT_ACTION_READ,
+) -> RAGProject:
+    await authorize_project(db, project_id, principal, action=action)
     project = await project_config_repository.get_rag_project(
         db,
         project_id,
-        user_id=user_id,
     )
     if not project:
         raise HTTPException(403, "Project not found or access denied")
     return project
 
-async def _get_document(document_id: str, user_id: str, db: AsyncSession) -> Document:
-    doc = await document_repository.get_owned_document(db, document_id, user_id)
+async def _get_document(
+    document_id: str,
+    principal: dict,
+    db: AsyncSession,
+    *,
+    action: ProjectAction = PROJECT_ACTION_READ,
+) -> Document:
+    doc = await document_repository.get_document(db, document_id)
     if not doc:
         raise HTTPException(404, "Document not found")
-    await _get_project(doc.project_id, user_id, db)
+    await _get_project(doc.project_id, principal, db, action=action)
     return doc
 
 
@@ -108,7 +126,7 @@ async def list_documents(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    await _get_project(project_id, user["user_id"], db)  # verify ownership
+    await _get_project(project_id, user, db)
 
     docs = await document_repository.list_project_documents(db, project_id)
     return [_document_payload(d) for d in docs]
@@ -122,7 +140,7 @@ async def get_document(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    doc = await _get_document(document_id, user["user_id"], db)
+    doc = await _get_document(document_id, user, db)
     return _document_payload(doc)
 
 
@@ -132,7 +150,7 @@ async def list_document_versions(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    doc = await _get_document(document_id, user["user_id"], db)
+    doc = await _get_document(document_id, user, db)
     versions = await version_repository.list_document_versions(db, doc.id)
     return [_document_version_payload(version) for version in versions]
 
@@ -145,11 +163,15 @@ async def delete_document(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    doc = await _get_document(document_id, user["user_id"], db)
+    doc = await _get_document(
+        document_id, user, db, action=PROJECT_ACTION_WRITE
+    )
 
     # delete from Qdrant first
     from app.modules.ragforge.services.indexer import delete_document_chunks
-    project = await _get_project(doc.project_id, user["user_id"], db)
+    project = await _get_project(
+        doc.project_id, user, db, action=PROJECT_ACTION_WRITE
+    )
     await asyncio.to_thread(
         delete_document_chunks,
         document_id=doc.id,
