@@ -61,7 +61,7 @@ Browser UI
 | --- | --- | --- |
 | `/api/auth/login` | `POST /auth/login` | Sends form-encoded credentials to the backend and stores `access_token` in the HttpOnly `ragforge_session` cookie. |
 | `/api/auth/register` | `POST /auth/register` | Proxies registration JSON to the backend. |
-| `/api/auth/logout` | none | Clears the `ragforge_session` cookie. |
+| `/api/auth/logout` | `POST /auth/logout` | Best-effort revokes the durable backend session, then clears the `ragforge_session` cookie. |
 | `/api/backend/[...path]` | Any authenticated backend path | Adds `Authorization: Bearer <cookie token>`, forwards request body and selected headers, and streams backend responses back to the UI. |
 
 `BACKEND_URL` controls the backend origin. If unset, the frontend uses

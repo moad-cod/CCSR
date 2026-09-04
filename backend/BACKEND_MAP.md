@@ -75,8 +75,8 @@ All protected user endpoints use `Authorization: Bearer <JWT>`. Login uses OAuth
 | Method | Route | Purpose |
 | --- | --- | --- |
 | `GET` | `/health` | Process health check; returns `{"status": "ok"}`. |
-| `POST` | `/auth/register` | Register a user, optionally attached to an existing organization. |
-| `POST` | `/auth/login` | Validate credentials and return a seven-day HS256 JWT. |
+| `POST` | `/auth/register` | Register a member account; joining an existing organization requires an invitation. |
+| `POST` | `/auth/login` | Validate credentials and return a seven-day HS256 JWT backed by a durable session. |
 
 ### Current-user and organization endpoints
 
@@ -85,24 +85,30 @@ All protected user endpoints use `Authorization: Bearer <JWT>`. Login uses OAuth
 | `GET` | `/auth/me` | Return the authenticated, non-deleted user. |
 | `PATCH` | `/auth/me` | Change email, password, name, or organization. |
 | `DELETE` | `/auth/me` | Soft-delete the user and their projects; delete their Qdrant collections. |
+| `POST` | `/auth/logout` | Revoke the current durable session. |
+| `GET` | `/auth/sessions` | List the current account's sessions. |
+| `DELETE` | `/auth/sessions/{session_id}` | Revoke one session owned by the current account. |
+| `PATCH` | `/auth/users/{user_id}/role` | Change a global member/admin role as a platform admin. |
 | `POST` | `/organizations/` | Create an organization. |
 | `GET` | `/organizations/` | List non-deleted organizations for which the current user has an active membership. |
 | `GET` | `/organizations/{organization_id}` | Fetch an organization after verifying active membership. |
 | `PATCH` | `/organizations/{organization_id}` | Rename an organization as an owner/admin member. |
 | `DELETE` | `/organizations/{organization_id}` | Soft-delete an organization as an owner/admin member. |
+| `POST/GET` | `/organizations/{organization_id}/invitations` | Create or list invitations as an owner/admin member. |
+| `DELETE` | `/organizations/{organization_id}/invitations/{invitation_id}` | Revoke a pending invitation. |
+| `POST` | `/organizations/invitations/{token}/accept` | Accept an email-bound invitation. |
 
 Organization creation also creates an owner membership. Organization list/read
-requires active membership, and update/delete requires an owner or admin
-membership. Membership administration, invitations, and platform-wide roles are
-not implemented.
+requires active membership, and update/delete/invitations require an owner or
+admin membership. Platform admins may administer every organization.
 
 ### Project and document endpoints
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| `POST` | `/projects/` | Create an owner-scoped project, persist default capability associations, and provision its RAG configuration. |
-| `GET` | `/projects/` | List projects created by the current user. |
-| `GET` | `/projects/{project_id}` | Fetch an owned project. |
+| `POST` | `/projects/` | Create a personal or organization project, persist default capability associations, and provision its RAG configuration. |
+| `GET` | `/projects/` | List personal projects plus projects in active organizations. |
+| `GET` | `/projects/{project_id}` | Fetch an accessible project. |
 | `PATCH` | `/projects/{project_id}` | Rename a project without changing its Qdrant collection. |
 | `DELETE` | `/projects/{project_id}` | Soft-delete project/documents and delete text and multimodal collections. |
 | `GET` | `/documents/?project_id=...` | List non-deleted documents in an owned project. |
@@ -110,7 +116,9 @@ not implemented.
 | `GET` | `/documents/{document_id}/versions` | List all versions of an owned document in ascending version order. |
 | `DELETE` | `/documents/{document_id}` | Delete its text vectors and soft-delete the document. |
 
-Project/document tenancy is ownership-based (`Project.created_by`), not organization-role-based.
+Personal projects remain creator-private. Active organization members can read
+organization projects and RAG resources; creators and organization owner/admin
+members can mutate them. Platform admins can administer every project.
 
 Project creation persists default-enabled associations in
 `project_capabilities` and invokes capability provisioning hooks; RAGForge adds
