@@ -3,6 +3,7 @@ export type User = {
   organization_id: string | null;
   email: string;
   full_name: string | null;
+  global_role: "member" | "admin";
   created_at: string | null;
   updated_at: string | null;
 };
