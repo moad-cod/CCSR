@@ -10,6 +10,8 @@ CORE_TABLES = frozenset(
     {
         "organizations",
         "organization_memberships",
+        "organization_invitations",
+        "auth_sessions",
         "users",
         "projects",
         "project_capabilities",
@@ -29,6 +31,9 @@ REQUIRED_FOREIGN_KEYS = frozenset(
         ("users", ("organization_id",), "organizations"),
         ("organization_memberships", ("organization_id",), "organizations"),
         ("organization_memberships", ("user_id",), "users"),
+        ("organization_invitations", ("organization_id",), "organizations"),
+        ("organization_invitations", ("invited_by",), "users"),
+        ("auth_sessions", ("user_id",), "users"),
         ("projects", ("organization_id",), "organizations"),
         ("projects", ("created_by",), "users"),
         ("project_capabilities", ("project_id",), "projects"),
@@ -57,6 +62,8 @@ REQUIRED_FOREIGN_KEYS = frozenset(
 REQUIRED_UNIQUE_CONSTRAINTS = frozenset(
     {
         ("users", "uq_users_email"),
+        ("auth_sessions", "uq_auth_sessions_token_hash"),
+        ("organization_invitations", "uq_organization_invitations_token_hash"),
         ("organization_memberships", "uq_organization_memberships_org_user"),
         ("projects", "uq_projects_qdrant_collection"),
         ("rag_project_configs", "uq_rag_project_configs_qdrant_collection"),
@@ -72,6 +79,8 @@ REQUIRED_CHECK_CONSTRAINTS = frozenset(
     {
         ("documents", "ck_documents_status"),
         ("organization_memberships", "ck_organization_memberships_role"),
+        ("organization_invitations", "ck_organization_invitations_role"),
+        ("users", "ck_users_global_role"),
         ("ingestion_runs", "ck_ingestion_runs_status"),
         ("embedding_runs", "ck_embedding_runs_status"),
     }
@@ -83,6 +92,11 @@ REQUIRED_INDEXES = frozenset(
         ("project_capabilities", "ix_project_capabilities_capability_key"),
         ("organization_memberships", "ix_organization_memberships_organization_id"),
         ("organization_memberships", "ix_organization_memberships_user_id"),
+        ("organization_invitations", "ix_organization_invitations_organization_id"),
+        ("organization_invitations", "ix_organization_invitations_email"),
+        ("auth_sessions", "ix_auth_sessions_user_id"),
+        ("auth_sessions", "ix_auth_sessions_expires_at"),
+        ("users", "ix_users_global_role"),
         ("documents", "ix_documents_current_version_id"),
         ("documents", "ix_documents_status"),
         ("document_versions", "ix_document_versions_document_id"),
