@@ -8,11 +8,14 @@ from app.models import (
     Chunk,
     Document,
     EmbeddingRun,
+    AuthSession,
     IngestionRun,
+    OrganizationInvitation,
     OrganizationMembership,
     ProjectCapability,
     QueryLog,
     RAGProjectConfig,
+    User,
 )
 
 
@@ -26,6 +29,8 @@ class ControlPlaneModelTests(unittest.TestCase):
             {
                 "ingestion_runs",
                 "organization_memberships",
+                "organization_invitations",
+                "auth_sessions",
                 "chunks",
                 "embedding_runs",
                 "query_logs",
@@ -74,6 +79,8 @@ class ControlPlaneModelTests(unittest.TestCase):
             (IngestionRun, "status", "not-an-ingestion-status"),
             (EmbeddingRun, "status", "not-an-embedding-status"),
             (OrganizationMembership, "role", "not-an-organization-role"),
+            (OrganizationInvitation, "role", "not-an-organization-role"),
+            (User, "global_role", "not-a-global-role"),
         )
         for model, field_name, invalid_value in cases:
             with self.subTest(model=model.__name__):
@@ -97,6 +104,11 @@ class ControlPlaneModelTests(unittest.TestCase):
             if isinstance(constraint, UniqueConstraint)
         }
         self.assertIn(("organization_id", "user_id"), unique_columns)
+
+    def test_platform_authorization_models_are_registered(self):
+        self.assertEqual(AuthSession.__table__.c.token_hash.type.length, 64)
+        self.assertFalse(AuthSession.__table__.c.expires_at.nullable)
+        self.assertFalse(OrganizationInvitation.__table__.c.expires_at.nullable)
 
     def test_embedding_run_tracks_model_loading_and_retrying(self):
         self.assertEqual(EmbeddingRun(status="loading_model").status, "loading_model")
