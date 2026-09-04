@@ -1,9 +1,9 @@
 from datetime import datetime
 import uuid
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, String
+from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
 from app.core.db import Base
 
@@ -16,6 +16,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     full_name = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
+    global_role = Column(String, nullable=False, default="member")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     deleted_at = Column(DateTime, nullable=True)
@@ -30,7 +31,18 @@ class User(Base):
     ingestion_runs = relationship("IngestionRun", back_populates="creator")
     query_logs = relationship("QueryLog", back_populates="user")
 
+    @validates("global_role")
+    def validate_global_role(self, _key: str, value: str) -> str:
+        if value not in {"member", "admin"}:
+            raise ValueError(f"Invalid global role: {value}")
+        return value
+
     __table_args__ = (
+        CheckConstraint(
+            "global_role IN ('member', 'admin')",
+            name="ck_users_global_role",
+        ),
         Index("ix_users_organization_id", "organization_id"),
+        Index("ix_users_global_role", "global_role"),
         Index("ix_users_deleted_at", "deleted_at"),
     )
