@@ -155,6 +155,7 @@ services:
       - --reload
     environment:
       DATABASE_URL: postgresql+asyncpg://ragforge:ragforge@postgres:5432/ragforge
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
       QDRANT_URL: http://qdrant:6333
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GROQ_API_KEY: ${GROQ_API_KEY:-}

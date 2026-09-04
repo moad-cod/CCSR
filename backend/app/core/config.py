@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
+    PLATFORM_ADMIN_EMAILS: str = ""
     QDRANT_URL: str
     QDRANT_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
@@ -78,6 +79,14 @@ class Settings(BaseSettings):
             raise ValueError("GEMINI_API_KEY is required for Gemini queries")
         if provider == "groq" and not self.GROQ_API_KEY:
             raise ValueError("GROQ_API_KEY is required for Groq queries")
+
+    @property
+    def platform_admin_emails(self) -> frozenset[str]:
+        return frozenset(
+            email.strip().lower()
+            for email in self.PLATFORM_ADMIN_EMAILS.split(",")
+            if email.strip()
+        )
 
     def llm_base_url(self, provider: str) -> str:
         if provider == "gemini":
