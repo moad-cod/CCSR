@@ -46,8 +46,9 @@ Today, this philosophy is partially realized through the RAG control plane: docu
 
 This section describes the current implementation, not the full CCSR roadmap.
 
-- User registration, login, profile update, JWT-protected backend routes, and HttpOnly-cookie frontend sessions.
-- Owner-scoped project CRUD with per-project Qdrant collections.
+- User registration, durable revocable login sessions, global roles, profile update, JWT-protected backend routes, and HttpOnly-cookie frontend sessions.
+- Private personal projects and membership-readable organization projects with role-controlled mutations.
+- Expiring, revocable organization invitations bound to the invited account email.
 - Document listing, detail views, version history, soft deletion, and same-filename re-upload for new versions.
 - Durable file ingestion for PDF, DOCX, XLSX, PPTX, CSV, HTML/HTM, Markdown, and plain text.
 - MinIO Bronze/Silver/Gold artifact paths for durable file ingestion.
@@ -96,7 +97,7 @@ CCSR is an active engineering project. The default runtime remains text-RAG focu
 
 | Capability | Status | Notes |
 | --- | --- | --- |
-| Auth, projects, documents, query history | Implemented | JWT auth, ownership-scoped projects, soft deletes, durable query logs. |
+| Auth, projects, documents, query history | Implemented | Session-backed JWT auth, default-deny project policies, soft deletes, durable query logs. |
 | Next.js control-plane UI | Implemented | Auth, projects, source management, ingestion progress, playground chat, history, observability, organization, and profile views. |
 | Durable file ingestion | Implemented | File upload lands raw data in MinIO Bronze, then writes Silver/Gold artifacts and Qdrant indexes when orchestration runs. |
 | Airflow ingestion orchestration | Implemented | Docker profile and DAG trigger the shared pipeline jobs. |
@@ -115,7 +116,7 @@ CCSR is an active engineering project. The default runtime remains text-RAG focu
 | Research findings and notes | Planned | Intended to connect evaluated evidence to research conclusions. |
 | Paper and mathematical concept relationships | Planned | Directional knowledge layer; no implemented graph API exists yet. |
 | Reproducibility manifests | Planned | Target manifest fields are documented below, but no complete manifest model is implemented. |
-| Organization membership and roles | Partially implemented | Membership records and owner/admin organization mutations are enforced. Platform-wide visitor/member/admin roles, invitations, membership management, and project collaboration are not implemented. |
+| Organization membership and roles | Implemented | Membership records, invitations, global member/admin roles, organization administration, and organization-project access are enforced server-side. |
 | Local generation through Ollama | Planned | Hosted Gemini/Groq generation is implemented; Ollama is not wired into the current config. |
 | Cross-domain NLP/CV/ML experiment support | Planned | The current mature implementation remains Retrieval/RAG. |
 
@@ -360,6 +361,7 @@ Use `.env.example` as the source of truth. Important variables:
 | Group | Variable | Required | Purpose |
 | --- | --- | --- | --- |
 | App | `SECRET_KEY` | Yes | JWT signing secret. Generate a random value for every environment. |
+| Auth | `PLATFORM_ADMIN_EMAILS` | Recommended | Comma-separated accounts promoted to global admin when they register. |
 | App | `FRONTEND_PORT` | No | Frontend port for Docker Compose. |
 | Auth | `AUTH_COOKIE_SECURE` | Production | Set to `true` behind HTTPS. |
 | PostgreSQL | `DATABASE_URL` | Yes | Main async SQLAlchemy database URL. |
