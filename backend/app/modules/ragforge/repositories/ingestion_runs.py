@@ -75,6 +75,21 @@ async def list_owned_project_runs(
     return list(result.scalars().all())
 
 
+async def list_project_runs(
+    db: AsyncSession,
+    project_id: str,
+    *,
+    limit: int = 50,
+) -> list[IngestionRun]:
+    result = await db.execute(
+        select(IngestionRun)
+        .where(IngestionRun.project_id == project_id)
+        .order_by(IngestionRun.created_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
 async def retry_failed_ingestion_run(
     db: AsyncSession,
     ingestion_run_id: str,
