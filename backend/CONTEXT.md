@@ -29,9 +29,15 @@ changing those execution or research paths.
 
 ## Current boundaries
 
-- Organization list/read and mutations enforce membership and owner/admin roles.
-- Project, document, ingestion, and query access remains creator-owned through
-  `Project.created_by`.
+- Authentication requires a valid, unrevoked durable session and resolves a
+  member/admin global role server-side.
+- Organization list/read and mutations enforce membership and owner/admin roles;
+  platform admins may administer every organization, and expiring invitations
+  are the only way to join an existing organization.
+- Personal projects remain creator-private. Active organization members may
+  read organization projects; creators and organization owner/admin members may
+  mutate them. Platform admins may administer every project. RAG routes use the
+  same shared policy rather than creator-only checks.
 - `project_capabilities` is the durable enablement boundary and
   `rag_project_configs` owns Qdrant identity, embedding/sparse models, the
   default chunker, and retrieval settings. `Project.qdrant_collection` remains

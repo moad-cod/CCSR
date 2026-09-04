@@ -1,6 +1,6 @@
 # Organization
 
-**Status:** Implemented with membership-scoped access.
+**Status:** Implemented with membership-scoped access and platform administration.
 
 **Authoritative sources:**
 [`organization.py`](../../../backend/app/platform/organizations/model.py),
@@ -9,10 +9,10 @@
 
 **Hits**
 
-- Memberships, a user's active organization selection, optional project
-  association, member-scoped visibility, and owner/admin mutations.
+- Memberships and invitations, a user's active organization selection,
+  organization-project collaboration, member-scoped visibility, owner/admin
+  mutations, and platform-admin access.
 
 **Does not hit**
 
-- Platform administration, invitation flows, project collaboration, or public
-  portfolio visibility.
+- Public portfolio visibility or direct membership editing.

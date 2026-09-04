@@ -13,6 +13,9 @@ The repository remains one deployable modular monolith.
   RAG-owned project settings live in `rag_project_configs`. Existing projects
   are backfilled as RAGForge-enabled; legacy collection fields remain during
   the compatibility window.
+- Authentication issues JWTs backed by durable, revocable sessions. Users have
+  member/admin platform roles, organizations support expiring invitations, and
+  shared default-deny policies govern organization and project access.
 - The frontend is one Next.js application with shared UI primitives, but project
   navigation and data loading still assume RAG capabilities.
 - PostgreSQL is authoritative for durable application state. Redis is

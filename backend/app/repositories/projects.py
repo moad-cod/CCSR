@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -48,6 +48,51 @@ async def list_user_projects(db: AsyncSession, user_id: str) -> list[Project]:
         .where(Project.created_by == user_id, Project.deleted_at.is_(None))
         .order_by(Project.created_at.desc())
     )
+    return list(result.scalars().all())
+
+
+async def list_accessible_projects(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    global_role: str,
+) -> list[Project]:
+    query = (
+        select(Project)
+        .options(
+            selectinload(Project.capabilities),
+            selectinload(Project.rag_config),
+        )
+        .where(Project.deleted_at.is_(None))
+        .order_by(Project.created_at.desc())
+    )
+    if global_role != "admin":
+        from app.platform.organizations.membership import OrganizationMembership
+        from app.platform.organizations.model import Organization
+
+        query = (
+            query.outerjoin(Organization, Organization.id == Project.organization_id)
+            .outerjoin(
+                OrganizationMembership,
+                and_(
+                    OrganizationMembership.organization_id == Project.organization_id,
+                    OrganizationMembership.user_id == user_id,
+                    OrganizationMembership.deleted_at.is_(None),
+                ),
+            )
+            .where(
+                or_(
+                    Project.organization_id.is_(None),
+                    Organization.deleted_at.is_(None),
+                ),
+                or_(
+                    Project.created_by == user_id,
+                    OrganizationMembership.id.is_not(None),
+                )
+            )
+            .distinct()
+        )
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 

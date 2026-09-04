@@ -8,12 +8,12 @@
 
 **Hits**
 
-- Authentication, current-user profile, active organization selection, owned
-  projects, ingestion runs, and query logs.
+- Authentication, durable sessions, global member/admin role, current-user
+  profile, active organization selection, accessible projects, ingestion runs,
+  and query logs.
 - Account deletion triggers registered capability hooks; RAGForge contributes
   the existing Qdrant project-collection cleanup.
 
 **Does not hit**
 
-- Durable sessions, token revocation, platform admin roles, quotas, or public
-  visitor state; those contracts do not exist yet.
+- Quotas or public visitor state; those contracts do not exist yet.

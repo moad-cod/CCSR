@@ -6,6 +6,12 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 from app.platform.access.authentication import get_current_user
+from app.platform.access.policies import (
+    PROJECT_ACTION_READ,
+    PROJECT_ACTION_WRITE,
+    ProjectAction,
+    authorize_project,
+)
 from app.core.db import AsyncSessionLocal, get_db
 from app.modules.ragforge.models.document import Document
 from app.modules.ragforge.models.document_version import DocumentVersion
@@ -70,11 +76,17 @@ STALE_DISPATCH_MESSAGE = (
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-async def _get_project(project_id: str, user_id: str, db: AsyncSession) -> RAGProject:
+async def _get_project(
+    project_id: str,
+    principal: dict,
+    db: AsyncSession,
+    *,
+    action: ProjectAction = PROJECT_ACTION_WRITE,
+) -> RAGProject:
+    await authorize_project(db, project_id, principal, action=action)
     project = await project_config_repository.get_rag_project(
         db,
         project_id,
-        user_id=user_id,
     )
     if not project:
         raise HTTPException(403, "Project not found or access denied")
@@ -423,7 +435,7 @@ async def upload_multimodal(
     except ValueError as exc:
         raise HTTPException(503, str(exc))
 
-    project = await _get_project(project_id, user["user_id"], db)
+    project = await _get_project(project_id, user, db)
     file_bytes = await _read_upload(file)
     file_hash = _content_hash(file_bytes)
     doc = await _get_or_create_document(
@@ -632,7 +644,7 @@ async def upload_file(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    project = await _get_project(project_id, user["user_id"], db)
+    project = await _get_project(project_id, user, db)
     _validate_file(file)
     chunker = _validate_text_chunker(
         chunker or project.config.default_chunker
@@ -727,13 +739,10 @@ async def get_ingestion_run_status(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    run = await ingestion_repository.get_owned_ingestion_run(
-        db,
-        ingestion_run_id,
-        user["user_id"],
-    )
+    run = await ingestion_repository.get_ingestion_run(db, ingestion_run_id)
     if run is None:
         raise HTTPException(404, "Ingestion run not found")
+    await authorize_project(db, run.project_id, user, action=PROJECT_ACTION_READ)
     run = await _reconcile_stale_dispatch_run(db, run)
 
     version = await version_repository.get_document_version(db, run.document_version_id)
@@ -751,13 +760,8 @@ async def list_ingestion_runs(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    await _get_project(project_id, user["user_id"], db)
-    runs = await ingestion_repository.list_owned_project_runs(
-        db,
-        project_id,
-        user["user_id"],
-        limit=limit,
-    )
+    await _get_project(project_id, user, db, action=PROJECT_ACTION_READ)
+    runs = await ingestion_repository.list_project_runs(db, project_id, limit=limit)
     payloads: list[dict] = []
     for run in runs:
         run = await _reconcile_stale_dispatch_run(db, run)
@@ -775,13 +779,10 @@ async def retry_ingestion_run(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    run = await ingestion_repository.get_owned_ingestion_run(
-        db,
-        ingestion_run_id,
-        user["user_id"],
-    )
+    run = await ingestion_repository.get_ingestion_run(db, ingestion_run_id)
     if run is None:
         raise HTTPException(404, "Ingestion run not found")
+    await authorize_project(db, run.project_id, user, action=PROJECT_ACTION_WRITE)
     try:
         run = await ingestion_repository.retry_failed_ingestion_run(db, run.id)
     except ValueError as exc:
@@ -828,13 +829,10 @@ async def stream_ingestion_run_events(
     user: dict = Depends(get_current_user),
 ):
     """Stream tenant-owned ingestion progress with Redis replay and DB recovery."""
-    run = await ingestion_repository.get_owned_ingestion_run(
-        db,
-        ingestion_run_id,
-        user["user_id"],
-    )
+    run = await ingestion_repository.get_ingestion_run(db, ingestion_run_id)
     if run is None:
         raise HTTPException(404, "Ingestion run not found")
+    await authorize_project(db, run.project_id, user, action=PROJECT_ACTION_READ)
     run = await _reconcile_stale_dispatch_run(db, run)
     version = await version_repository.get_document_version(db, run.document_version_id)
     if version is None:
@@ -984,7 +982,7 @@ async def upload_url(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    project = await _get_project(payload.project_id, user["user_id"], db)
+    project = await _get_project(payload.project_id, user, db)
     chunker = _validate_text_chunker(
         payload.chunker or project.config.default_chunker
     )
@@ -1057,7 +1055,7 @@ async def upload_gdrive(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    project = await _get_project(payload.project_id, user["user_id"], db)
+    project = await _get_project(payload.project_id, user, db)
     chunker = _validate_text_chunker(
         payload.chunker or project.config.default_chunker
     )

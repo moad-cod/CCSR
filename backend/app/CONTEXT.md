@@ -6,8 +6,9 @@ live under `platform/`, while pure RAGForge code lives under
 
 ## Current ownership guide
 
-- Platform-owned: `platform/access`, `platform/accounts`, and
-  `platform/organizations`.
+- Platform-owned: `platform/access` (durable sessions and shared policies),
+  `platform/accounts` (global roles), and `platform/organizations`
+  (memberships and invitations).
 - RAGForge-owned: `modules/ragforge` for documents, versions, chunks,
   embeddings, ingestion, retrieval, generation, query history, traces, and
   per-project RAG configuration.

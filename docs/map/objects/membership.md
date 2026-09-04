@@ -9,10 +9,10 @@ and [`organizations.py`](../../../backend/app/platform/organizations/api.py).
 
 **Hits**
 
-- Organization visibility and owner/admin organization mutations.
+- Organization visibility, owner/admin organization mutations, and expiring
+  invitations that activate or restore memberships.
 - Organization creation and a user's active organization selection.
 
 **Does not hit**
 
-- Platform-wide admin roles, invitations, membership-management APIs, project
-  roles, or access to documents/runs owned by another member.
+- Per-project custom roles and direct membership editing APIs.

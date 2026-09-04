@@ -44,7 +44,7 @@ class LifecycleDeletionRouteTests(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch(
-                "app.api.projects.project_repository.get_owned_project",
+                "app.api.projects.authorize_project",
                 AsyncMock(return_value=project),
             ),
             patch.object(
@@ -60,7 +60,7 @@ class LifecycleDeletionRouteTests(unittest.IsolatedAsyncioTestCase):
             result = await delete_project(
                 "project-id",
                 db=db,
-                user={"user_id": "account-id"},
+                user={"user_id": "account-id", "global_role": "member"},
             )
 
         context = lifecycle_hook.await_args.args[0]
@@ -78,14 +78,14 @@ class LifecycleDeletionRouteTests(unittest.IsolatedAsyncioTestCase):
         db.commit.assert_awaited_once()
 
     async def test_account_deletion_uses_registry_and_preserves_response(self):
-        account = SimpleNamespace(id="account-id", deleted_at=None)
+        account = SimpleNamespace(id="account-id", global_role="member", deleted_at=None)
         projects = [
             SimpleNamespace(id="one", deleted_at=None),
             SimpleNamespace(id="two", deleted_at=None),
         ]
         db = SimpleNamespace(
             execute=AsyncMock(
-                side_effect=[_ScalarResult(account), _ManyResult(projects)]
+                side_effect=[_ScalarResult(account), _ManyResult(projects), None]
             ),
             commit=AsyncMock(),
         )
@@ -95,7 +95,14 @@ class LifecycleDeletionRouteTests(unittest.IsolatedAsyncioTestCase):
             "before_account_delete",
             AsyncMock(return_value=LifecycleResult()),
         ) as lifecycle_hook:
-            result = await delete_me(db=db, user={"user_id": "account-id"})
+            result = await delete_me(
+                db=db,
+                user={
+                    "user_id": "account-id",
+                    "global_role": "member",
+                    "session_id": "session-id",
+                },
+            )
 
         context = lifecycle_hook.await_args.args[0]
         self.assertIs(context.db, db)

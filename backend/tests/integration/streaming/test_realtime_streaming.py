@@ -153,6 +153,7 @@ class IngestionStreamingTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.run = SimpleNamespace(
             id="run-1",
+            project_id="project-1",
             document_id="document-1",
             document_version_id="version-1",
             status="running",
@@ -168,7 +169,7 @@ class IngestionStreamingTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_other_tenant_cannot_subscribe(self):
         with patch(
-            "app.api.ingest.ingestion_repository.get_owned_ingestion_run",
+            "app.api.ingest.ingestion_repository.get_ingestion_run",
             AsyncMock(return_value=None),
         ):
             with self.assertRaises(HTTPException) as context:
@@ -185,9 +186,11 @@ class IngestionStreamingTests(unittest.IsolatedAsyncioTestCase):
         self.run.status = "indexed"
         with (
             patch(
-                "app.api.ingest.ingestion_repository.get_owned_ingestion_run",
+                "app.api.ingest.ingestion_repository.get_ingestion_run",
                 AsyncMock(return_value=self.run),
             ),
+            patch("app.api.ingest.authorize_project", AsyncMock()),
+            patch("app.api.ingest._get_embedding_progress_run", AsyncMock(return_value=None)),
             patch(
                 "app.api.ingest.version_repository.get_document_version",
                 AsyncMock(return_value=self.version),
@@ -214,9 +217,11 @@ class IngestionStreamingTests(unittest.IsolatedAsyncioTestCase):
         )
         with (
             patch(
-                "app.api.ingest.ingestion_repository.get_owned_ingestion_run",
+                "app.api.ingest.ingestion_repository.get_ingestion_run",
                 AsyncMock(return_value=self.run),
             ),
+            patch("app.api.ingest.authorize_project", AsyncMock()),
+            patch("app.api.ingest._get_embedding_progress_run", AsyncMock(return_value=None)),
             patch(
                 "app.api.ingest.version_repository.get_document_version",
                 AsyncMock(return_value=self.version),
@@ -244,9 +249,11 @@ class IngestionStreamingTests(unittest.IsolatedAsyncioTestCase):
         )
         with (
             patch(
-                "app.api.ingest.ingestion_repository.get_owned_ingestion_run",
+                "app.api.ingest.ingestion_repository.get_ingestion_run",
                 AsyncMock(return_value=self.run),
             ),
+            patch("app.api.ingest.authorize_project", AsyncMock()),
+            patch("app.api.ingest._get_embedding_progress_run", AsyncMock(return_value=None)),
             patch(
                 "app.api.ingest.version_repository.get_document_version",
                 AsyncMock(return_value=self.version),
@@ -272,9 +279,11 @@ class IngestionStreamingTests(unittest.IsolatedAsyncioTestCase):
         stream_db = SimpleNamespace()
         with (
             patch(
-                "app.api.ingest.ingestion_repository.get_owned_ingestion_run",
+                "app.api.ingest.ingestion_repository.get_ingestion_run",
                 AsyncMock(return_value=self.run),
             ),
+            patch("app.api.ingest.authorize_project", AsyncMock()),
+            patch("app.api.ingest._get_embedding_progress_run", AsyncMock(return_value=None)),
             patch(
                 "app.api.ingest.version_repository.get_document_version",
                 AsyncMock(return_value=self.version),
@@ -387,6 +396,7 @@ class QueryStreamingTests(unittest.IsolatedAsyncioTestCase):
         query_log = SimpleNamespace(id="query-log-1")
         finish = AsyncMock(return_value=query_log)
         with (
+            patch("app.api.query._authorize_query", AsyncMock(return_value=self.project)),
             patch("app.api.query.get_cached_query", AsyncMock(return_value=None)),
             patch("app.api.query.asyncio.to_thread", new=_inline_to_thread),
             patch("app.api.query.set_cached_query", AsyncMock()),
@@ -410,7 +420,7 @@ class QueryStreamingTests(unittest.IsolatedAsyncioTestCase):
             result = await _execute_query(
                 self.request,
                 self.db,
-                "user-1",
+                {"user_id": "user-1", "global_role": "member"},
                 emit=emit,
                 stream_tokens=True,
                 route="rag-stream",
@@ -444,6 +454,7 @@ class QueryStreamingTests(unittest.IsolatedAsyncioTestCase):
 
         query_log = SimpleNamespace(id="query-log-1")
         with (
+            patch("app.api.query._authorize_query", AsyncMock(return_value=self.project)),
             patch("app.api.query.get_cached_query", AsyncMock(return_value=None)),
             patch("app.api.query.asyncio.to_thread", new=_inline_to_thread),
             patch("app.api.query.embed_query", Mock(return_value=[0.1, 0.2])),
@@ -466,7 +477,7 @@ class QueryStreamingTests(unittest.IsolatedAsyncioTestCase):
                 await _execute_query(
                     self.request,
                     self.db,
-                    "user-1",
+                    {"user_id": "user-1", "global_role": "member"},
                     emit=emit,
                     stream_tokens=True,
                 )

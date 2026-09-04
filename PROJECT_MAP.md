@@ -396,17 +396,18 @@ Registration, login, the health check, and the chunker catalog are unauthenticat
 
 | Domain | Supported | Not currently supported |
 |---|---|---|
-| Projects | Create, owner-scoped list/read, rename, soft delete, durable capability associations, configured RAG defaults | Description, capability selection UI, status/count/activity aggregates |
+| Projects | Create, personal-project ownership, organization-member reads, organization-admin writes, global administration, durable capability associations, configured RAG defaults | Description, custom project roles, capability selection UI, status/count/activity aggregates |
 | Documents | Project list, read, version list, soft delete, new version through re-upload | Update metadata, read one version by ID, rollback, delete one version, direct chunk editing |
 | Ingestion runs | Project list, read, failed-run retry, SSE snapshot/replay/recovery | Cancel endpoint, retry history, per-stage duration/timestamp records, structured diagnostics |
 | Queries | Synchronous/streaming answer, document filter, provider/model choice, history, ranked trace | Regenerate endpoint, feedback endpoint, structured citations in the answer response |
-| Organizations | Authenticated create; membership-scoped list/read; owner/admin rename and soft delete | Membership administration, invitations, platform-wide roles |
+| Organizations | Authenticated create; membership-scoped list/read; owner/admin rename, soft delete, and invitations; platform-admin override | Direct membership editing and email delivery |
 
-Project tenancy is enforced by `Project.created_by`, not by organization
-membership. Organization endpoints enforce active membership for list/read and
-owner/admin membership for mutations. Registration can still create a member
-record for a supplied existing organization UUID. A project create/update
-payload only supports `name` plus optional `organization_id` on create.
+Personal project tenancy is enforced by `Project.created_by`. Organization
+projects use active membership for reads and creator/owner/admin membership for
+mutations, with a global-admin override. Registration cannot join an existing
+organization directly; acceptance of an email-bound invitation creates the
+membership. A project create/update payload still supports `name` plus optional
+`organization_id` on create.
 
 Project responses temporarily preserve the legacy `collection` and
 `qdrant_collection` fields and also expose `capabilities` and `rag_config`.

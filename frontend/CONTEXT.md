@@ -2,7 +2,9 @@
 
 The frontend is one Next.js application serving authenticated CCSR screens. It
 uses a same-origin backend proxy and HttpOnly authentication cookie. The current
-project experience still assumes RAG data and routes.
+project experience still assumes RAG data and routes. Login tokens are backed
+by durable backend sessions, and the logout handler revokes the backend session
+before clearing the compatibility cookie.
 
 ## Route by task
 
