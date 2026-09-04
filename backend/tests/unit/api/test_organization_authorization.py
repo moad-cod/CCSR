@@ -89,7 +89,7 @@ class OrganizationAuthorizationTests(unittest.IsolatedAsyncioTestCase):
         ) as list_member_organizations:
             result = await list_organizations(
                 db=SimpleNamespace(),
-                user={"user_id": "user-id"},
+                user={"user_id": "user-id", "global_role": "member"},
             )
 
         list_member_organizations.assert_awaited_once_with(ANY, user_id="user-id")
@@ -97,14 +97,14 @@ class OrganizationAuthorizationTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_organization_hides_non_member_organizations(self):
         with patch(
-            "app.api.organizations.membership_repository.get_member_organization",
+            "app.api.organizations.membership_repository.get_organization",
             AsyncMock(return_value=None),
         ):
             with self.assertRaises(HTTPException) as context:
                 await get_organization(
                     "organization-id",
                     db=SimpleNamespace(),
-                    user={"user_id": "user-id"},
+                    user={"user_id": "user-id", "global_role": "member"},
                 )
 
         self.assertEqual(context.exception.status_code, 404)
@@ -120,7 +120,7 @@ class OrganizationAuthorizationTests(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch(
-                "app.api.organizations.membership_repository.get_member_organization",
+                "app.api.organizations.membership_repository.get_organization",
                 AsyncMock(return_value=organization),
             ),
             patch(
@@ -133,7 +133,7 @@ class OrganizationAuthorizationTests(unittest.IsolatedAsyncioTestCase):
                     "organization-id",
                     OrganizationUpdate(name="Renamed"),
                     db=SimpleNamespace(),
-                    user={"user_id": "user-id"},
+                    user={"user_id": "user-id", "global_role": "member"},
                 )
 
         self.assertEqual(context.exception.status_code, 403)
@@ -143,8 +143,8 @@ class OrganizationAuthorizationTests(unittest.IsolatedAsyncioTestCase):
         db = SimpleNamespace()
 
         with patch(
-            "app.api.projects.membership_repository.get_active_membership",
-            AsyncMock(return_value=None),
+            "app.api.projects.authorize_organization",
+            AsyncMock(side_effect=HTTPException(403, "Organization membership required")),
         ):
             with self.assertRaises(HTTPException) as context:
                 await create_project(
@@ -188,7 +188,7 @@ class OrganizationAuthorizationTests(unittest.IsolatedAsyncioTestCase):
                 AsyncMock(return_value=project),
             ),
             patch(
-                "app.api.projects.project_repository.get_owned_project",
+                "app.api.projects.project_repository.get_project",
                 AsyncMock(return_value=loaded_project),
             ),
             patch.object(
