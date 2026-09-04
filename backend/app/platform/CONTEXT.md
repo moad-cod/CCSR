@@ -2,9 +2,12 @@
 
 This package owns cross-product identity and tenancy capabilities.
 
-- access/ owns authentication dependencies and token handling.
-- accounts/ owns user accounts and their API.
-- organizations/ owns organizations, memberships, roles, and their API.
+- access/ owns authentication dependencies, durable sessions, token handling,
+  and default-deny organization/project policies.
+- accounts/ owns user accounts, global member/admin roles, session management,
+  and their API.
+- organizations/ owns organizations, memberships, invitations, roles, and their
+  API.
 - capabilities/ owns capability definitions, the in-process registry, and
   project/account lifecycle contracts. Product modules implement those hooks;
   the application composition root registers them.
