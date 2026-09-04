@@ -15,6 +15,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
 from app.platform.access.authentication import get_current_user
+from app.platform.access.policies import (
+    PROJECT_ACTION_READ,
+    PROJECT_ACTION_WRITE,
+    authorize_project,
+)
 from app.core.config import settings
 from app.core.db import AsyncSessionLocal, get_db
 from app.models.project import Project
@@ -125,12 +130,14 @@ _query_stream_tasks: set[asyncio.Task] = set()
 async def _authorize_query(
     request: QueryRequest,
     db: AsyncSession,
-    user_id: str,
+    principal: dict,
 ):
+    await authorize_project(
+        db, request.project_id, principal, action=PROJECT_ACTION_WRITE
+    )
     project = await project_config_repository.get_rag_project(
         db,
         request.project_id,
-        user_id=user_id,
     )
     if not project:
         raise HTTPException(403, "Project not found or access denied")
@@ -151,12 +158,12 @@ async def _authorize_query(
 async def _get_owned_project(
     db: AsyncSession,
     project_id: str,
-    user_id: str,
+    principal: dict,
 ) -> RAGProject:
+    await authorize_project(db, project_id, principal, action=PROJECT_ACTION_READ)
     project = await project_config_repository.get_rag_project(
         db,
         project_id,
-        user_id=user_id,
     )
     if project is None:
         raise HTTPException(404, "Project not found")
@@ -225,7 +232,7 @@ def _response_payload(
 async def _execute_query(
     request: QueryRequest,
     db: AsyncSession,
-    user_id: str,
+    principal: dict,
     *,
     emit: QueryEventEmitter | None = None,
     stream_tokens: bool = False,
@@ -233,7 +240,8 @@ async def _execute_query(
 ):
     started_at = time.perf_counter()
     await _notify(emit, "query.received", project_id=request.project_id)
-    project = await _authorize_query(request, db, user_id)
+    project = await _authorize_query(request, db, principal)
+    user_id = principal["user_id"]
 
     question_hash = normalized_question_hash(request.question)
     model = resolve_model(request.provider, request.model)
@@ -479,7 +487,7 @@ async def query_history(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    await _get_owned_project(db, project_id, user["user_id"])
+    await _get_owned_project(db, project_id, user)
     history = await query_log_repository.get_project_query_history(
         db,
         project_id,
@@ -499,14 +507,15 @@ async def query_trace(
         .join(Project, Project.id == QueryLog.project_id)
         .where(
             QueryLog.id == query_log_id,
-            QueryLog.user_id == user["user_id"],
-            Project.created_by == user["user_id"],
             Project.deleted_at.is_(None),
         )
     )
     query_log = query_result.scalar_one_or_none()
     if query_log is None:
         raise HTTPException(404, "Query not found")
+    await authorize_project(
+        db, query_log.project_id, user, action=PROJECT_ACTION_READ
+    )
 
     retrieval_result = await db.execute(
         select(RetrievalLog, Chunk, Document)
@@ -548,7 +557,7 @@ async def query(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    return await _execute_query(request, db, user["user_id"])
+    return await _execute_query(request, db, user)
 
 
 @router.post("/query/stream")
@@ -559,7 +568,7 @@ async def stream_query(
     user: dict = Depends(get_current_user),
 ):
     """Stream query stages and answer tokens without cancelling durable work."""
-    await _authorize_query(request, db, user["user_id"])
+    await _authorize_query(request, db, user)
     operation_id = str(uuid.uuid4())
     queue: asyncio.Queue[StreamEvent | None] = asyncio.Queue()
     sequence = 0
@@ -585,7 +594,7 @@ async def stream_query(
                 await _execute_query(
                     request,
                     worker_db,
-                    user["user_id"],
+                    user,
                     emit=emit,
                     stream_tokens=True,
                     route="rag-stream",
@@ -641,11 +650,10 @@ async def multimodal_query(
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    project = await project_config_repository.get_rag_project(
-        db,
-        request.project_id,
-        user_id=user["user_id"],
+    await authorize_project(
+        db, request.project_id, user, action=PROJECT_ACTION_WRITE
     )
+    project = await project_config_repository.get_rag_project(db, request.project_id)
     if not project:
         raise HTTPException(403, "Project not found or access denied")
 
