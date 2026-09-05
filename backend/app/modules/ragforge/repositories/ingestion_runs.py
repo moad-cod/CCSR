@@ -35,6 +35,16 @@ async def create_ingestion_run(db: AsyncSession, **values) -> IngestionRun:
     run = IngestionRun(**values)
     db.add(run)
     await db.flush()
+    from app.modules.ragforge.workflows import create_generic_ingestion_run
+
+    generic_run = await create_generic_ingestion_run(
+        db,
+        ingestion_run_id=run.id,
+        project_id=run.project_id,
+        requested_by=run.created_by,
+    )
+    run.generic_run_id = generic_run.id
+    await db.flush()
     return run
 
 
