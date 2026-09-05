@@ -36,6 +36,7 @@ Next.js control-plane UI / Swagger UI
 | Models | `backend/app/models/*.py` | One SQLAlchemy model per control-plane table, relationships, constraints, and indexes; `tables.py` remains a compatibility export |
 | Organizations | `backend/app/platform/organizations/api.py` | Organization CRUD and soft delete |
 | Projects | `backend/app/api/projects.py`, `backend/app/platform/capabilities/*` | Project CRUD and ownership checks; deletion dispatches registered module lifecycle hooks |
+| Execution | `backend/app/platform/execution/*`, `backend/app/modules/ragforge/workflows.py` | Versioned workflow definitions, validated generic runs, registered Airflow/Celery adapters, and the RAG ingestion bridge |
 | RAGForge lifecycle | `backend/app/modules/ragforge/capability.py`, `backend/app/modules/ragforge/lifecycle.py` | Contributes existing document, R2, and Qdrant cleanup without platform-to-RAG imports |
 | Documents | `backend/app/modules/ragforge/api/documents.py` | Document list/get/delete and document version listing |
 | Ingestion | `backend/app/modules/ragforge/api/ingest.py` | File, URL, Google Drive, and optional multimodal ingestion |
@@ -273,12 +274,12 @@ The v2 schema defined in `docs/architecture/control-plane.md` is represented in 
 The schema deliberately separates durable metadata from data-plane storage:
 
 ```text
-PostgreSQL: identities, paths, statuses, run history, chunk/query/retrieval metadata
+PostgreSQL: identities, workflow definitions, generic/module run history, paths, statuses, chunk/query/retrieval metadata
 MinIO:      Bronze raw objects, Silver chunk Parquet, Gold embedded metadata Parquet
 Qdrant:     dense and sparse vectors (PostgreSQL stores qdrant_point_id only)
 Redis:      temporary cache, session, progress, and rate-limit state
-Airflow:    optional DAG scheduling; ingestion_runs.airflow_dag_run_id provides traceability
-Celery:     optional chain/work queue; currently reuses ingestion_runs.airflow_dag_run_id for workflow traceability
+Airflow:    optional DAG scheduling; runs.external_execution_id provides generic traceability
+Celery:     optional chain/work queue; runs.external_execution_id provides generic traceability
 ```
 
 Status validation is enforced twice: SQLAlchemy rejects invalid values before persistence, and PostgreSQL check constraints protect writes from any other client. Canonical values live in `backend/app/modules/ragforge/models/statuses.py`.
