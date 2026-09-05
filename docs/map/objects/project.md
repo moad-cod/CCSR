@@ -18,5 +18,6 @@ collection column remains temporarily.
 
 **Does not hit**
 
-- Per-project custom roles, description, visibility, publication state, research studies, generic
-  workflows, or generic runs; these are not modeled yet.
+- Per-project custom roles, description, visibility, publication state, or
+  research studies. Generic workflows and runs reference projects without
+  adding project-type branching.
