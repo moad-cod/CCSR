@@ -1,14 +1,14 @@
 # Generic run
 
-**Status:** Planned; the durable run currently implemented is RAG ingestion.
+**Status:** Implemented; RAG ingestion is the first linked module-specific run.
 
-**Verification sources:** [`ingestion_run.py`](../../../backend/app/modules/ragforge/models/ingestion_run.py),
-[`models/__init__.py`](../../../backend/app/models/__init__.py), and
-[`ingestion_runs.py`](../../../backend/app/modules/ragforge/repositories/ingestion_runs.py).
+**Authoritative sources:** [`model.py`](../../../backend/app/platform/execution/model.py),
+[`repository.py`](../../../backend/app/platform/execution/repository.py), and
+[`0008 migration`](../../../backend/alembic/versions/20260905_0008_add_generic_workflows_and_runs.py).
 
 **Hits**
 
-- Future project/workflow/user identity, engine, external execution ID, general
+- Project/workflow/user identity, engine, external execution ID, general
   status, validated inputs, output summary, usage, and safe errors.
 
 **Does not hit**
