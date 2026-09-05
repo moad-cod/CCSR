@@ -17,6 +17,12 @@ class IngestionRun(Base):
     __tablename__ = "ingestion_runs"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    generic_run_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("runs.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True,
+    )
     project_id = Column(UUID(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     document_id = Column(UUID(as_uuid=False), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     document_version_id = Column(
@@ -35,6 +41,7 @@ class IngestionRun(Base):
     document_version = relationship("DocumentVersion", back_populates="ingestion_runs")
     creator = relationship("User", back_populates="ingestion_runs")
     chunks = relationship("Chunk", back_populates="ingestion_run")
+    generic_run = relationship("GenericRun", back_populates="ingestion_run")
 
     @validates("status")
     def validate_status(self, _key: str, value: str) -> str:
@@ -46,6 +53,7 @@ class IngestionRun(Base):
             name="ck_ingestion_runs_status",
         ),
         Index("ix_ingestion_runs_project_id", "project_id"),
+        Index("ix_ingestion_runs_generic_run_id", "generic_run_id"),
         Index("ix_ingestion_runs_document_id", "document_id"),
         Index("ix_ingestion_runs_document_version_id", "document_version_id"),
         Index("ix_ingestion_runs_status", "status"),
