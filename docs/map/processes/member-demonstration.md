@@ -1,6 +1,7 @@
 # Member demonstration
 
-**Status:** Planned; no safe generic member execution gateway exists.
+**Status:** Planned; the generic gateway exists, but quota-backed member demo
+execution policy is not implemented.
 
 **Verification sources:** current route registration in
 [`main.py`](../../../backend/app/main.py), current models in
