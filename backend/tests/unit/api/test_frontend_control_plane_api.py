@@ -121,6 +121,9 @@ class FrontendControlPlaneApiTests(unittest.IsolatedAsyncioTestCase):
     async def test_failed_ingestion_retry_resets_durable_state(self):
         run = SimpleNamespace(
             id="run-id",
+            project_id="project-id",
+            created_by="user-id",
+            generic_run_id="old-generic-run-id",
             document_id="document-id",
             document_version_id="version-id",
             status="failed",
@@ -148,12 +151,17 @@ class FrontendControlPlaneApiTests(unittest.IsolatedAsyncioTestCase):
 
         db = SimpleNamespace(get=AsyncMock(side_effect=get), flush=AsyncMock())
 
-        result = await retry_failed_ingestion_run(db, "run-id")
+        with patch(
+            "app.modules.ragforge.workflows.create_generic_ingestion_run",
+            AsyncMock(return_value=SimpleNamespace(id="new-generic-run-id")),
+        ):
+            result = await retry_failed_ingestion_run(db, "run-id")
 
         self.assertIs(result, run)
         self.assertEqual(run.status, "queued")
         self.assertIsNone(run.error_message)
         self.assertIsNone(run.airflow_dag_run_id)
+        self.assertEqual(run.generic_run_id, "new-generic-run-id")
         self.assertEqual(document.status, "landed")
         self.assertEqual(version.status, "landed")
         db.flush.assert_awaited_once()
