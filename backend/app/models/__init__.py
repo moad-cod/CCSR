@@ -15,6 +15,7 @@ from app.platform.capabilities.model import ProjectCapability
 from app.platform.organizations.membership import OrganizationMembership
 from app.platform.organizations.invitation import OrganizationInvitation
 from app.platform.organizations.model import Organization
+from app.platform.execution.model import GenericRun, WorkflowDefinition
 
 
 __all__ = [
@@ -33,4 +34,6 @@ __all__ = [
     "EmbeddingRun",
     "QueryLog",
     "RetrievalLog",
+    "WorkflowDefinition",
+    "GenericRun",
 ]
