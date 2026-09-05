@@ -35,6 +35,16 @@ async def create_ingestion_run(db: AsyncSession, **values) -> IngestionRun:
     run = IngestionRun(**values)
     db.add(run)
     await db.flush()
+    from app.modules.ragforge.workflows import create_generic_ingestion_run
+
+    generic_run = await create_generic_ingestion_run(
+        db,
+        ingestion_run_id=run.id,
+        project_id=run.project_id,
+        requested_by=run.created_by,
+    )
+    run.generic_run_id = generic_run.id
+    await db.flush()
     return run
 
 
@@ -106,6 +116,16 @@ async def retry_failed_ingestion_run(
     run.error_message = None
     run.airflow_dag_run_id = None
 
+    from app.modules.ragforge.workflows import create_generic_ingestion_run
+
+    generic_run = await create_generic_ingestion_run(
+        db,
+        ingestion_run_id=run.id,
+        project_id=run.project_id,
+        requested_by=run.created_by,
+    )
+    run.generic_run_id = generic_run.id
+
     document = await db.get(Document, run.document_id)
     version = await db.get(DocumentVersion, run.document_version_id)
     if document is not None:
@@ -164,6 +184,34 @@ async def update_ingestion_status(
             version.silver_path = silver_path
         if gold_path is not None:
             version.gold_path = gold_path
+    if run.generic_run_id is not None:
+        from app.platform.execution.repository import update_run_status
+
+        generic_status = {
+            "landed": "pending",
+            "queued": "queued",
+            "running": "running",
+            "silver_completed": "running",
+            "gold_completed": "running",
+            "indexed": "succeeded",
+            "failed": "failed",
+            "cancelled": "cancelled",
+        }[status]
+        await update_run_status(
+            db,
+            run.generic_run_id,
+            generic_status,
+            external_execution_id=airflow_dag_run_id,
+            error_message=error_message,
+            output_summary=(
+                {
+                    "document_id": run.document_id,
+                    "document_version_id": run.document_version_id,
+                }
+                if status == "indexed"
+                else None
+            ),
+        )
     await db.flush()
     return run
 

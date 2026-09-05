@@ -10,12 +10,14 @@ from app.models import (
     EmbeddingRun,
     AuthSession,
     IngestionRun,
+    GenericRun,
     OrganizationInvitation,
     OrganizationMembership,
     ProjectCapability,
     QueryLog,
     RAGProjectConfig,
     User,
+    WorkflowDefinition,
 )
 
 
@@ -37,6 +39,8 @@ class ControlPlaneModelTests(unittest.TestCase):
                 "retrieval_logs",
                 "project_capabilities",
                 "rag_project_configs",
+                "workflow_definitions",
+                "runs",
             }.issubset(Base.metadata.tables)
         )
 
@@ -81,6 +85,8 @@ class ControlPlaneModelTests(unittest.TestCase):
             (OrganizationMembership, "role", "not-an-organization-role"),
             (OrganizationInvitation, "role", "not-an-organization-role"),
             (User, "global_role", "not-a-global-role"),
+            (WorkflowDefinition, "engine", "not-an-engine"),
+            (GenericRun, "status", "not-a-run-status"),
         )
         for model, field_name, invalid_value in cases:
             with self.subTest(model=model.__name__):

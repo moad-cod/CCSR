@@ -1,18 +1,18 @@
 # Workflow definition
 
-**Status:** Planned; only a deployment-wide ingestion orchestrator switch exists.
+**Status:** Implemented; RAG document ingestion is the first registered version.
 
-**Verification sources:**
-[`ingestion_orchestrator.py`](../../../backend/app/services/ingestion_orchestrator.py),
-[`config.py`](../../../backend/app/core/config.py), and
-[`models/__init__.py`](../../../backend/app/models/__init__.py).
+**Authoritative sources:**
+[`model.py`](../../../backend/app/platform/execution/model.py),
+[`registry.py`](../../../backend/app/platform/execution/registry.py), and
+[`workflows.py`](../../../backend/app/modules/ragforge/workflows.py).
 
 **Hits**
 
-- Future approved input/output schemas, workflow version, engine selection,
+- Approved input/output schemas, workflow version, engine selection,
   runtime policy, module handler, and produced artifact types.
 
 **Does not hit**
 
-- The browser or arbitrary user-supplied commands. The current browser does not
-  define Airflow DAGs or Celery tasks.
+- The browser or arbitrary user-supplied commands. Engine selection and handler
+  references come only from server-registered definitions.

@@ -10,8 +10,8 @@ and [`chunk_indexing.py`](../../../backend/app/modules/ragforge/services/chunk_i
 **Current movement**
 
 ```text
-file upload -> MinIO Bronze + PostgreSQL document/version/run
--> Airflow or Celery -> Silver chunks -> Gold embeddings
+file upload -> MinIO Bronze + generic run + linked RAG ingestion run
+-> registered Airflow or Celery adapter -> Silver chunks -> Gold embeddings
 -> Qdrant + PostgreSQL chunk lineage -> indexed status and SSE
 ```
 

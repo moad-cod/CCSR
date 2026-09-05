@@ -21,8 +21,10 @@ The repository remains one deployable modular monolith.
 - PostgreSQL is authoritative for durable application state. Redis is
   best-effort cache/progress transport. MinIO stores ingestion artifacts and
   Qdrant stores RAG vectors.
-- Airflow and Celery execute the same RAG ingestion stages through different
-  adapters. A generic workflow/run gateway is not implemented yet.
+- Versioned workflow definitions and generic runs are durable platform state.
+  The execution gateway validates enabled capabilities and workflow inputs,
+  then dispatches through Airflow or Celery adapters. RAG ingestion is the
+  first registered workflow and keeps its detailed module-owned run.
 
 ## Intended dependency direction
 

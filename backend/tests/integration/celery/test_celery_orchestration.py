@@ -58,14 +58,25 @@ class IngestionDispatchFailureTests(unittest.IsolatedAsyncioTestCase):
     async def test_configured_orchestrator_failure_marks_run_failed(self):
         from app.services import ingestion_orchestrator
 
-        db = SimpleNamespace(commit=AsyncMock())
+        db = SimpleNamespace(
+            get=AsyncMock(
+                return_value=SimpleNamespace(
+                    id="run-id",
+                    generic_run_id="generic-run-id",
+                    project_id="project-id",
+                    created_by="user-id",
+                )
+            ),
+            commit=AsyncMock(),
+        )
 
         with (
             patch.object(settings, "ORCHESTRATOR", "celery"),
             patch.object(settings, "CELERY_BROKER_URL", "redis://redis:6379/1"),
             patch.object(settings, "CELERY_TASK_ALWAYS_EAGER", False),
-            patch(
-                "app.workers.tasks.enqueue_ingestion",
+            patch.object(
+                ingestion_orchestrator.execution_gateway,
+                "dispatch",
                 AsyncMock(return_value=None),
             ),
             patch(
@@ -99,14 +110,25 @@ class IngestionDispatchFailureTests(unittest.IsolatedAsyncioTestCase):
     async def test_configured_orchestrator_exception_is_marked_failed_and_raised(self):
         from app.services import ingestion_orchestrator
 
-        db = SimpleNamespace(commit=AsyncMock())
+        db = SimpleNamespace(
+            get=AsyncMock(
+                return_value=SimpleNamespace(
+                    id="run-id",
+                    generic_run_id="generic-run-id",
+                    project_id="project-id",
+                    created_by="user-id",
+                )
+            ),
+            commit=AsyncMock(),
+        )
 
         with (
             patch.object(settings, "ORCHESTRATOR", "celery"),
             patch.object(settings, "CELERY_BROKER_URL", "redis://redis:6379/1"),
             patch.object(settings, "CELERY_TASK_ALWAYS_EAGER", False),
-            patch(
-                "app.workers.tasks.enqueue_ingestion",
+            patch.object(
+                ingestion_orchestrator.execution_gateway,
+                "dispatch",
                 AsyncMock(side_effect=RuntimeError("broker unavailable")),
             ),
             patch(

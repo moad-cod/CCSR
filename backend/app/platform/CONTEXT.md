@@ -11,6 +11,9 @@ This package owns cross-product identity and tenancy capabilities.
 - capabilities/ owns capability definitions, the in-process registry, and
   project/account lifecycle contracts. Product modules implement those hooks;
   the application composition root registers them.
+- execution/ owns durable workflow definitions and generic runs plus the
+  execution gateway and engine adapters. Module-owned workflow registrations
+  supply schemas and handlers; the browser never selects infrastructure.
 
 Legacy imports under app.core, app.api, app.models, and app.repositories are
 compatibility aliases. New platform code should import from app.platform.

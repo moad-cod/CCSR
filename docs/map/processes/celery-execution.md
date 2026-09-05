@@ -9,7 +9,7 @@
 **Current movement**
 
 ```text
-ingestion run -> Celery chain -> shared RAG ingestion stages
+generic run -> registered Celery adapter handler -> existing Celery chain
 -> authenticated internal FastAPI callbacks -> durable state/progress
 ```
 
@@ -20,4 +20,4 @@ ingestion run -> Celery chain -> shared RAG ingestion stages
 
 **Does not hit**
 
-- Direct PostgreSQL writes by workers or a generic short-workflow registry.
+- Direct PostgreSQL writes by workers or browser-selected task names.

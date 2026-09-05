@@ -1,24 +1,26 @@
 # Workflow submission
 
-**Status:** Generic submission is planned; RAG ingestion submission exists.
+**Status:** Implemented for registered RAG ingestion; arbitrary submission is not exposed.
 
-**Authoritative current sources:** [`ingest.py`](../../../backend/app/modules/ragforge/api/ingest.py),
-[`ingestion_orchestrator.py`](../../../backend/app/services/ingestion_orchestrator.py),
-and [`ingestion_run.py`](../../../backend/app/modules/ragforge/models/ingestion_run.py).
+**Authoritative sources:** [`gateway.py`](../../../backend/app/platform/execution/gateway.py),
+[`workflows.py`](../../../backend/app/modules/ragforge/workflows.py), and
+[`ingestion_orchestrator.py`](../../../backend/app/services/ingestion_orchestrator.py).
 
 **Current movement**
 
 ```text
-owned project upload -> validate and land Bronze
--> create RAG ingestion run -> deployment-wide ORCHESTRATOR switch
--> Airflow or Celery
+authorized project upload -> validate and land Bronze
+-> create generic run + linked RAG ingestion run
+-> validate registered input/capability -> registered engine adapter
+-> existing Airflow DAG or Celery chain
 ```
 
 **Hits**
 
-- File upload validation, MinIO landing, ingestion state, and engine enqueue.
+- File upload validation, MinIO landing, versioned definition/input snapshot,
+  durable generic and RAG state, and registered engine enqueue.
 
 **Does not hit**
 
-- Versioned workflow definitions, generic runs, quotas, member execution policy,
-  or arbitrary workflow inputs.
+- Quota reservation/finalization, arbitrary workflow inputs, or browser-selected
+  engines and handlers.

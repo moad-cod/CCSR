@@ -212,7 +212,8 @@ sequenceDiagram
 6. Allocate the next version number.
 7. Upload the raw object to MinIO's Bronze bucket.
 8. Insert a `DocumentVersion` with status `landed` and null Silver/Gold paths.
-9. Insert an `IngestionRun` with status `landed`.
+9. Insert an `IngestionRun` with status `landed` and link it to a validated
+   generic `Run` for `ragforge.ingest_document@1.0.0`.
 10. Commit, publish a best-effort event, return `202`, and trigger `app/services/ingestion_orchestrator.py` as a background task when configured.
 
 The object layout is deterministic and tenant-aware:
@@ -227,7 +228,7 @@ If MinIO succeeds but the SQL transaction fails, the endpoint attempts to delete
 
 ### Orchestrator boundary (`app/services/ingestion_orchestrator.py`)
 
-File ingestion no longer imports Airflow directly. `app/modules/ragforge/api/ingest.py` calls `ingestion_orchestration_enabled()` before scheduling a background enqueue and then calls `enqueue_ingestion(run.id)`. The boundary selects the implementation from `ORCHESTRATOR`:
+File ingestion no longer imports Airflow directly. `app/modules/ragforge/api/ingest.py` calls `ingestion_orchestration_enabled()` before scheduling a background enqueue and then calls `enqueue_ingestion(run.id)`. The boundary dispatches the linked generic run through the server-registered workflow definition; `ORCHESTRATOR` selects that definition's adapter for backward-compatible deployment configuration:
 
 | Value | Behavior |
 | --- | --- |
@@ -293,7 +294,9 @@ chain(
 
 Each task wraps one shared stage from `jobs/ingestion_workflow.py`. Stage failures retry according to `CELERY_TASK_MAX_RETRIES` and `CELERY_TASK_RETRY_DELAY_SECONDS`. When the final retry is exhausted, Celery attempts to mark the durable ingestion run `failed` through the internal control-plane API.
 
-Celery stores its workflow ID in the existing `IngestionRun.airflow_dag_run_id` field for now. That preserves schema compatibility during the comparison branch, but the field name is Airflow-specific.
+The generic run stores the Celery workflow ID in `external_execution_id` with
+`engine=celery`. It is also dual-written to `IngestionRun.airflow_dag_run_id`
+to preserve the existing ingestion API during the compatibility window.
 
 ### Artifact transforms (`app/modules/ragforge/services/pipeline_artifacts.py`)
 
@@ -496,6 +499,8 @@ Embedding-run states are `queued`, `running`, `completed`, `failed`, and `cancel
 
 | File | Responsibility |
 | --- | --- |
+| `app/platform/execution/` | Versioned definitions, validated generic runs, read APIs, gateway, and Airflow/Celery adapters. |
+| `app/modules/ragforge/workflows.py` | Registers the RAG ingestion contract and links generic runs to detailed ingestion runs. |
 | `app/core/config.py` | Pydantic environment settings and provider/R2 validation. |
 | `app/core/db.py` | Async SQLAlchemy engine, session factory, declarative base, and FastAPI dependency. |
 | `app/platform/access/authentication.py` | Decode HS256 JWT and expose `user_id`; database existence/soft-delete checks occur in endpoint code. |
@@ -824,7 +829,9 @@ These are important implementation facts, not necessarily defects in every deplo
    external pipeline trigger or operational recovery. If a configured Airflow
    or Celery adapter fails to accept the run, the orchestrator boundary records
    a terminal, retryable `failed` state.
-7. **Celery currently reuses `airflow_dag_run_id`.** The Celery workflow ID is persisted in the existing Airflow-named field to avoid schema churn during comparison.
+7. **`airflow_dag_run_id` remains a compatibility field.** Generic runs now
+   use engine-neutral fields, but ingestion responses still dual-write the old
+   field until clients migrate.
 8. **Celery is implemented for benchmarking, but the infrastructure E2E suite is still Airflow-oriented.** Celery has focused unit coverage and benchmark validation; the older `tests/e2e/test_control_plane.py` still waits for Airflow success.
 9. **Embedding-run tracking is active for durable file ingestion.** The Silver-to-Gold stage updates `EmbeddingRun` records through the internal pipeline API; synchronous URL/GDrive/multimodal paths still do not create this lineage.
 10. **CrossEncoder reranking is optional.** It is referenced in code but intentionally absent from the base dependencies, so default installations preserve RRF order.

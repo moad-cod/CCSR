@@ -29,6 +29,7 @@ class User(Base):
     )
     projects = relationship("Project", back_populates="creator", foreign_keys="Project.created_by")
     ingestion_runs = relationship("IngestionRun", back_populates="creator")
+    runs = relationship("GenericRun", back_populates="requester", foreign_keys="GenericRun.requested_by")
     query_logs = relationship("QueryLog", back_populates="user")
 
     @validates("global_role")

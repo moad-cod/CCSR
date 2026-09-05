@@ -134,14 +134,24 @@ def build_ingestion_workflow(ingestion_run_id: str):
     )
 
 
-async def enqueue_ingestion(ingestion_run_id: str) -> str | None:
-    """Publish the Celery ingestion chain and persist its workflow ID."""
+async def dispatch_ingestion_workflow(ingestion_run_id: str) -> str | None:
+    """Publish the existing stage chain without changing its internal tasks."""
     if not settings.CELERY_BROKER_URL and not settings.CELERY_TASK_ALWAYS_EAGER:
         return None
-
     try:
         result = build_ingestion_workflow(ingestion_run_id).apply_async()
-        workflow_id = str(result.id)
+        return str(result.id)
+    except Exception:
+        logger.exception("Could not dispatch ingestion run %s in Celery", ingestion_run_id)
+        return None
+
+
+async def enqueue_ingestion(ingestion_run_id: str) -> str | None:
+    """Legacy enqueue API; dispatch through the adapter and dual-write status."""
+    try:
+        workflow_id = await dispatch_ingestion_workflow(ingestion_run_id)
+        if workflow_id is None:
+            return None
         async with AsyncSessionLocal() as db:
             await update_ingestion_status(
                 db,

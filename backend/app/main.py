@@ -9,9 +9,12 @@ from app.platform.organizations.api import router as organizations_router
 from app.modules.ragforge.api.internal_pipeline import router as internal_pipeline_router
 from app.modules.ragforge.capability import register_ragforge_capability
 from app.platform.capabilities import capability_registry
+from app.platform.execution.api import router as execution_router
+from app.modules.ragforge.workflows import register_ragforge_workflows
 
 
 register_ragforge_capability(capability_registry)
+register_ragforge_workflows()
 
 app = FastAPI(
     title="RAGForge API",
@@ -25,6 +28,7 @@ app.include_router(query_router,     prefix="/rag",       tags=["rag"])
 app.include_router(documents_router, prefix="/documents", tags=["documents"])
 app.include_router(chunkers_router,  prefix="/chunkers",  tags=["chunkers"])
 app.include_router(organizations_router, prefix="/organizations", tags=["organizations"])
+app.include_router(execution_router, tags=["execution"])
 app.include_router(
     internal_pipeline_router,
     prefix="/internal/pipeline",

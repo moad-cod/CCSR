@@ -38,6 +38,7 @@ class Project(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    runs = relationship("GenericRun", back_populates="project", cascade="all, delete-orphan")
 
     @property
     def collection(self) -> str:

@@ -6,8 +6,12 @@ import logging
 
 from app.core.config import settings
 from app.core.db import AsyncSessionLocal
-from app.modules.ragforge.repositories.ingestion_runs import mark_ingestion_failed
+from app.modules.ragforge.repositories.ingestion_runs import (
+    mark_ingestion_failed,
+    update_ingestion_status,
+)
 from app.services.event_stream import publish_ingestion_event
+from app.platform.execution.gateway import execution_gateway
 
 
 logger = logging.getLogger(__name__)
@@ -54,14 +58,43 @@ async def enqueue_ingestion(ingestion_run_id: str) -> str | None:
     orchestrator = selected_orchestrator()
     workflow_id: str | None = None
     try:
-        if orchestrator == "celery":
-            from app.workers.tasks import enqueue_ingestion as enqueue_celery
+        from app.modules.ragforge.models.ingestion_run import IngestionRun
+        from app.modules.ragforge.workflows import (
+            create_generic_ingestion_run,
+            register_ragforge_workflows,
+        )
 
-            workflow_id = await enqueue_celery(ingestion_run_id)
-        elif orchestrator == "airflow":
-            from app.services.airflow import enqueue_ingestion as enqueue_airflow
+        register_ragforge_workflows()
+        async with AsyncSessionLocal() as db:
+            ingestion_run = await db.get(IngestionRun, ingestion_run_id)
+            if ingestion_run is None:
+                raise LookupError(f"Ingestion run {ingestion_run_id} does not exist")
+            if ingestion_run.generic_run_id is None:
+                generic_run = await create_generic_ingestion_run(
+                    db,
+                    ingestion_run_id=ingestion_run.id,
+                    project_id=ingestion_run.project_id,
+                    requested_by=ingestion_run.created_by,
+                )
+                ingestion_run.generic_run_id = generic_run.id
+                await db.commit()
+            generic_run_id = ingestion_run.generic_run_id
 
-            workflow_id = await enqueue_airflow(ingestion_run_id)
+        workflow_id = await execution_gateway.dispatch(generic_run_id)
+        if workflow_id:
+            async with AsyncSessionLocal() as db:
+                await update_ingestion_status(
+                    db,
+                    ingestion_run_id,
+                    "queued",
+                    airflow_dag_run_id=workflow_id,
+                )
+                await db.commit()
+            await publish_ingestion_event(
+                ingestion_run_id,
+                "queued",
+                data={"airflow_dag_run_id": workflow_id},
+            )
     except Exception:
         logger.exception(
             "Configured %s orchestrator failed while accepting ingestion run %s",
