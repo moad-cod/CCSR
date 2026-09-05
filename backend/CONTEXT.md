@@ -17,6 +17,8 @@ still in their historical packages.
 - Generic project and shared/mixed adapters: historical `app/api/`,
   `app/models/`, `app/repositories/`, and `app/services/` paths.
 - Durable migrations: `alembic/versions/`.
+- Generic workflow definitions, runs, gateway, and engine adapters:
+  `app/platform/execution/`.
 - Celery worker adapter: `app/workers/`
 - Shared ingestion stages and commands: `jobs/`
 - Airflow image, DAG, and callback plugin: `airflow/`
@@ -42,7 +44,12 @@ changing those execution or research paths.
   `rag_project_configs` owns Qdrant identity, embedding/sparse models, the
   default chunker, and retrieval settings. `Project.qdrant_collection` remains
   mandatory and dual-written temporarily for API/schema compatibility.
-- `IngestionRun.airflow_dag_run_id` is also used for Celery workflow IDs.
+- Generic runs own engine-neutral `engine` and `external_execution_id` fields.
+  `IngestionRun.airflow_dag_run_id` remains dual-written for API compatibility
+  and can still contain a Celery workflow ID during the transition.
+- RAGForge registers `ragforge.ingest_document@1.0.0`; its generic run wraps
+  the detailed ingestion run while the Airflow DAG and Celery chain keep their
+  existing stage order, task names, callbacks, and event payloads.
 - The application root registers RAGForge in the platform capability registry;
   project creation provisions its default association/configuration, and
   project/account deletion invokes hooks only for enabled projects without
