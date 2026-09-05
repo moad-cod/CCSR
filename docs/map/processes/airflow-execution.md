@@ -10,7 +10,7 @@
 **Current movement**
 
 ```text
-ingestion run -> Airflow REST enqueue -> ragforge_ingestion DAG
+generic run -> Airflow adapter -> ragforge_ingestion DAG
 -> configured Bronze/Silver/Gold/Qdrant jobs
 -> authenticated internal FastAPI callbacks
 ```
@@ -22,4 +22,4 @@ ingestion run -> Airflow REST enqueue -> ragforge_ingestion DAG
 
 **Does not hit**
 
-- Direct PostgreSQL writes by Airflow or generic workflow/engine policy.
+- Direct PostgreSQL writes by Airflow or changes to module-owned ingestion stages.
