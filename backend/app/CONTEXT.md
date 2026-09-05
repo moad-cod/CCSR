@@ -9,6 +9,9 @@ live under `platform/`, while pure RAGForge code lives under
 - Platform-owned: `platform/access` (durable sessions and shared policies),
   `platform/accounts` (global roles), and `platform/organizations`
   (memberships and invitations).
+- Platform execution: `platform/execution` owns versioned workflow metadata,
+  generic runs, input validation, dispatch, and Airflow/Celery adapter
+  contracts. Product modules register approved definitions and handlers.
 - RAGForge-owned: `modules/ragforge` for documents, versions, chunks,
   embeddings, ingestion, retrieval, generation, query history, traces, and
   per-project RAG configuration.
