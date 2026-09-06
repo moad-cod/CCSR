@@ -18,6 +18,10 @@ from app.models import (
     RAGProjectConfig,
     User,
     WorkflowDefinition,
+    Artifact,
+    AuditEvent,
+    QuotaPolicy,
+    QuotaReservation,
 )
 
 
@@ -41,6 +45,10 @@ class ControlPlaneModelTests(unittest.TestCase):
                 "rag_project_configs",
                 "workflow_definitions",
                 "runs",
+                "quota_policies",
+                "quota_reservations",
+                "artifacts",
+                "audit_events",
             }.issubset(Base.metadata.tables)
         )
 
@@ -87,6 +95,9 @@ class ControlPlaneModelTests(unittest.TestCase):
             (User, "global_role", "not-a-global-role"),
             (WorkflowDefinition, "engine", "not-an-engine"),
             (GenericRun, "status", "not-a-run-status"),
+            (Artifact, "visibility", "not-a-visibility"),
+            (AuditEvent, "outcome", "not-an-outcome"),
+            (QuotaReservation, "status", "not-a-reservation-status"),
         )
         for model, field_name, invalid_value in cases:
             with self.subTest(model=model.__name__):
