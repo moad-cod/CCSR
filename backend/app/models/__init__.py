@@ -16,6 +16,9 @@ from app.platform.organizations.membership import OrganizationMembership
 from app.platform.organizations.invitation import OrganizationInvitation
 from app.platform.organizations.model import Organization
 from app.platform.execution.model import GenericRun, WorkflowDefinition
+from app.platform.artifacts.model import Artifact
+from app.platform.audit.model import AuditEvent
+from app.platform.quotas.model import QuotaPolicy, QuotaReservation
 
 
 __all__ = [
@@ -36,4 +39,8 @@ __all__ = [
     "RetrievalLog",
     "WorkflowDefinition",
     "GenericRun",
+    "QuotaPolicy",
+    "QuotaReservation",
+    "Artifact",
+    "AuditEvent",
 ]
