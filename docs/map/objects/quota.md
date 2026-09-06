@@ -1,14 +1,14 @@
 # Quota
 
-**Status:** Planned; no durable quota or usage model.
+**Status:** Implemented for per-account workflow execution.
 
-**Verification sources:** the current model registry in
-[`models/__init__.py`](../../../backend/app/models/__init__.py) and current
-backend limitations in [`BACKEND_MAP.md`](../../../backend/BACKEND_MAP.md).
+**Authoritative sources:** [`model.py`](../../../backend/app/platform/quotas/model.py),
+[`service.py`](../../../backend/app/platform/quotas/service.py), and
+[`0009 migration`](../../../backend/alembic/versions/20260906_0009_add_quotas_artifacts_and_audit.py).
 
 **Hits**
 
-- Future member run allowance, concurrency, runtime/input limits, reservation,
+- Member run allowance, concurrency, runtime/input limits, reservation,
   finalization, and usage ledger.
 
 **Does not hit**
