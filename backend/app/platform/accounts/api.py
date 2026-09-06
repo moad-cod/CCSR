@@ -13,6 +13,8 @@ from app.platform.access.policies import GLOBAL_ROLE_ADMIN, require_global_roles
 from app.platform.accounts.model import User
 from app.platform.capabilities import AccountDeletionContext, capability_registry
 from app.platform.organizations import repository as membership_repository
+from app.platform.audit import record_audit_event
+from app.platform.quotas import ensure_default_quota_policy
 from datetime import UTC, datetime, timedelta
 from pydantic import BaseModel, ConfigDict, field_validator
 import uuid
@@ -174,6 +176,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     )
     db.add(user)
     await db.flush()
+    await ensure_default_quota_policy(db, user.id)
     await db.commit()
     await db.refresh(user)
     return _user_payload(user)
@@ -285,7 +288,17 @@ async def update_global_role(
         )
         if admin_count <= 1:
             raise HTTPException(409, "The last platform admin cannot be demoted")
+    previous_role = account.global_role
     account.global_role = body.global_role
+    await record_audit_event(
+        db,
+        actor_user_id=_admin["user_id"],
+        actor_global_role="admin",
+        action="account.role.update",
+        target_type="user",
+        target_id=account.id,
+        details={"previous_role": previous_role, "new_role": body.global_role},
+    )
     await db.commit()
     await db.refresh(account)
     return _user_payload(account)
