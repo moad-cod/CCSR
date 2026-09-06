@@ -10,8 +10,8 @@ and [`docker-compose.yml`](../../../docker-compose.yml).
 **Hits**
 
 - Raw Bronze uploads, chunked Silver Parquet, embedded Gold Parquet, retryable
-  version-scoped object paths, and future shared large artifacts.
+  version-scoped object paths whose metadata is registered as shared artifacts.
 
 **Does not hit**
 
-- Durable artifact metadata, access policy, run state, or vector search.
+- Durable artifact metadata, run state, or vector search.
