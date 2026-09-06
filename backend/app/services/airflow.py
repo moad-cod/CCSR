@@ -20,7 +20,7 @@ async def dispatch_ingestion(ingestion_run_id: str) -> str | None:
     definition = ragforge_ingestion_workflow_definition("airflow")
     receipt = await AirflowExecutionAdapter(client_factory=httpx.AsyncClient).dispatch(
         definition,
-        IngestDocumentInput(ingestion_run_id=ingestion_run_id).model_dump(),
+        IngestDocumentInput(ingestion_run_id=ingestion_run_id).model_dump(exclude_none=True),
         None,
     )
     return receipt.external_execution_id if receipt is not None else None
