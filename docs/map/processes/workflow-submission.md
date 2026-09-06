@@ -11,16 +11,16 @@
 ```text
 authorized project upload -> validate and land Bronze
 -> create generic run + linked RAG ingestion run
--> validate registered input/capability -> registered engine adapter
+-> validate registered input/capability -> reserve quota
+-> registered engine adapter
 -> existing Airflow DAG or Celery chain
 ```
 
 **Hits**
 
 - File upload validation, MinIO landing, versioned definition/input snapshot,
-  durable generic and RAG state, and registered engine enqueue.
+  durable generic and RAG state, quota, artifact registration, and engine enqueue.
 
 **Does not hit**
 
-- Quota reservation/finalization, arbitrary workflow inputs, or browser-selected
-  engines and handlers.
+- Arbitrary workflow inputs or browser-selected engines and handlers.

@@ -25,6 +25,9 @@ The repository remains one deployable modular monolith.
   The execution gateway validates enabled capabilities and workflow inputs,
   then dispatches through Airflow or Celery adapters. RAG ingestion is the
   first registered workflow and keeps its detailed module-owned run.
+- Per-account quota reservations/finalization, shared artifact metadata, safe
+  generic errors, and append-only admin audit events are durable platform
+  services. MinIO continues to hold artifact bodies.
 
 ## Intended dependency direction
 

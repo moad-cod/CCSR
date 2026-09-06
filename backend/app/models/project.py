@@ -39,6 +39,7 @@ class Project(Base):
         uselist=False,
     )
     runs = relationship("GenericRun", back_populates="project", cascade="all, delete-orphan")
+    artifacts = relationship("Artifact", back_populates="project", cascade="all, delete-orphan")
 
     @property
     def collection(self) -> str:

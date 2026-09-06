@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.platform.execution.contracts import RegisteredWorkflowDefinition
 from app.platform.execution.model import GenericRun, WorkflowDefinition
+from app.platform.audit.safety import safe_execution_error
 
 
 ALLOWED_RUN_TRANSITIONS = {
@@ -128,6 +129,7 @@ async def update_run_status(
     status: str,
     *,
     external_execution_id: str | None = None,
+    error_code: str | None = None,
     error_message: str | None = None,
     output_summary: dict[str, Any] | None = None,
 ) -> GenericRun | None:
@@ -144,8 +146,22 @@ async def update_run_status(
         run.started_at = now
     if status in {"succeeded", "failed", "cancelled"}:
         run.completed_at = now
-    run.error_message = error_message
+    if status == "failed":
+        safe_code, safe_message = safe_execution_error(error_message)
+        run.error_code = error_code or safe_code
+        run.error_message = safe_message
+    else:
+        run.error_code = error_code
+        run.error_message = error_message
     if output_summary is not None:
         run.output_summary = output_summary
+    if status in {"succeeded", "failed", "cancelled"}:
+        from app.platform.quotas import finalize_run_quota
+
+        await finalize_run_quota(
+            db,
+            run,
+            consume=bool(run.started_at is not None or status == "succeeded"),
+        )
     await db.flush()
     return run

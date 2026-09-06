@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.ragforge.models.document import Document
 from app.modules.ragforge.models.document_version import DocumentVersion
 from app.modules.ragforge.models.ingestion_run import IngestionRun
+from app.core.config import settings
 
 
 TERMINAL_STATUSES = frozenset({"indexed", "failed", "cancelled"})
@@ -31,7 +32,18 @@ DOCUMENT_STATUS_BY_RUN_STATUS = {
 }
 
 
-async def create_ingestion_run(db: AsyncSession, **values) -> IngestionRun:
+def _minio_storage_uri(bucket: str, object_path: str) -> str:
+    prefix = f"{bucket}/"
+    object_key = object_path[len(prefix) :] if object_path.startswith(prefix) else object_path
+    return f"minio://{bucket}/{object_key}"
+
+
+async def create_ingestion_run(
+    db: AsyncSession,
+    *,
+    input_size_bytes: int | None = None,
+    **values,
+) -> IngestionRun:
     run = IngestionRun(**values)
     db.add(run)
     await db.flush()
@@ -42,8 +54,30 @@ async def create_ingestion_run(db: AsyncSession, **values) -> IngestionRun:
         ingestion_run_id=run.id,
         project_id=run.project_id,
         requested_by=run.created_by,
+        input_size_bytes=input_size_bytes,
     )
     run.generic_run_id = generic_run.id
+    version = await db.get(DocumentVersion, run.document_version_id)
+    if version is not None and getattr(version, "bronze_path", None):
+        from app.modules.ragforge.workflows import register_ingestion_artifact
+
+        await register_ingestion_artifact(
+            db,
+            generic_run_id=generic_run.id,
+            project_id=run.project_id,
+            created_by=run.created_by,
+            document_id=run.document_id,
+            document_version_id=run.document_version_id,
+            artifact_type="rag-bronze",
+            storage_provider="minio",
+            storage_uri=_minio_storage_uri(
+                settings.MINIO_BUCKET_BRONZE,
+                version.bronze_path,
+            ),
+            version=str(getattr(version, "version_number", "1")),
+            checksum=getattr(version, "content_hash", None),
+            size_bytes=input_size_bytes,
+        )
     await db.flush()
     return run
 
@@ -135,6 +169,25 @@ async def retry_failed_ingestion_run(
         version.error_message = None
         version.silver_path = None
         version.gold_path = None
+        if getattr(version, "bronze_path", None):
+            from app.modules.ragforge.workflows import register_ingestion_artifact
+
+            await register_ingestion_artifact(
+                db,
+                generic_run_id=generic_run.id,
+                project_id=run.project_id,
+                created_by=run.created_by,
+                document_id=run.document_id,
+                document_version_id=run.document_version_id,
+                artifact_type="rag-bronze",
+                storage_provider="minio",
+                storage_uri=_minio_storage_uri(
+                    settings.MINIO_BUCKET_BRONZE,
+                    version.bronze_path,
+                ),
+                version=str(getattr(version, "version_number", "1")),
+                checksum=getattr(version, "content_hash", None),
+            )
 
     await db.flush()
     return run
@@ -185,7 +238,49 @@ async def update_ingestion_status(
         if gold_path is not None:
             version.gold_path = gold_path
     if run.generic_run_id is not None:
+        from app.modules.ragforge.workflows import register_ingestion_artifact
         from app.platform.execution.repository import update_run_status
+
+        artifact_version = str(getattr(version, "version_number", "1"))
+        artifact_common = {
+            "db": db,
+            "generic_run_id": run.generic_run_id,
+            "project_id": run.project_id,
+            "created_by": run.created_by,
+            "document_id": run.document_id,
+            "document_version_id": run.document_version_id,
+            "version": artifact_version,
+        }
+        if silver_path is not None:
+            await register_ingestion_artifact(
+                **artifact_common,
+                artifact_type="rag-silver",
+                storage_provider="minio",
+                storage_uri=_minio_storage_uri(
+                    settings.MINIO_BUCKET_SILVER,
+                    silver_path,
+                ),
+            )
+        if gold_path is not None:
+            await register_ingestion_artifact(
+                **artifact_common,
+                artifact_type="rag-gold",
+                storage_provider="minio",
+                storage_uri=_minio_storage_uri(
+                    settings.MINIO_BUCKET_GOLD,
+                    gold_path,
+                ),
+            )
+        if status == "indexed":
+            await register_ingestion_artifact(
+                **artifact_common,
+                artifact_type="qdrant-index",
+                storage_provider="qdrant",
+                storage_uri=(
+                    f"qdrant://project/{run.project_id}/"
+                    f"document-version/{run.document_version_id}"
+                ),
+            )
 
         generic_status = {
             "landed": "pending",

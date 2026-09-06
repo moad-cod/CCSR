@@ -5,15 +5,16 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.platform.execution import RegisteredWorkflowDefinition
+from app.platform.execution.contracts import RegisteredWorkflowDefinition
 from app.platform.execution.adapters import AirflowExecutionAdapter, CeleryExecutionAdapter
 from app.platform.execution.gateway import execution_gateway
 from app.platform.execution.model import GenericRun
 from app.platform.execution.registry import ExecutionRegistry, execution_registry
+from app.platform.artifacts import register_artifact
 
 
 RAGFORGE_INGEST_WORKFLOW_KEY = "ragforge.ingest_document"
@@ -23,6 +24,7 @@ CELERY_INGESTION_HANDLER = "ragforge.ingestion.workflow"
 
 class IngestDocumentInput(BaseModel):
     ingestion_run_id: str
+    input_size_bytes: int | None = Field(default=None, ge=0)
 
 
 async def _dispatch_celery_ingestion(payload: Mapping[str, Any]) -> str | None:
@@ -55,6 +57,7 @@ def ragforge_ingestion_workflow_definition(
         handler_reference=handler_reference,
         resource_requirements={"profile": "ingestion-plan"},
         artifact_types=("rag-bronze", "rag-silver", "rag-gold", "qdrant-index"),
+        member_execution_allowed=True,
         publication_status="published",
         external_id_prefix="ragforge",
     )
@@ -76,6 +79,7 @@ async def create_generic_ingestion_run(
     ingestion_run_id: str,
     project_id: str,
     requested_by: str,
+    input_size_bytes: int | None = None,
 ) -> GenericRun:
     register_ragforge_workflows()
     return await execution_gateway.create_run(
@@ -84,5 +88,42 @@ async def create_generic_ingestion_run(
         version=RAGFORGE_INGEST_WORKFLOW_VERSION,
         project_id=project_id,
         requested_by=requested_by,
-        input_data={"ingestion_run_id": ingestion_run_id},
+        input_data={
+            "ingestion_run_id": ingestion_run_id,
+            "input_size_bytes": input_size_bytes,
+        },
+    )
+
+
+async def register_ingestion_artifact(
+    db: AsyncSession,
+    *,
+    generic_run_id: str,
+    project_id: str,
+    created_by: str,
+    document_id: str,
+    document_version_id: str,
+    artifact_type: str,
+    storage_provider: str,
+    storage_uri: str,
+    version: str,
+    checksum: str | None = None,
+    size_bytes: int | None = None,
+):
+    return await register_artifact(
+        db,
+        project_id=project_id,
+        run_id=generic_run_id,
+        artifact_type=artifact_type,
+        storage_provider=storage_provider,
+        storage_uri=storage_uri,
+        version=version,
+        visibility="private",
+        checksum=checksum,
+        size_bytes=size_bytes,
+        created_by=created_by,
+        metadata={
+            "document_id": document_id,
+            "document_version_id": document_version_id,
+        },
     )
