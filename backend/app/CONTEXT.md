@@ -12,6 +12,9 @@ live under `platform/`, while pure RAGForge code lives under
 - Platform execution: `platform/execution` owns versioned workflow metadata,
   generic runs, input validation, dispatch, and Airflow/Celery adapter
   contracts. Product modules register approved definitions and handlers.
+- Platform governance: `platform/quotas`, `platform/artifacts`, and
+  `platform/audit` own durable usage, shared artifact metadata, safe error
+  redaction, and administrative event history.
 - RAGForge-owned: `modules/ragforge` for documents, versions, chunks,
   embeddings, ingestion, retrieval, generation, query history, traces, and
   per-project RAG configuration.
