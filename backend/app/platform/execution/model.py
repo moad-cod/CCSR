@@ -99,6 +99,7 @@ class GenericRun(Base):
     quota_cost = Column(Numeric(18, 6), nullable=False, default=0)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
+    error_code = Column(String, nullable=True)
     error_message = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -107,6 +108,8 @@ class GenericRun(Base):
     project = relationship("Project", back_populates="runs")
     requester = relationship("User", back_populates="runs", foreign_keys=[requested_by])
     ingestion_run = relationship("IngestionRun", back_populates="generic_run", uselist=False)
+    quota_reservation = relationship("QuotaReservation", back_populates="run", uselist=False)
+    artifacts = relationship("Artifact", back_populates="run")
 
     @validates("engine")
     def validate_engine(self, _key: str, value: str) -> str:
