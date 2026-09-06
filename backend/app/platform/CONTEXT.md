@@ -14,6 +14,9 @@ This package owns cross-product identity and tenancy capabilities.
 - execution/ owns durable workflow definitions and generic runs plus the
   execution gateway and engine adapters. Module-owned workflow registrations
   supply schemas and handlers; the browser never selects infrastructure.
+- quotas/ owns account policies, atomic reservations, and usage finalization.
+- artifacts/ owns shared metadata while object bodies remain in MinIO.
+- audit/ owns append-only, redacted administrative events.
 
 Legacy imports under app.core, app.api, app.models, and app.repositories are
 compatibility aliases. New platform code should import from app.platform.
