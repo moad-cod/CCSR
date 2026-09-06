@@ -54,6 +54,7 @@ class GenericRunResponse(BaseModel):
     quota_cost: Decimal
     started_at: datetime | None
     completed_at: datetime | None
+    error_code: str | None
     error_message: str | None
     created_at: datetime
     updated_at: datetime
