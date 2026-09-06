@@ -9,7 +9,8 @@
 **Hits**
 
 - Project/workflow/user identity, engine, external execution ID, general
-  status, validated inputs, output summary, usage, and safe errors.
+  status, validated inputs, output summary, settled quota cost, and categorized
+  safe errors.
 
 **Does not hit**
 
