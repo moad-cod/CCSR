@@ -56,6 +56,15 @@ class ExecutionGatewayTests(unittest.IsolatedAsyncioTestCase):
         durable_definition = SimpleNamespace(id="definition-id")
         durable_run = SimpleNamespace(id="run-id")
 
+        db = SimpleNamespace(
+            get=AsyncMock(
+                return_value=SimpleNamespace(
+                    id="user-id",
+                    global_role="member",
+                    deleted_at=None,
+                )
+            )
+        )
         with (
             patch(
                 "app.platform.execution.gateway.capability_repository.list_project_capability_keys",
@@ -69,9 +78,13 @@ class ExecutionGatewayTests(unittest.IsolatedAsyncioTestCase):
                 "app.platform.execution.gateway.repository.create_run",
                 AsyncMock(return_value=durable_run),
             ) as create,
+            patch(
+                "app.platform.execution.gateway.reserve_run_quota",
+                AsyncMock(),
+            ) as reserve,
         ):
             result = await gateway.create_run(
-                SimpleNamespace(),
+                db,
                 workflow_key="test.execute",
                 project_id="project-id",
                 requested_by="user-id",
@@ -85,6 +98,7 @@ class ExecutionGatewayTests(unittest.IsolatedAsyncioTestCase):
             create.await_args.kwargs["input_snapshot"],
             {"resource_id": "resource-id"},
         )
+        reserve.assert_awaited_once()
 
     async def test_create_run_denies_projects_without_required_capability(self):
         registry = ExecutionRegistry()
