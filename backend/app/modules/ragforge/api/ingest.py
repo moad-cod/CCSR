@@ -699,6 +699,7 @@ async def upload_file(
         )
         run = await ingestion_repository.create_ingestion_run(
             db,
+            input_size_bytes=len(file_bytes),
             id=str(uuid.uuid4()),
             project_id=project.id,
             document_id=doc.id,
