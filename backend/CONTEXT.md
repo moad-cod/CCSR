@@ -19,6 +19,8 @@ still in their historical packages.
 - Durable migrations: `alembic/versions/`.
 - Generic workflow definitions, runs, gateway, and engine adapters:
   `app/platform/execution/`.
+- Quotas, shared artifact metadata, and administrative audit events:
+  `app/platform/quotas/`, `app/platform/artifacts/`, and `app/platform/audit/`.
 - Celery worker adapter: `app/workers/`
 - Shared ingestion stages and commands: `jobs/`
 - Airflow image, DAG, and callback plugin: `airflow/`
@@ -50,6 +52,10 @@ changing those execution or research paths.
 - RAGForge registers `ragforge.ingest_document@1.0.0`; its generic run wraps
   the detailed ingestion run while the Airflow DAG and Celery chain keep their
   existing stage order, task names, callbacks, and event payloads.
+- Member runs reserve durable daily/monthly/concurrency quota before dispatch;
+  terminal updates finalize actual usage or release pre-start failures. Admin
+  bypasses, quota changes, role changes, and manual artifact registrations are
+  audited with redacted details.
 - The application root registers RAGForge in the platform capability registry;
   project creation provisions its default association/configuration, and
   project/account deletion invokes hooks only for enabled projects without
