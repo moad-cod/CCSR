@@ -31,6 +31,12 @@ class User(Base):
     ingestion_runs = relationship("IngestionRun", back_populates="creator")
     runs = relationship("GenericRun", back_populates="requester", foreign_keys="GenericRun.requested_by")
     query_logs = relationship("QueryLog", back_populates="user")
+    quota_policy = relationship(
+        "QuotaPolicy",
+        foreign_keys="QuotaPolicy.user_id",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
     @validates("global_role")
     def validate_global_role(self, _key: str, value: str) -> str:
