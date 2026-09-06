@@ -13,6 +13,8 @@ from app.platform.capabilities import repository as capability_repository
 from app.platform.execution import repository
 from app.platform.execution.model import GenericRun, WorkflowDefinition
 from app.platform.execution.registry import ExecutionRegistry, execution_registry
+from app.platform.accounts.model import User
+from app.platform.quotas import reserve_run_quota
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +45,10 @@ class ExecutionGateway:
         except ValidationError as exc:
             raise ValueError("Workflow input is invalid") from exc
         durable_definition = await repository.upsert_workflow_definition(db, definition)
-        return await repository.create_run(
+        account = await db.get(User, requested_by)
+        if account is None or account.deleted_at is not None:
+            raise ValueError("Requesting account does not exist")
+        run = await repository.create_run(
             db,
             project_id=project_id,
             workflow_definition_id=durable_definition.id,
@@ -51,6 +56,13 @@ class ExecutionGateway:
             engine=definition.engine,
             input_snapshot=validated.model_dump(mode="json"),
         )
+        await reserve_run_quota(
+            db,
+            run=run,
+            workflow=definition,
+            actor_global_role=account.global_role,
+        )
+        return run
 
     async def dispatch(self, run_id: str) -> str | None:
         async with AsyncSessionLocal() as db:
@@ -82,6 +94,7 @@ class ExecutionGateway:
                     db,
                     run.id,
                     "failed",
+                    error_code="dispatch_failed",
                     error_message="Execution engine could not accept the workflow",
                 )
                 await db.commit()
@@ -92,6 +105,7 @@ class ExecutionGateway:
                     db,
                     run.id,
                     "failed",
+                    error_code="dispatch_failed",
                     error_message="Execution engine did not accept the workflow",
                 )
                 await db.commit()
