@@ -40,6 +40,16 @@ class Project(Base):
     )
     runs = relationship("GenericRun", back_populates="project", cascade="all, delete-orphan")
     artifacts = relationship("Artifact", back_populates="project", cascade="all, delete-orphan")
+    research_studies = relationship(
+        "ResearchStudy",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    publications = relationship(
+        "Publication",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def collection(self) -> str:
