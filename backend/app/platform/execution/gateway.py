@@ -15,6 +15,7 @@ from app.platform.execution.model import GenericRun, WorkflowDefinition
 from app.platform.execution.registry import ExecutionRegistry, execution_registry
 from app.platform.accounts.model import User
 from app.platform.quotas import reserve_run_quota
+from app.platform.research.model import Experiment, ResearchStudy
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ class ExecutionGateway:
         requested_by: str,
         input_data: dict[str, Any],
         version: str | None = None,
+        experiment_id: str | None = None,
     ) -> GenericRun:
         definition = self.registry.get_workflow(workflow_key, version)
         if definition is None or definition.publication_status != "published":
@@ -48,6 +50,13 @@ class ExecutionGateway:
         account = await db.get(User, requested_by)
         if account is None or account.deleted_at is not None:
             raise ValueError("Requesting account does not exist")
+        if experiment_id is not None:
+            experiment = await db.get(Experiment, experiment_id)
+            if experiment is None:
+                raise ValueError("Experiment does not exist")
+            study = await db.get(ResearchStudy, experiment.study_id)
+            if study is None or study.project_id != project_id:
+                raise ValueError("Experiment does not belong to this project")
         run = await repository.create_run(
             db,
             project_id=project_id,
@@ -55,6 +64,7 @@ class ExecutionGateway:
             requested_by=requested_by,
             engine=definition.engine,
             input_snapshot=validated.model_dump(mode="json"),
+            experiment_id=experiment_id,
         )
         await reserve_run_quota(
             db,
