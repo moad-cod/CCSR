@@ -21,6 +21,8 @@ still in their historical packages.
   `app/platform/execution/`.
 - Quotas, shared artifact metadata, and administrative audit events:
   `app/platform/quotas/`, `app/platform/artifacts/`, and `app/platform/audit/`.
+- Research hierarchy and public-safe publication snapshots:
+  `app/platform/research/` and `app/platform/publication/`.
 - Celery worker adapter: `app/workers/`
 - Shared ingestion stages and commands: `jobs/`
 - Airflow image, DAG, and callback plugin: `airflow/`
@@ -56,6 +58,10 @@ changing those execution or research paths.
   terminal updates finalize actual usage or release pre-start failures. Admin
   bypasses, quota changes, role changes, and manual artifact registrations are
   audited with redacted details.
+- Projects may contain multiple research studies. Generic runs and artifacts
+  can carry experiment/study lineage. Private and draft publications remain
+  project-authorized; visitor routes read only the current immutable snapshot
+  of a public publication.
 - The application root registers RAGForge in the platform capability registry;
   project creation provisions its default association/configuration, and
   project/account deletion invokes hooks only for enabled projects without

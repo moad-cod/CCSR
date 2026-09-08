@@ -15,6 +15,9 @@ live under `platform/`, while pure RAGForge code lives under
 - Platform governance: `platform/quotas`, `platform/artifacts`, and
   `platform/audit` own durable usage, shared artifact metadata, safe error
   redaction, and administrative event history.
+- Platform research: `platform/research` owns the durable study hierarchy and
+  `platform/publication` owns private/draft/public state plus immutable public
+  projections.
 - RAGForge-owned: `modules/ragforge` for documents, versions, chunks,
   embeddings, ingestion, retrieval, generation, query history, traces, and
   per-project RAG configuration.
