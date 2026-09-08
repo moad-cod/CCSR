@@ -118,6 +118,45 @@ class ExecutionGatewayTests(unittest.IsolatedAsyncioTestCase):
                     input_data={"resource_id": "resource-id"},
                 )
 
+    async def test_create_run_rejects_experiment_from_another_project(self):
+        registry = ExecutionRegistry()
+        registry.register_workflow(_definition())
+        gateway = ExecutionGateway(registry)
+        db = SimpleNamespace(
+            get=AsyncMock(
+                side_effect=[
+                    SimpleNamespace(id="user-id", global_role="member", deleted_at=None),
+                    SimpleNamespace(id="experiment-id", study_id="study-id"),
+                    SimpleNamespace(id="study-id", project_id="other-project"),
+                ]
+            )
+        )
+        with (
+            patch(
+                "app.platform.execution.gateway.capability_repository.list_project_capability_keys",
+                AsyncMock(return_value=("test",)),
+            ),
+            patch(
+                "app.platform.execution.gateway.repository.upsert_workflow_definition",
+                AsyncMock(return_value=SimpleNamespace(id="definition-id")),
+            ),
+            patch(
+                "app.platform.execution.gateway.repository.create_run",
+                AsyncMock(),
+            ) as create,
+        ):
+            with self.assertRaisesRegex(ValueError, "does not belong"):
+                await gateway.create_run(
+                    db,
+                    workflow_key="test.execute",
+                    project_id="project-id",
+                    requested_by="user-id",
+                    input_data={"resource_id": "resource-id"},
+                    experiment_id="experiment-id",
+                )
+
+        create.assert_not_awaited()
+
 
 class CeleryAdapterTests(unittest.IsolatedAsyncioTestCase):
     async def test_adapter_uses_only_the_registered_module_handler(self):
