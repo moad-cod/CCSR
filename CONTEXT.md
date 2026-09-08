@@ -28,6 +28,9 @@ The repository remains one deployable modular monolith.
 - Per-account quota reservations/finalization, shared artifact metadata, safe
   generic errors, and append-only admin audit events are durable platform
   services. MinIO continues to hold artifact bodies.
+- Capability-neutral research studies now own questions, hypotheses, dataset
+  links, experiments, comparisons, and findings. Publications move through
+  private/draft/public state and expose only immutable public-safe snapshots.
 
 ## Intended dependency direction
 
