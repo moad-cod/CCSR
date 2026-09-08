@@ -11,7 +11,7 @@ import {EmptyState} from "@/components/ui/empty-state";
 import {ErrorState} from "@/components/ui/error-state";
 import {LoadingState} from "@/components/ui/loading-state";
 import {apiFetch} from "@/lib/api";
-import type {Document, IngestionRun, Project, QueryHistoryItem} from "@/lib/types";
+import type {Document, IngestionRun, Project, QueryHistoryItem, ResearchExperiment} from "@/lib/types";
 import {formatLatency, relativeTime} from "@/lib/utils";
 
 function averageLatency(items: QueryHistoryItem[]) {
@@ -41,17 +41,19 @@ function ConfigCard({label, title, detail, status, accent}: {label: string; titl
 
 export function LabExperimentsPage({projectId}: {projectId: string}) {
   const project = useQuery({queryKey: ["project", projectId], queryFn: () => apiFetch<Project>(`/projects/${projectId}`)});
+  const experiments = useQuery({queryKey: ["research-experiments", projectId], queryFn: () => apiFetch<ResearchExperiment[]>(`/projects/${projectId}/research/experiments`)});
   const documents = useQuery({queryKey: ["documents", projectId], queryFn: () => apiFetch<Document[]>(`/documents/?project_id=${projectId}`)});
   const runs = useQuery({queryKey: ["ingestion-runs", projectId], queryFn: () => apiFetch<IngestionRun[]>(`/ingest/runs?project_id=${projectId}&limit=100`)});
   const history = useQuery({queryKey: ["query-history", projectId], queryFn: () => apiFetch<QueryHistoryItem[]>(`/rag/projects/${projectId}/history?limit=100`)});
-  const loading = project.isLoading || documents.isLoading || runs.isLoading || history.isLoading;
-  const error = project.isError || documents.isError || runs.isError || history.isError;
+  const loading = project.isLoading || experiments.isLoading || documents.isLoading || runs.isLoading || history.isLoading;
+  const error = project.isError || experiments.isError || documents.isError || runs.isError || history.isError;
   if (loading) return <LoadingState label="Loading experiments" rows={6} />;
-  if (error) return <ErrorState title="Experiments could not be loaded" description="The project evidence endpoints did not return usable responses." onRetry={() => void Promise.all([project.refetch(), documents.refetch(), runs.refetch(), history.refetch()])} />;
+  if (error) return <ErrorState title="Experiments could not be loaded" description="The project evidence endpoints did not return usable responses." onRetry={() => void Promise.all([project.refetch(), experiments.refetch(), documents.refetch(), runs.refetch(), history.refetch()])} />;
 
   const docs = documents.data ?? [];
   const runItems = runs.data ?? [];
   const queries = history.data ?? [];
+  const formalExperiments = experiments.data ?? [];
   const indexed = docs.filter((document) => document.status === "indexed");
   const completedRuns = runItems.filter((run) => run.status === "indexed");
   const failedRuns = runItems.filter((run) => run.status === "failed");
@@ -63,9 +65,9 @@ export function LabExperimentsPage({projectId}: {projectId: string}) {
   const readyForComparison = indexed.length > 0 && queries.length > 0;
 
   return <div className="space-y-6">
-    <PageHeader eyebrow={project.data?.name ?? "Experiments"} title="Experiments" description="Evidence-backed experiment planning for the current Lab. Configuration cards use real corpus, pipeline, and test state; unsupported experiment records remain explicit." actions={<Link href={`/projects/${projectId}/test`}><Button><Beaker className="size-4" />Run test</Button></Link>} />
+    <PageHeader eyebrow={project.data?.name ?? "Experiments"} title="Experiments" description="Durable experiment definitions alongside current pipeline and query evidence." actions={<Link href={`/projects/${projectId}/test`}><Button><Beaker className="size-4" />Run test</Button></Link>} />
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <MetricCard label="Experiment readiness" value={readyForComparison ? "Ready" : "Partial"} detail="Needs indexed sources and test results" icon={FlaskConical} />
+      <MetricCard label="Experiments" value={formalExperiments.length} detail={`${formalExperiments.filter((item) => item.status === "completed").length} completed`} icon={FlaskConical} />
       <MetricCard label="Corpus coverage" value={`${retrievalCoverage}%`} detail={`${indexed.length}/${docs.length} sources indexed`} icon={FileStack} />
       <MetricCard label="Pipeline success" value={`${pipelineSuccess}%`} detail={`${completedRuns.length}/${runItems.length} indexed runs`} icon={Workflow} />
       <MetricCard label="Mean test latency" value={avgLatency === null ? "n/a" : formatLatency(avgLatency)} detail="From persisted query history" icon={Gauge} />
@@ -98,7 +100,8 @@ export function LabExperimentsPage({projectId}: {projectId: string}) {
     <div className="grid gap-4 xl:grid-cols-2">
       <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
         <div className="border-b border-[var(--border)] p-4"><h2 className="text-sm font-semibold">Recent experiment evidence</h2><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Pipeline runs and interactive tests that can become formal experiment runs later</p></div>
-        {runItems.length || queries.length ? <div className="divide-y divide-[var(--border)]">
+        {formalExperiments.length || runItems.length || queries.length ? <div className="divide-y divide-[var(--border)]">
+          {formalExperiments.slice(0, 4).map((experiment) => <Link key={experiment.id} href={`/projects/${projectId}/experiments/${experiment.id}`} className="grid gap-3 p-4 hover:bg-[var(--surface-elevated)] sm:grid-cols-[1fr_auto_auto] sm:items-center"><span className="min-w-0"><span className="block truncate text-xs font-medium">{experiment.name}</span><span className="mt-1 block text-[9px] text-[var(--ink-muted)]">Durable experiment · {relativeTime(experiment.created_at)}</span></span><StatusBadge status={experiment.status} /><span className="text-[10px] text-[var(--accent)]">Inspect<ArrowRight className="inline size-3" /></span></Link>)}
           {runItems.slice(0, 4).map((run) => <Link key={run.ingestion_run_id} href={`/projects/${projectId}/runs/${run.ingestion_run_id}`} className="grid gap-3 p-4 hover:bg-[var(--surface-elevated)] sm:grid-cols-[1fr_auto_auto] sm:items-center"><span className="min-w-0"><span className="mono block truncate text-[10px] text-[var(--ink-secondary)]">{run.ingestion_run_id}</span><span className="mt-1 block text-[9px] text-[var(--ink-muted)]">Pipeline run · {relativeTime(run.created_at)}</span></span><StatusBadge status={run.status} /><span className="text-[10px] text-[var(--accent)]">Inspect<ArrowRight className="inline size-3" /></span></Link>)}
           {queries.slice(0, 4).map((query) => <Link key={query.query_log_id} href={`/projects/${projectId}/history/${query.query_log_id}`} className="grid gap-3 p-4 hover:bg-[var(--surface-elevated)] sm:grid-cols-[1fr_auto_auto] sm:items-center"><span className="min-w-0"><span className="line-clamp-1 text-xs font-medium">{query.question}</span><span className="mt-1 block text-[9px] text-[var(--ink-muted)]">Test result · {relativeTime(query.created_at)}</span></span><span className="text-[10px] text-[var(--ink-secondary)]">{formatLatency(query.latency_ms)}</span><span className="text-[10px] text-[var(--accent)]">Open<ArrowRight className="inline size-3" /></span></Link>)}
         </div> : <EmptyState icon={FlaskConical} title="No experiment evidence yet" description="Index sources and run tests to create comparable evidence." action="Open test" onAction={() => location.assign(`/projects/${projectId}/test`)} />}
@@ -116,7 +119,7 @@ export function LabExperimentsPage({projectId}: {projectId: string}) {
             <div className="h-2 rounded-full bg-[var(--surface-elevated)]"><div className="h-full rounded-full" style={{width: `${value}%`, backgroundColor: color as string}} /></div>
           </div>)}
         </div>
-        <div className="mt-5 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-soft)] p-3 text-[10px] leading-5 text-[var(--warning-soft-text)]">Formal quality, cost, and model-vs-model plots require backend experiment records. This page only plots measurable control-plane evidence.</div>
+        <div className="mt-5 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-soft)] p-3 text-[10px] leading-5 text-[var(--warning-soft-text)]">Experiment records are now durable. Quality, cost, and model-vs-model plots remain unavailable until workflows write standardized metrics.</div>
       </section>
     </div>
   </div>;
