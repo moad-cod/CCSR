@@ -8,7 +8,8 @@
 
 **Hits**
 
-- Project/run/type/version/visibility/checksum/size/creator metadata.
+- Project/study/experiment/run/type/version/visibility/checksum/size/creator
+  metadata.
 - Existing version-scoped Bronze, Silver, and Gold objects plus Qdrant index
   lineage registered without moving their payloads.
 

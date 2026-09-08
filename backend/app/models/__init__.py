@@ -19,6 +19,16 @@ from app.platform.execution.model import GenericRun, WorkflowDefinition
 from app.platform.artifacts.model import Artifact
 from app.platform.audit.model import AuditEvent
 from app.platform.quotas.model import QuotaPolicy, QuotaReservation
+from app.platform.research.model import (
+    Experiment,
+    ExperimentComparison,
+    ResearchDataset,
+    ResearchFinding,
+    ResearchHypothesis,
+    ResearchQuestion,
+    ResearchStudy,
+)
+from app.platform.publication.model import Publication, PublicationRevision
 
 
 __all__ = [
@@ -43,4 +53,13 @@ __all__ = [
     "QuotaReservation",
     "Artifact",
     "AuditEvent",
+    "ResearchStudy",
+    "ResearchQuestion",
+    "ResearchHypothesis",
+    "ResearchDataset",
+    "Experiment",
+    "ExperimentComparison",
+    "ResearchFinding",
+    "Publication",
+    "PublicationRevision",
 ]

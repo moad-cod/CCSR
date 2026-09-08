@@ -22,6 +22,15 @@ from app.models import (
     AuditEvent,
     QuotaPolicy,
     QuotaReservation,
+    ResearchStudy,
+    ResearchQuestion,
+    ResearchHypothesis,
+    ResearchDataset,
+    Experiment,
+    ExperimentComparison,
+    ResearchFinding,
+    Publication,
+    PublicationRevision,
 )
 
 
@@ -51,6 +60,37 @@ class ControlPlaneModelTests(unittest.TestCase):
                 "audit_events",
             }.issubset(Base.metadata.tables)
         )
+
+    def test_research_and_publication_tables_are_registered(self):
+        self.assertTrue(
+            {
+                "research_studies",
+                "research_questions",
+                "research_hypotheses",
+                "research_datasets",
+                "experiments",
+                "experiment_comparisons",
+                "experiment_comparison_members",
+                "research_findings",
+                "publications",
+                "publication_revisions",
+                "publication_findings",
+                "publication_artifacts",
+            }.issubset(Base.metadata.tables)
+        )
+
+    def test_publication_state_and_research_statuses_are_constrained(self):
+        self.assertTrue(
+            any(
+                isinstance(item, CheckConstraint)
+                and item.name == "ck_publications_state"
+                for item in Publication.__table__.constraints
+            )
+        )
+        with self.assertRaises(ValueError):
+            ResearchStudy(status="unknown")
+        with self.assertRaises(ValueError):
+            Experiment(status="unknown")
 
     def test_capability_and_rag_configuration_constraints_are_registered(self):
         capability_primary_key = tuple(

@@ -16,6 +16,8 @@ from app.platform.artifacts.api import router as artifacts_router
 from app.platform.audit.api import router as audit_router
 from app.platform.quotas.api import router as quotas_router
 from app.platform.quotas import QuotaExceededError
+from app.platform.research.api import router as research_router
+from app.platform.publication.api import router as publication_router
 
 
 register_ragforge_capability(capability_registry)
@@ -37,6 +39,8 @@ app.include_router(execution_router, tags=["execution"])
 app.include_router(artifacts_router, tags=["artifacts"])
 app.include_router(quotas_router, tags=["quotas"])
 app.include_router(audit_router, tags=["audit"])
+app.include_router(research_router, tags=["research"])
+app.include_router(publication_router, tags=["publication"])
 app.include_router(
     internal_pipeline_router,
     prefix="/internal/pipeline",

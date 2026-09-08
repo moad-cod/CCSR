@@ -1,18 +1,17 @@
 # Experiment
 
-**Status:** Planned; frontend placeholders exist without a backend model.
+**Status:** Durable generic experiment records are implemented.
 
-**Verification sources:** [`models/__init__.py`](../../../backend/app/models/__init__.py),
-[`FRONTEND_MAP.md`](../../../frontend/FRONTEND_MAP.md), and the current project
-experiment routes under
-[`frontend/src/app`](<../../../frontend/src/app/(dashboard)/projects/[projectId]/experiments/>).
+**Authoritative sources:** [`model.py`](../../../backend/app/platform/research/model.py),
+[`api.py`](../../../backend/app/platform/research/api.py), and
+[`execution/model.py`](../../../backend/app/platform/execution/model.py).
 
 **Hits**
 
-- Future research configuration, generic runs, comparisons, metrics, and
+- Research configuration, generic runs, comparisons, findings, and
   artifact provenance.
 
 **Does not hit**
 
-- Current RAG ingestion runs or benchmark reports; neither is a generic
-  experiment record today.
+- Module-specific run detail or automatic conversion of historical RAG
+  ingestion runs and benchmark reports into experiments.

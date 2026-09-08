@@ -18,6 +18,16 @@ class Artifact(Base):
     id = Column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id = Column(UUID(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     run_id = Column(UUID(as_uuid=False), ForeignKey("runs.id", ondelete="SET NULL"), nullable=True)
+    research_study_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("research_studies.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    experiment_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("experiments.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     artifact_type = Column(String, nullable=False)
     storage_provider = Column(String, nullable=False)
     storage_uri = Column(String, nullable=False)
@@ -31,6 +41,8 @@ class Artifact(Base):
 
     project = relationship("Project", back_populates="artifacts")
     run = relationship("GenericRun", back_populates="artifacts")
+    research_study = relationship("ResearchStudy", back_populates="artifacts")
+    experiment = relationship("Experiment", back_populates="artifacts")
 
     @validates("visibility")
     def validate_visibility(self, _key: str, value: str) -> str:
@@ -57,6 +69,8 @@ class Artifact(Base):
         ),
         Index("ix_artifacts_project_id", "project_id"),
         Index("ix_artifacts_run_id", "run_id"),
+        Index("ix_artifacts_research_study_id", "research_study_id"),
+        Index("ix_artifacts_experiment_id", "experiment_id"),
         Index("ix_artifacts_artifact_type", "artifact_type"),
         Index("ix_artifacts_visibility", "visibility"),
         Index("ix_artifacts_created_at", "created_at"),

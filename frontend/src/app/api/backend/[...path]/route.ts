@@ -1,6 +1,7 @@
 import {cookies} from "next/headers";
 import {NextRequest} from "next/server";
 import {AUTH_COOKIE, backendUrl} from "@/lib/server-auth";
+import {isPublicBackendRequest} from "@/lib/backend-proxy-access";
 
 const FORWARDED_REQUEST_HEADERS = [
   "accept",
@@ -22,7 +23,11 @@ async function proxy(
   const {path} = await context.params;
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE)?.value;
-  if (!token) {
+  const backendPath =
+    request.nextUrl.pathname.slice("/api/backend".length) ||
+    `/${path.join("/")}`;
+  const publicRequest = isPublicBackendRequest(request.method, backendPath);
+  if (!token && !publicRequest) {
     return Response.json({detail: "Not authenticated"}, {status: 401});
   }
 
@@ -31,16 +36,11 @@ async function proxy(
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
-  headers.set("Authorization", `Bearer ${token}`);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const hasBody = !["GET", "HEAD"].includes(request.method);
   const response = await fetch(
-    backendUrl(
-      `${
-        request.nextUrl.pathname.slice("/api/backend".length) ||
-        `/${path.join("/")}`
-      }${request.nextUrl.search}`,
-    ),
+    backendUrl(`${backendPath}${request.nextUrl.search}`),
     {
       method: request.method,
       headers,

@@ -1,24 +1,25 @@
 # Project publication
 
-**Status:** Planned; no visibility or publication persistence exists.
+**Status:** Implemented through versioned publication snapshots.
 
-**Verification sources:** [`project.py`](../../../backend/app/models/project.py),
-the model registry in [`models/__init__.py`](../../../backend/app/models/__init__.py),
-and current capability status in [`README.md`](../../../README.md).
+**Authoritative sources:** [`service.py`](../../../backend/app/platform/publication/service.py),
+[`repository.py`](../../../backend/app/platform/publication/repository.py), and
+[`0010 migration`](../../../backend/alembic/versions/20260907_0010_add_research_and_publication.py).
 
-**Target movement**
+**Current movement**
 
 ```text
-admin draft -> validate public-safe project/research/artifact graph
--> immutable publication snapshot -> public route visibility
+authorized private/draft editing -> validate selected public findings/artifacts
+-> immutable publication revision -> unauthenticated public read
+-> unpublish back to draft without deleting revision history
 ```
 
 **Hits**
 
-- Future project visibility, published research, safe artifact exposure, public
+- Published research, safe artifact metadata, public
   slugs, and audit records.
 
 **Does not hit**
 
-- Current private project access or arbitrary publication of private runs and
+- Private project access or arbitrary publication of private runs and
   artifacts.

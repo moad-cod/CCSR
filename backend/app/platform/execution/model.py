@@ -91,6 +91,11 @@ class GenericRun(Base):
         nullable=False,
     )
     requested_by = Column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    experiment_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("experiments.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     engine = Column(String, nullable=False)
     external_execution_id = Column(String, nullable=True)
     status = Column(String, nullable=False, default="pending")
@@ -110,6 +115,7 @@ class GenericRun(Base):
     ingestion_run = relationship("IngestionRun", back_populates="generic_run", uselist=False)
     quota_reservation = relationship("QuotaReservation", back_populates="run", uselist=False)
     artifacts = relationship("Artifact", back_populates="run")
+    experiment = relationship("Experiment", back_populates="runs")
 
     @validates("engine")
     def validate_engine(self, _key: str, value: str) -> str:
@@ -132,6 +138,7 @@ class GenericRun(Base):
         Index("ix_runs_project_id", "project_id"),
         Index("ix_runs_workflow_definition_id", "workflow_definition_id"),
         Index("ix_runs_requested_by", "requested_by"),
+        Index("ix_runs_experiment_id", "experiment_id"),
         Index("ix_runs_status", "status"),
         Index("ix_runs_created_at", "created_at"),
         Index("ix_runs_external_execution_id", "external_execution_id"),

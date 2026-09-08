@@ -164,6 +164,8 @@ frontend/
 | `/` | Root redirect | Redirects authenticated users into project workspace flow. | none |
 | `/login` | Login | CCSR sign-in, validation, password visibility, toast errors, auth ambience. | `POST /api/auth/login` -> backend `POST /auth/login` |
 | `/register` | Registration | Account creation, password confirmation, auto-login after successful registration. | `POST /api/auth/register` -> backend `POST /auth/register`; then `POST /api/auth/login` |
+| `/publications` | Public research index | Unauthenticated cards built only from immutable public publication revisions. | `GET /publications` through the GET-only public proxy allowlist |
+| `/publications/[slug]` | Public research detail | Public-safe study, question, hypothesis, experiment, finding, and artifact projections without run inputs or storage locations. | `GET /publications/{slug}` through the GET-only public proxy allowlist |
 | `/home` | Workspace home | Cross-project summary, next-action guidance, recent projects, runs needing attention, truthful planned experiment state. | `GET /projects/`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=100`; optional create flow uses `GET /organizations/`, `GET /chunkers`, `POST /projects/` |
 | `/labs` | Lab discovery | Premium project-backed Lab discovery, domain filters, readiness stats, create/rename/delete Lab actions. | `GET/POST /projects/`; `PATCH/DELETE /projects/{project_id}`; `GET /organizations/`; `GET /chunkers`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=30` |
 | `/projects` | Project index | Grid/list project browser, search, sort, project stats, create/rename/delete. | `GET/POST /projects/`; `PATCH/DELETE /projects/{project_id}`; `GET /organizations/`; `GET /chunkers`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=30` |
@@ -179,8 +181,8 @@ frontend/
 | Route | Feature | Characteristics | Backend APIs |
 | --- | --- | --- | --- |
 | `/projects/[projectId]/overview` | Lab overview | Readiness summary, next meaningful action, recent run/query evidence. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
-| `/projects/[projectId]/research` | Lab research/paper | Research question framing, abstract/methodology derived from real source and run evidence, source/paper list, selected paper metadata. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=20`; `GET /documents/{document_id}/versions` |
-| `/projects/[projectId]/experiments` | Experiment evidence | A/B/C/D configuration slots, readiness plot, evidence table, planned labels for unsupported experiment APIs. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| `/projects/[projectId]/research` | Lab research/paper | Durable study/question/hypothesis/methodology content with existing RAG source and run evidence as a compatibility fallback. | `GET /projects/{project_id}`; `GET /projects/{project_id}/research/studies`; `GET /projects/{project_id}/research/studies/{study_id}`; source/run/version APIs |
+| `/projects/[projectId]/experiments` | Experiment evidence | Durable experiment records plus existing A/B/C/D readiness and operational evidence. | `GET /projects/{project_id}`; `GET /projects/{project_id}/research/experiments`; document, ingestion, and query-history APIs |
 | `/projects/[projectId]/results` | Results | Real persisted query results, latency/cache summaries, comparison summary, findings from available evidence. | `GET /projects/{project_id}`; `GET /rag/projects/{project_id}/history?limit=100`; `GET /ingest/runs?project_id=...&limit=100` |
 | `/projects/[projectId]/artifacts` | Artifacts | Typed registry for source objects, model references, configs, reports, plots, notebooks placeholder, and code references. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100`; `GET /documents/{document_id}/versions` |
 | `/projects/[projectId]/test` | Interactive Test Lab | Variant selector for baseline/retrieval/adaptation/final, readiness metrics, latest evidence, embedded executable RAG workspace. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100`; workspace APIs listed under Sources and Playground |
@@ -220,8 +222,9 @@ frontend/
 | Project/Lab management | `ProjectCard`, `LabCard`, `ConfirmDeleteDialog`, settings page | Search, sort, grid/list, rename, delete, destructive confirmation. | `GET /projects/`; `PATCH /projects/{project_id}`; `DELETE /projects/{project_id}` |
 | Lab shell | `LabShell` | Common project-backed research navigation for Overview, Research, Experiments, Results, Artifacts, Test, Reproduce. | `GET /projects/{project_id}` |
 | Overview | `ProjectOverview` | Readiness, next action, latest run, latest query, project evidence summary. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
-| Research paper view | `LabResearchPage` | Research question, abstract, hypothesis, methodology, paper/source viewer and metadata. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=20`; `GET /documents/{document_id}/versions` |
-| Experiment evidence | `LabExperimentsPage` | Baseline/retrieval/pipeline/final comparison slots, readiness bars, run/query evidence. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| Research paper view | `LabResearchPage` | Durable study/question/hypothesis/methodology content plus paper/source evidence. | Research study APIs plus existing project, document, ingestion, and version APIs |
+| Experiment evidence | `LabExperimentsPage` | Durable experiments, baseline/retrieval/pipeline/final comparison slots, readiness bars, run/query evidence. | `GET /projects/{project_id}/research/experiments` plus existing evidence APIs |
+| Public publications | `PublicationsPage`, `PublicationDetailPage` | Unauthenticated rendering of immutable public-safe revision snapshots. | `GET /publications`; `GET /publications/{slug}` |
 | Results | `LabResultsPage` | Persisted query counts, latency, cache hits, indexed runs, result plots, findings, evidence links. | `GET /projects/{project_id}`; `GET /rag/projects/{project_id}/history?limit=100`; `GET /ingest/runs?project_id=...&limit=100` |
 | Artifacts | `LabArtifactsPage` | Datasets from documents, model/config references from versions and query history, report links, plot summary, code references. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /documents/{document_id}/versions`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
 | Test Lab | `LabTestPage`, `WorkspaceEntry`, `KnowledgeWorkspace` | Interactive testing of current RAG system, variant readiness selector, latest evidence, embedded workspace. | Lab evidence APIs plus workspace APIs: documents, runs, chunkers, ingestion, streamed RAG query, query trace/history |
@@ -266,6 +269,16 @@ apiFetch("/projects/")
 | `POST /organizations/` | Organization page | Create organization. |
 | `PATCH /organizations/{organization_id}` | Organization page | Rename organization. |
 | `DELETE /organizations/{organization_id}` | Organization page | Delete organization. |
+
+### Research And Publication
+
+| API | Used by | Notes |
+| --- | --- | --- |
+| `GET /projects/{project_id}/research/studies` | `LabResearchPage` | Authorized project study index. |
+| `GET /projects/{project_id}/research/studies/{study_id}` | `LabResearchPage` | Full durable hierarchy for the selected study. |
+| `GET /projects/{project_id}/research/experiments` | `LabExperimentsPage` | Authorized durable experiment index. |
+| `GET /publications` | `PublicationsPage` | Unauthenticated current public revisions only. |
+| `GET /publications/{slug}` | `PublicationDetailPage` | Unauthenticated immutable public-safe snapshot. |
 
 ### Sources, Versions, And Ingestion
 
@@ -381,7 +394,6 @@ Design characteristics:
 The frontend intentionally labels these as planned or unavailable until backend
 contracts exist:
 
-- first-class experiment records
 - persisted experiment run detail APIs
 - model-only baseline execution endpoint
 - fine-tuned/QLoRA adapter execution endpoint
@@ -392,7 +404,7 @@ contracts exist:
 - evaluator score contracts
 - formal comparison matrices
 - cost/resource metrics
-- research notes and findings APIs
+- authenticated publication authoring UI
 - reproducibility manifest export/import
 - knowledge graph or paper relationship browser
 - persisted project descriptions, research questions, abstracts, and hypotheses

@@ -11,6 +11,7 @@ from app.platform.access.policies import GLOBAL_ROLE_ADMIN, PROJECT_ACTION_MANAG
 from app.platform.artifacts import repository
 from app.platform.audit import record_audit_event
 from app.platform.execution.model import GenericRun
+from app.platform.research.model import Experiment, ResearchStudy
 
 
 router = APIRouter()
@@ -22,6 +23,8 @@ class ArtifactResponse(BaseModel):
     id: str
     project_id: str
     run_id: str | None
+    research_study_id: str | None
+    experiment_id: str | None
     artifact_type: str
     storage_provider: str
     storage_uri: str
@@ -37,6 +40,8 @@ class ArtifactResponse(BaseModel):
 class ArtifactCreate(BaseModel):
     project_id: str
     run_id: str | None = None
+    research_study_id: str | None = None
+    experiment_id: str | None = None
     artifact_type: str = Field(min_length=1, max_length=100)
     storage_provider: Literal["minio", "qdrant", "external"]
     storage_uri: str = Field(min_length=1, max_length=2048)
@@ -78,14 +83,37 @@ async def create_artifact(
     admin: dict = Depends(require_global_roles(GLOBAL_ROLE_ADMIN)),
 ):
     await authorize_project(db, body.project_id, admin, action=PROJECT_ACTION_MANAGE)
+    experiment_id = body.experiment_id
     if body.run_id is not None:
         run = await db.get(GenericRun, body.run_id)
         if run is None or run.project_id != body.project_id:
             raise HTTPException(400, "Run does not belong to the artifact project")
+        run_experiment_id = getattr(run, "experiment_id", None)
+        if run_experiment_id is not None:
+            if experiment_id is not None and experiment_id != run_experiment_id:
+                raise HTTPException(400, "Artifact experiment conflicts with its run")
+            experiment_id = run_experiment_id
+    research_study_id = body.research_study_id
+    if research_study_id is not None:
+        study = await db.get(ResearchStudy, research_study_id)
+        if study is None or study.project_id != body.project_id:
+            raise HTTPException(400, "Study does not belong to the artifact project")
+    if experiment_id is not None:
+        experiment = await db.get(Experiment, experiment_id)
+        if experiment is None:
+            raise HTTPException(400, "Experiment not found")
+        experiment_study = await db.get(ResearchStudy, experiment.study_id)
+        if experiment_study is None or experiment_study.project_id != body.project_id:
+            raise HTTPException(400, "Experiment does not belong to the artifact project")
+        if research_study_id is not None and research_study_id != experiment.study_id:
+            raise HTTPException(400, "Experiment does not belong to the artifact study")
+        research_study_id = experiment.study_id
     artifact = await repository.register_artifact(
         db,
         project_id=body.project_id,
         run_id=body.run_id,
+        research_study_id=research_study_id,
+        experiment_id=experiment_id,
         artifact_type=body.artifact_type,
         storage_provider=body.storage_provider,
         storage_uri=body.storage_uri,

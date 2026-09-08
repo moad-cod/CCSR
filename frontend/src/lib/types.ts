@@ -174,3 +174,87 @@ export type StreamEvent = {
   timestamp?: string;
   [key: string]: unknown;
 };
+
+export type ResearchQuestion = {
+  id: string;
+  study_id: string;
+  question: string;
+  rationale: string | null;
+  ordinal: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ResearchHypothesis = {
+  id: string;
+  study_id: string;
+  question_id: string | null;
+  statement: string;
+  rationale: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ResearchExperiment = {
+  id: string;
+  study_id: string;
+  slug: string;
+  name: string;
+  objective: string | null;
+  status: string;
+  configuration: Record<string, unknown>;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ResearchStudy = {
+  id: string;
+  project_id: string;
+  slug: string;
+  title: string;
+  abstract: string | null;
+  objective: string | null;
+  methodology: string | null;
+  status: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ResearchStudyDetail = ResearchStudy & {
+  questions: ResearchQuestion[];
+  hypotheses: ResearchHypothesis[];
+  datasets: Array<{id: string; artifact_id: string; role: string; description: string | null}>;
+  experiments: ResearchExperiment[];
+  comparisons: Array<{id: string; name: string; experiment_ids: string[]; conclusion: string | null}>;
+  findings: Array<{id: string; title: string; statement: string; status: string; visibility: string}>;
+};
+
+export type PublicPublication = {
+  slug: string;
+  title: string;
+  summary: string | null;
+  revision_number: number;
+  published_at: string;
+  snapshot: {
+    schema_version: number;
+    project: {id: string; name: string};
+    publication: {id: string; slug: string; title: string; summary: string | null};
+    research_study: null | {
+      id: string;
+      slug: string;
+      title: string;
+      abstract: string | null;
+      objective: string | null;
+      methodology: string | null;
+      status: string;
+      questions: Array<{question: string; rationale: string | null; ordinal: number}>;
+      hypotheses: Array<{statement: string; rationale: string | null; status: string}>;
+      experiments: Array<{id: string; slug: string; name: string; objective: string | null; status: string}>;
+    };
+    findings: Array<{id: string; experiment_id: string | null; title: string; statement: string; evidence_summary: string | null}>;
+    artifacts: Array<{id: string; type: string; version: string; checksum: string | null; size_bytes: number | null; metadata: Record<string, unknown>}>;
+  };
+};

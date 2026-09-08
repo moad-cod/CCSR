@@ -1,18 +1,17 @@
 # Publication
 
-**Status:** Planned; no durable publication or visibility entity exists.
+**Status:** Private, draft, and public publications are durable.
 
-**Verification sources:** current project schema in
-[`project.py`](../../../backend/app/models/project.py), current model registry in
-[`models/__init__.py`](../../../backend/app/models/__init__.py), and planned
-capability status in [`README.md`](../../../README.md).
+**Authoritative sources:** [`model.py`](../../../backend/app/platform/publication/model.py),
+[`service.py`](../../../backend/app/platform/publication/service.py), and
+[`api.py`](../../../backend/app/platform/publication/api.py).
 
 **Hits**
 
-- Future project/research visibility, public slugs, immutable public-safe
+- Project/research presentation, public slugs, immutable public-safe
   snapshots, linked artifacts, findings, and audit history.
 
 **Does not hit**
 
-- Current authenticated project routes or automatic exposure of private runs,
-  source documents, credentials, or unrestricted artifacts.
+- Private runs, source documents, credentials, artifact storage locations, or
+  any draft/private record not copied into an explicit public revision.
