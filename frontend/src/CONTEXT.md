@@ -1,6 +1,7 @@
 # Frontend source context
 
-The source tree does not yet have platform/module ownership directories.
+The source tree has started platform ownership with public publication screens;
+most authenticated screens still live in the historical component tree.
 
 - Generic candidates include authentication, organization, project registry,
   profile, shared shell, and shared UI primitives.
@@ -12,6 +13,9 @@ The source tree does not yet have platform/module ownership directories.
   query history per project and must not become the generic project contract.
 - `lib/types.ts` is a compatibility barrel that should be split only when its
   consumers can migrate safely.
+- `platform/publication/` is the first platform-owned frontend slice. It renders
+  only immutable visitor snapshots; the backend proxy allowlist remains GET-only
+  and publication-specific.
 
 Future route files under `app/` should compose screens from `platform/` or
 `modules/ragforge/`. Create those directories only when a real screen or
