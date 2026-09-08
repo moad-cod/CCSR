@@ -22,3 +22,5 @@ the old `airflow_dag_run_id` response field during compatibility.
 Generic terminal updates store only categorized safe errors and settle the
 associated quota reservation. Detailed internal failures may remain in
 module-owned operational state where existing compatibility requires them.
+Generic runs may optionally reference a durable experiment after the gateway
+verifies that the experiment belongs to the same project.
