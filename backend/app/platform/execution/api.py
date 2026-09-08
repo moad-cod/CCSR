@@ -46,6 +46,7 @@ class GenericRunResponse(BaseModel):
     project_id: str
     workflow_definition_id: str
     requested_by: str
+    experiment_id: str | None
     engine: str
     external_execution_id: str | None
     status: str
