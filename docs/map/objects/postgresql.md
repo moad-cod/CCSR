@@ -8,9 +8,10 @@
 
 **Hits**
 
-- Accounts, organizations, memberships, projects, workflows, runs, quotas,
-  artifact metadata, audit events, document lineage, ingestion status, chunks,
-  embeddings, queries, and retrieval logs.
+- Accounts, organizations, memberships, projects, research hierarchies,
+  publication revisions, workflows, runs, quotas, artifact metadata, audit
+  events, document lineage, ingestion status, chunks, embeddings, queries, and
+  retrieval logs.
 
 **Does not hit**
 
