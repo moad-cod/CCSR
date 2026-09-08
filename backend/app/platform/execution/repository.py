@@ -72,11 +72,13 @@ async def create_run(
     requested_by: str,
     engine: str,
     input_snapshot: dict[str, Any],
+    experiment_id: str | None = None,
 ) -> GenericRun:
     run = GenericRun(
         project_id=project_id,
         workflow_definition_id=workflow_definition_id,
         requested_by=requested_by,
+        experiment_id=experiment_id,
         engine=engine,
         status="pending",
         input_snapshot=input_snapshot,
