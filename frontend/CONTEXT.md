@@ -1,10 +1,11 @@
 # Frontend context
 
-The frontend is one Next.js application serving authenticated CCSR screens. It
-uses a same-origin backend proxy and HttpOnly authentication cookie. The current
-project experience still assumes RAG data and routes. Login tokens are backed
-by durable backend sessions, and the logout handler revokes the backend session
-before clearing the compatibility cookie.
+The frontend is one Next.js application serving authenticated CCSR screens and
+a read-only public publication surface. It uses a same-origin backend proxy and
+HttpOnly authentication cookie; only GET publication routes are explicitly
+allowed through that proxy without a cookie. The current project experience
+still assumes RAG data and routes. Login tokens are backed by durable backend
+sessions, and logout revokes the backend session before clearing the cookie.
 
 ## Route by task
 
@@ -13,6 +14,7 @@ before clearing the compatibility cookie.
 - Shared accessible primitives: `src/components/ui/`
 - Client data hooks: `src/hooks/`
 - API proxy/client, server auth, types, and SSE helpers: `src/lib/`
+- Public publication screens: `src/platform/publication/`
 - Detailed current map: `FRONTEND_MAP.md`
 
 Read [`src/CONTEXT.md`](src/CONTEXT.md) before moving screens or changing route
