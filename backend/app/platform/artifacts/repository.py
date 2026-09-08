@@ -18,6 +18,8 @@ async def register_artifact(
     storage_uri: str,
     created_by: str | None,
     run_id: str | None = None,
+    research_study_id: str | None = None,
+    experiment_id: str | None = None,
     version: str = "1",
     visibility: str = "private",
     checksum: str | None = None,
@@ -38,6 +40,8 @@ async def register_artifact(
     artifact = Artifact(
         project_id=project_id,
         run_id=run_id,
+        research_study_id=research_study_id,
+        experiment_id=experiment_id,
         artifact_type=artifact_type,
         storage_provider=storage_provider,
         storage_uri=storage_uri,
