@@ -200,7 +200,7 @@ class OrganizationAuthorizationTests(unittest.IsolatedAsyncioTestCase):
             result = await create_project(
                 ProjectCreate(name="Research Project"),
                 db=db,
-                user={"user_id": "user-id"},
+                user={"user_id": "user-id", "global_role": "member"},
             )
 
         context = provision_project.await_args.args[0]
