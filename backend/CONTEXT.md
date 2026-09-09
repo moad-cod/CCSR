@@ -23,6 +23,9 @@ still in their historical packages.
   `app/platform/quotas/`, `app/platform/artifacts/`, and `app/platform/audit/`.
 - Research hierarchy and public-safe publication snapshots:
   `app/platform/research/` and `app/platform/publication/`.
+- Project responses expose server-resolved read/write/manage permissions.
+  Platform and RAGForge overview endpoints provide bounded aggregate contracts
+  for capability-aware frontend composition.
 - Celery worker adapter: `app/workers/`
 - Shared ingestion stages and commands: `jobs/`
 - Airflow image, DAG, and callback plugin: `airflow/`

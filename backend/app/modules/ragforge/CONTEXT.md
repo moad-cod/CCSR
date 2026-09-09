@@ -20,3 +20,8 @@ and lifecycle readers require both the durable `ragforge` association and a
 `RAGProjectConfig`; they do not use the legacy project collection as their
 configuration source. Project responses retain `collection` and
 `qdrant_collection` while also exposing `capabilities` and `rag_config`.
+
+`api/overview.py` owns bounded workspace and project aggregate reads for RAG
+documents, ingestion runs, and query history. It resolves the authorized,
+RAGForge-enabled project set once; frontend overviews must not issue one
+request per project.
