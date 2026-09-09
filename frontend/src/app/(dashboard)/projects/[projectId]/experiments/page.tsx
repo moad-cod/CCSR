@@ -1,4 +1,4 @@
-import {LabShell} from "@/components/labs/lab-shell";
+import {ProjectShell as LabShell} from "@/platform/projects/project-shell";
 import {LabExperimentsPage} from "@/components/labs/lab-experiments-page";
 
 export default async function ProjectExperimentsPage({

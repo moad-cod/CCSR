@@ -1,5 +1,5 @@
 import {LabResearchPage} from "@/components/labs/lab-research-page";
-import {LabShell} from "@/components/labs/lab-shell";
+import {ProjectShell as LabShell} from "@/platform/projects/project-shell";
 
 export default async function ResearchPage({
   params,

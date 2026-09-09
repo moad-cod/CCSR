@@ -1,5 +1,5 @@
-import {LabShell} from "@/components/labs/lab-shell";
-import {ProjectOverview} from "@/components/project-overview";
+import {ProjectShell as LabShell} from "@/platform/projects/project-shell";
+import {ProjectOverview} from "@/platform/projects/project-overview";
 
 export default async function ProjectOverviewPage({
   params,

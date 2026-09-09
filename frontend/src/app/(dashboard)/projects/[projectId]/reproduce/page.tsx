@@ -1,5 +1,5 @@
 import {LabReproducePage} from "@/components/labs/lab-reproduce-page";
-import {LabShell} from "@/components/labs/lab-shell";
+import {ProjectShell as LabShell} from "@/platform/projects/project-shell";
 
 export default async function ReproducePage({
   params,

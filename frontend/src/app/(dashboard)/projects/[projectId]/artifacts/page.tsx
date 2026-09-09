@@ -1,5 +1,5 @@
 import {LabArtifactsPage} from "@/components/labs/lab-artifacts-page";
-import {LabShell} from "@/components/labs/lab-shell";
+import {ProjectShell as LabShell} from "@/platform/projects/project-shell";
 
 export default async function ArtifactsPage({
   params,
