@@ -166,13 +166,13 @@ frontend/
 | `/register` | Registration | Account creation, password confirmation, auto-login after successful registration. | `POST /api/auth/register` -> backend `POST /auth/register`; then `POST /api/auth/login` |
 | `/publications` | Public research index | Unauthenticated cards built only from immutable public publication revisions. | `GET /publications` through the GET-only public proxy allowlist |
 | `/publications/[slug]` | Public research detail | Public-safe study, question, hypothesis, experiment, finding, and artifact projections without run inputs or storage locations. | `GET /publications/{slug}` through the GET-only public proxy allowlist |
-| `/home` | Workspace home | Cross-project summary, next-action guidance, recent projects, runs needing attention, truthful planned experiment state. | `GET /projects/`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=100`; optional create flow uses `GET /organizations/`, `GET /chunkers`, `POST /projects/` |
-| `/labs` | Lab discovery | Premium project-backed Lab discovery, domain filters, readiness stats, create/rename/delete Lab actions. | `GET/POST /projects/`; `PATCH/DELETE /projects/{project_id}`; `GET /organizations/`; `GET /chunkers`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=30` |
-| `/projects` | Project index | Grid/list project browser, search, sort, project stats, create/rename/delete. | `GET/POST /projects/`; `PATCH/DELETE /projects/{project_id}`; `GET /organizations/`; `GET /chunkers`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=30` |
-| `/documents` | Global source browser | Cross-project source list, filename search, status filter, delete source action. | `GET /projects/`; per-project `GET /documents/?project_id=...`; `DELETE /documents/{document_id}` |
-| `/history` | Global query history | Cross-project persisted query history, search, outcome filter, links to query detail. | `GET /projects/`; per-project `GET /rag/projects/{project_id}/history?limit=100` |
-| `/runs` | Global runs | Cross-project durable ingestion run list, search, status filter, run detail links. | `GET /projects/`; per-project `GET /ingest/runs?project_id=...&limit=100`; per-project `GET /documents/?project_id=...` |
-| `/observability` | Global observability | Aggregated source, ingestion, query, latency, cache, and failure evidence. | `GET /projects/`; per-project `GET /documents/?project_id=...`; per-project `GET /ingest/runs?project_id=...&limit=100`; per-project `GET /rag/projects/{project_id}/history?limit=100` |
+| `/home` | Workspace home | Cross-project project/research and enabled RAGForge summaries without request fan-out. | `GET /projects/overview`; `GET /rag/workspace/overview?include=documents,runs,history`; optional create APIs |
+| `/labs` | Lab discovery | Project-backed Lab discovery with aggregate readiness and permission-aware actions. | `GET /projects/overview`; `GET /rag/workspace/overview`; project mutation APIs |
+| `/projects` | Project index | Capability-aware project browser with aggregate stats and permission-aware actions. | `GET /projects/overview`; `GET /rag/workspace/overview`; project mutation APIs |
+| `/documents` | Global RAG source browser | Cross-project source list for RAGForge-enabled projects. | `GET /projects/overview`; `GET /rag/workspace/overview?include=documents`; `DELETE /documents/{document_id}` |
+| `/history` | Global RAG query history | Cross-project persisted query history for RAGForge-enabled projects. | `GET /projects/overview`; `GET /rag/workspace/overview?include=history` |
+| `/runs` | Global RAG ingestion runs | Cross-project ingestion run list without per-project requests. | `GET /projects/overview`; `GET /rag/workspace/overview?include=documents,runs` |
+| `/observability` | Global RAG observability | Aggregated source, ingestion, query, latency, cache, and failure evidence. | `GET /projects/overview`; `GET /rag/workspace/overview?include=documents,runs,history` |
 | `/organization` | Organization management | Organization list, create, rename, delete, active organization indication. | `GET /organizations/`; `POST /organizations/`; `PATCH /organizations/{organization_id}`; `DELETE /organizations/{organization_id}`; `GET /auth/me` |
 | `/settings/profile` | Profile settings | Current-user profile, organization selection, optional password update. | `GET /auth/me`; `PATCH /auth/me`; `GET /organizations/` |
 
@@ -180,7 +180,7 @@ frontend/
 
 | Route | Feature | Characteristics | Backend APIs |
 | --- | --- | --- | --- |
-| `/projects/[projectId]/overview` | Lab overview | Readiness summary, next meaningful action, recent run/query evidence. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| `/projects/[projectId]/overview` | Project overview | Platform research/run/artifact/publication counts plus a separate enabled RAGForge summary. | `GET /projects/{project_id}/overview`; conditional `GET /rag/projects/{project_id}/overview` |
 | `/projects/[projectId]/research` | Lab research/paper | Durable study/question/hypothesis/methodology content with existing RAG source and run evidence as a compatibility fallback. | `GET /projects/{project_id}`; `GET /projects/{project_id}/research/studies`; `GET /projects/{project_id}/research/studies/{study_id}`; source/run/version APIs |
 | `/projects/[projectId]/experiments` | Experiment evidence | Durable experiment records plus existing A/B/C/D readiness and operational evidence. | `GET /projects/{project_id}`; `GET /projects/{project_id}/research/experiments`; document, ingestion, and query-history APIs |
 | `/projects/[projectId]/results` | Results | Real persisted query results, latency/cache summaries, comparison summary, findings from available evidence. | `GET /projects/{project_id}`; `GET /rag/projects/{project_id}/history?limit=100`; `GET /ingest/runs?project_id=...&limit=100` |
@@ -216,12 +216,12 @@ frontend/
 
 | Feature area | Primary components | Characteristics | Backend/API connections |
 | --- | --- | --- | --- |
-| Application shell | `AppShell`, `PageHeader`, `Button`, `Badge`, `StatusBadge` | Sidebar, top bar, breadcrumbs, project switcher, organization switcher, command palette, notifications placeholder, skip navigation, responsive mobile nav. | `GET /auth/me`; `PATCH /auth/me` for organization switch; `GET /projects/`; `GET /organizations/`; `POST /api/auth/logout` |
+| Application shell | `AppShell`, `platform/navigation` | Capability- and permission-aware platform/RAGForge navigation, breadcrumbs, switchers, search, and responsive shell. | `GET /auth/me`; `GET /projects/`; `GET /organizations/` |
 | Authentication | `(auth)/layout.tsx`, `login/page.tsx`, `register/page.tsx` | Branded auth layout, validated forms, HttpOnly-cookie auth, no client JWT storage. | `POST /api/auth/login`; `POST /api/auth/register`; backend `POST /auth/login`; backend `POST /auth/register` |
 | Project/Lab creation | `ProjectForm`, `ProjectsPage`, `LabsDiscoveryPage`, Home create flow | Create named research workspace, choose organization, choose chunker preference in local storage for onboarding. | `POST /projects/`; `GET /organizations/`; `GET /chunkers` |
 | Project/Lab management | `ProjectCard`, `LabCard`, `ConfirmDeleteDialog`, settings page | Search, sort, grid/list, rename, delete, destructive confirmation. | `GET /projects/`; `PATCH /projects/{project_id}`; `DELETE /projects/{project_id}` |
-| Lab shell | `LabShell` | Common project-backed research navigation for Overview, Research, Experiments, Results, Artifacts, Test, Reproduce. | `GET /projects/{project_id}` |
-| Overview | `ProjectOverview` | Readiness, next action, latest run, latest query, project evidence summary. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
+| Project shell | `platform/projects/ProjectShell` | Separates platform research links from enabled RAGForge links and hides settings without write permission. | `GET /projects/{project_id}/overview` |
+| Overview | `platform/projects/ProjectOverview` | Platform aggregate summary composed with a conditional RAGForge aggregate panel. | `GET /projects/{project_id}/overview`; conditional `GET /rag/projects/{project_id}/overview` |
 | Research paper view | `LabResearchPage` | Durable study/question/hypothesis/methodology content plus paper/source evidence. | Research study APIs plus existing project, document, ingestion, and version APIs |
 | Experiment evidence | `LabExperimentsPage` | Durable experiments, baseline/retrieval/pipeline/final comparison slots, readiness bars, run/query evidence. | `GET /projects/{project_id}/research/experiments` plus existing evidence APIs |
 | Public publications | `PublicationsPage`, `PublicationDetailPage` | Unauthenticated rendering of immutable public-safe revision snapshots. | `GET /publications`; `GET /publications/{slug}` |
@@ -261,6 +261,8 @@ apiFetch("/projects/")
 | API | Used by | Notes |
 | --- | --- | --- |
 | `GET /projects/` | Home, Labs, Projects, Observability, AppShell, overview hooks | Project list. |
+| `GET /projects/overview` | Home, Labs, Projects, global RAG pages | Accessible projects, resolved permissions, and platform aggregate counts in constant query count. |
+| `GET /projects/{project_id}/overview` | Project shell and overview | Authorized project, permissions, and platform-owned counts. |
 | `POST /projects/` | Home, Labs, Projects | Create project/Lab. |
 | `GET /projects/{project_id}` | Lab shell, overview, research, settings, pipelines, query detail, observability | Project detail. |
 | `PATCH /projects/{project_id}` | Labs, Projects, settings | Rename/update project. |
@@ -277,6 +279,8 @@ apiFetch("/projects/")
 | `GET /projects/{project_id}/research/studies` | `LabResearchPage` | Authorized project study index. |
 | `GET /projects/{project_id}/research/studies/{study_id}` | `LabResearchPage` | Full durable hierarchy for the selected study. |
 | `GET /projects/{project_id}/research/experiments` | `LabExperimentsPage` | Authorized durable experiment index. |
+| `GET /rag/workspace/overview` | Global RAGForge pages | Bounded documents, run summaries, history, and per-project readiness for all accessible enabled projects. |
+| `GET /rag/projects/{project_id}/overview` | Project overview | Bounded RAGForge readiness, recent runs, primary source, and latest query. |
 | `GET /publications` | `PublicationsPage` | Unauthenticated current public revisions only. |
 | `GET /publications/{slug}` | `PublicationDetailPage` | Unauthenticated immutable public-safe snapshot. |
 
@@ -357,7 +361,7 @@ test coverage confirms they are no longer referenced.
 | `lib/api.ts` | `apiFetch` and `authFetch` wrappers | `apiFetch` prefixes `/api/backend`; `authFetch` prefixes `/api/auth`; both normalize backend error payloads. |
 | `lib/server-auth.ts` | Server-side auth constants | Defines `AUTH_COOKIE = "ragforge_session"` and `backendUrl()`. |
 | `lib/sse.ts` | SSE parsing helpers | Consumes streamed backend events for RAG answers. |
-| `hooks/use-workspace-overview.ts` | Cross-project overview aggregation | Loads `GET /projects/`, per-project documents, runs, and query history depending on options. |
+| `hooks/use-workspace-overview.ts` | Cross-project overview composition | Joins platform and RAGForge aggregates in two bounded requests. |
 | `hooks/use-ingestion-stream.ts` | Run status streaming | Uses `EventSource` to `/api/backend/ingest/runs/{run_id}/events`, then recovers with `GET /ingest/runs/{run_id}`. |
 
 ## Visual System
@@ -407,20 +411,19 @@ contracts exist:
 - authenticated publication authoring UI
 - reproducibility manifest export/import
 - knowledge graph or paper relationship browser
-- persisted project descriptions, research questions, abstracts, and hypotheses
+- persisted project descriptions
 
 ## Current Modularity Boundary
 
-The App Router files are generally thin, but screen ownership is not yet split
-between platform and capability modules. `components/app-shell.tsx` and
-`components/labs/lab-shell.tsx` hard-code project navigation, while
-`hooks/use-workspace-overview.ts` loads RAG documents, ingestion runs, and query
-history for each project. These are current implementation facts, not the future
-generic project contract.
+The App Router files remain thin. `src/platform/navigation/` owns shared
+capability and permission filtering, while `src/platform/projects/` owns the
+project shell and platform/RAG aggregate overview composition. Historical
+`LabShell` and `ProjectOverview` imports remain compatibility exports.
 
-The approved direction is to keep route paths stable while composing generic
-screens from `src/platform/` and RAG screens from `src/modules/ragforge/`.
-Neither directory should be created until real components are migrated.
+`src/modules/ragforge/` owns the project capability gate. Existing source,
+playground, pipeline, test, and observability URLs remain stable and mount only
+for RAGForge-enabled projects. Workspace-wide RAG screens use one bounded
+module aggregate alongside one platform aggregate rather than N+1 requests.
 
 ## Validation Expectations
 
