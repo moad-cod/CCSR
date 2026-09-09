@@ -1,20 +1,46 @@
 "use client";
 
-import {useQueries, useQuery} from "@tanstack/react-query";
+import {useQuery} from "@tanstack/react-query";
 import {apiFetch} from "@/lib/api";
-import type {Document, IngestionRun, Project, QueryHistoryItem} from "@/lib/types";
+import type {ProjectOverviewContract, RAGWorkspaceOverview} from "@/lib/types";
 
-export function useWorkspaceOverview(options: {documents?: boolean; runs?: boolean; history?: boolean} = {}) {
-  const projectsQuery = useQuery({queryKey: ["projects"], queryFn: () => apiFetch<Project[]>("/projects/")});
-  const projects = projectsQuery.data ?? [];
-  const documentQueries = useQueries({queries: options.documents === false ? [] : projects.map((project) => ({queryKey: ["documents", project.project_id], queryFn: () => apiFetch<Document[]>(`/documents/?project_id=${project.project_id}`)}))});
-  const runQueries = useQueries({queries: options.runs ? projects.map((project) => ({queryKey: ["ingestion-runs", project.project_id], queryFn: () => apiFetch<IngestionRun[]>(`/ingest/runs?project_id=${project.project_id}&limit=100`)})) : []});
-  const historyQueries = useQueries({queries: options.history ? projects.map((project) => ({queryKey: ["query-history", project.project_id], queryFn: () => apiFetch<QueryHistoryItem[]>(`/rag/projects/${project.project_id}/history?limit=100`)})) : []});
+export function useWorkspaceOverview(options: {documents?: boolean; runs?: boolean; history?: boolean; enabled?: boolean} = {}) {
+  const includes = [
+    options.documents === false ? null : "documents",
+    options.runs ? "runs" : null,
+    options.history ? "history" : null,
+  ].filter((value): value is string => Boolean(value));
+  const include = includes.join(",");
+  const projectsQuery = useQuery({
+    queryKey: ["project-overviews"],
+    queryFn: () => apiFetch<ProjectOverviewContract[]>("/projects/overview"),
+    enabled: options.enabled !== false,
+  });
+  const overviewQuery = useQuery({
+    queryKey: ["ragforge", "workspace-overview", include],
+    queryFn: () => apiFetch<RAGWorkspaceOverview>(`/rag/workspace/overview?include=${include}`),
+    enabled: options.enabled !== false,
+  });
+  const projectOverviews = projectsQuery.data ?? [];
+  const projects = projectOverviews.map((item) => item.project);
+  const platformSummaries = new Map(projectOverviews.map((item) => [item.project.project_id, item.counts]));
   const projectMap = new Map(projects.map((project) => [project.project_id, project]));
-  const documents = documentQueries.flatMap((query, index) => (query.data ?? []).map((document) => ({...document, project: projects[index]})));
-  const runs = runQueries.flatMap((query, index) => (query.data ?? []).map((run) => ({...run, project: projects[index]})));
-  const history = historyQueries.flatMap((query, index) => (query.data ?? []).map((item) => ({...item, project: projects[index]})));
-  const pending = projectsQuery.isLoading || documentQueries.some((query) => query.isLoading) || runQueries.some((query) => query.isLoading) || historyQueries.some((query) => query.isLoading);
-  const error = projectsQuery.isError || documentQueries.some((query) => query.isError) || runQueries.some((query) => query.isError) || historyQueries.some((query) => query.isError);
-  return {projects, projectMap, documents, runs, history, pending, error, refetch: async () => {await projectsQuery.refetch(); await Promise.all([...documentQueries, ...runQueries, ...historyQueries].map((query) => query.refetch()));}};
+  const documents = (overviewQuery.data?.documents ?? []).map((document) => ({...document, project: projectMap.get(document.project_id)}));
+  const runs = (overviewQuery.data?.runs ?? []).map((run) => ({...run, project: projectMap.get(run.project_id)}));
+  const history = (overviewQuery.data?.history ?? []).map((item) => ({...item, project: projectMap.get(item.project_id)}));
+  const summaries = new Map((overviewQuery.data?.summaries ?? []).map((summary) => [summary.project_id, summary]));
+  return {
+    projects,
+    projectMap,
+    summaries,
+    platformSummaries,
+    documents,
+    runs,
+    history,
+    pending: options.enabled !== false && (projectsQuery.isLoading || overviewQuery.isLoading),
+    error: projectsQuery.isError || overviewQuery.isError,
+    refetch: async () => {
+      await Promise.all([projectsQuery.refetch(), overviewQuery.refetch()]);
+    },
+  };
 }
