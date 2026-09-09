@@ -52,12 +52,16 @@ class FrontendControlPlaneApiTests(unittest.IsolatedAsyncioTestCase):
                 "app.api.query.query_log_repository.get_project_query_history",
                 AsyncMock(return_value=[query_log]),
             ),
+            patch(
+                "app.modules.ragforge.api.query.authorize_project",
+                AsyncMock(return_value=project),
+            ),
         ):
             result = await query_history(
                 "project-id",
                 50,
                 db,
-                {"user_id": "user-id"},
+                {"user_id": "user-id", "global_role": "member"},
             )
 
         self.assertEqual(result[0]["query_log_id"], "query-id")
@@ -104,7 +108,13 @@ class FrontendControlPlaneApiTests(unittest.IsolatedAsyncioTestCase):
             )
         )
 
-        result = await query_trace("query-id", db, {"user_id": "user-id"})
+        with patch(
+            "app.modules.ragforge.api.query.authorize_project",
+            AsyncMock(),
+        ):
+            result = await query_trace(
+                "query-id", db, {"user_id": "user-id", "global_role": "member"}
+            )
 
         self.assertEqual(result["retrievals"][0]["document_name"], "guide.pdf")
         self.assertEqual(result["retrievals"][0]["rank"], 1)
