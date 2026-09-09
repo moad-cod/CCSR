@@ -2,28 +2,19 @@
 
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {
-  Archive,
-  BarChart3,
-  Beaker,
   Bell,
-  BookOpenText,
   Building2,
   ChevronDown,
   ChevronRight,
   Command,
-  FlaskConical,
   FolderKanban,
-  Home,
   LogOut,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  RotateCcw,
   Search,
-  Settings,
   Sparkles,
   UserRound,
-  Workflow,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -34,72 +25,11 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, 
 import {apiFetch, authFetch} from "@/lib/api";
 import type {Organization, Project, User} from "@/lib/types";
 import {cn, initials} from "@/lib/utils";
-
-type NavItem = {label: string; href: string; icon: typeof Home};
-type NavGroup = {label: string; items: NavItem[]};
+import {projectNavigation, workspaceNavigation} from "@/platform/navigation/navigation";
+import type {NavigationItem} from "@/platform/navigation/navigation";
 
 function projectIdFromPath(pathname: string) {
   return pathname.match(/^\/projects\/([^/]+)/)?.[1] ?? null;
-}
-
-function navigation(projectId: string | null): NavGroup[] {
-  if (projectId) {
-    return [
-      {
-        label: "Lab",
-        items: [
-          {label: "Overview", href: `/projects/${projectId}/overview`, icon: Home},
-          {label: "Research", href: `/projects/${projectId}/research`, icon: BookOpenText},
-          {label: "Experiments", href: `/projects/${projectId}/experiments`, icon: FlaskConical},
-          {label: "Results", href: `/projects/${projectId}/results`, icon: BarChart3},
-          {label: "Artifacts", href: `/projects/${projectId}/artifacts`, icon: Archive},
-          {label: "Test", href: `/projects/${projectId}/test`, icon: Beaker},
-          {label: "Reproduce", href: `/projects/${projectId}/reproduce`, icon: RotateCcw},
-        ],
-      },
-      {
-        label: "Manage",
-        items: [
-          {label: "All labs", href: "/labs", icon: FlaskConical},
-          {label: "All projects", href: "/projects", icon: FolderKanban},
-          {label: "Settings", href: `/projects/${projectId}/settings`, icon: Settings},
-          {label: "Organization", href: "/organization", icon: Building2},
-          {label: "Profile", href: "/settings/profile", icon: UserRound},
-        ],
-      },
-    ];
-  }
-  return [
-    {
-      label: "Workspace",
-      items: [
-        {label: "Home", href: "/home", icon: Home},
-        {label: "Labs", href: "/labs", icon: FlaskConical},
-        {label: "Projects", href: "/projects", icon: FolderKanban},
-      ],
-    },
-    {
-      label: "Research",
-      items: [
-        {label: "Experiments", href: "/experiments", icon: Sparkles},
-        {label: "Comparisons", href: "/comparisons", icon: BarChart3},
-      ],
-    },
-    {
-      label: "Monitor",
-      items: [
-        {label: "Runs", href: "/runs", icon: Workflow},
-        {label: "Observability", href: "/observability", icon: BarChart3},
-      ],
-    },
-    {
-      label: "Manage",
-      items: [
-        {label: "Organization", href: "/organization", icon: Building2},
-        {label: "Settings", href: "/settings/profile", icon: Settings},
-      ],
-    },
-  ];
 }
 
 function routeLabel(segment: string, project?: Project) {
@@ -147,7 +77,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const {data: projects = []} = useQuery({queryKey: ["projects"], queryFn: () => apiFetch<Project[]>("/projects/")});
   const {data: organizations = []} = useQuery({queryKey: ["organizations"], queryFn: () => apiFetch<Organization[]>("/organizations/")});
   const project = projects.find((item) => item.project_id === projectId);
-  const nav = navigation(projectId);
+  const nav = project ? projectNavigation(project, user) : workspaceNavigation(projects);
   const breadcrumbs = pathname.split("/").filter(Boolean).map((segment) => routeLabel(segment, project));
   const currentLabel = breadcrumbs.at(-1) ?? "CCSR";
   const searchResults = useMemo(() => {
@@ -234,13 +164,15 @@ export function AppShell({children}: {children: React.ReactNode}) {
     }
   }
 
-  function active(item: NavItem) {
+  function active(item: NavigationItem) {
     if (item.label === "Projects") return pathname === "/projects";
     if (item.label === "Labs") return pathname === "/labs";
-    if (item.label === "Research") return pathname.includes("/research") || pathname.includes("/sources") || pathname.includes("/documents");
-    if (item.label === "Artifacts") return pathname.includes("/artifacts") || pathname.includes("/pipelines") || pathname.includes("/runs/");
+    if (item.label === "Research") return pathname.includes("/research");
+    if (item.label === "Sources") return pathname === "/documents" || pathname.includes("/sources") || pathname.includes("/documents");
+    if (item.label === "Artifacts") return pathname.includes("/artifacts");
     if (item.label === "Results") return pathname.includes("/results") || pathname.includes("/evaluation");
-    if (item.label === "Test") return pathname.includes("/test") || pathname.includes("/playground") || pathname.includes("/history");
+    if (item.label === "Playground") return pathname.includes("/test") || pathname.includes("/playground") || pathname.includes("/chat") || pathname.includes("/history/");
+    if (item.label === "Pipelines") return pathname.includes("/pipelines") || pathname.includes("/runs/");
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   }
 
