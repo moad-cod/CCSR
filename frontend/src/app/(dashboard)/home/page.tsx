@@ -14,7 +14,7 @@ import {ErrorState} from "@/components/ui/error-state";
 import {LoadingState} from "@/components/ui/loading-state";
 import {useWorkspaceOverview} from "@/hooks/use-workspace-overview";
 import {apiFetch} from "@/lib/api";
-import type {Chunker, IngestionRun, Organization, Project} from "@/lib/types";
+import type {Chunker, Organization, Project} from "@/lib/types";
 import {relativeTime} from "@/lib/utils";
 import {useState} from "react";
 
@@ -44,7 +44,11 @@ export default function HomePage() {
     mutationFn: (values: ProjectFormValues) => apiFetch<Project>("/projects/", {method: "POST", body: JSON.stringify({name: values.name, organization_id: values.organization_id || null})}),
     onSuccess: async (project, values) => {
       localStorage.setItem(`ragforge:project:${project.project_id}:chunker`, values.chunker);
-      await queryClient.invalidateQueries({queryKey: ["projects"]});
+      await Promise.all([
+        queryClient.invalidateQueries({queryKey: ["projects"]}),
+        queryClient.invalidateQueries({queryKey: ["project-overviews"]}),
+        queryClient.invalidateQueries({queryKey: ["ragforge", "workspace-overview"]}),
+      ]);
       setCreateOpen(false);
       router.push(`/projects/${project.project_id}/onboarding`);
     },
@@ -57,6 +61,7 @@ export default function HomePage() {
   const attentionRuns = overview.runs.filter((run) => ["failed", "cancelled"].includes(run.status));
   const recentProjects = [...overview.projects].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 5);
   const isEmptyWorkspace = overview.projects.length === 0;
+  const completedExperiments = [...overview.platformSummaries.values()].reduce((total, summary) => total + summary.experiments, 0);
 
   const createAction = <Button className="w-full sm:w-auto" disabled={create.isPending} onClick={() => setCreateOpen(true)}>{create.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}Create project</Button>;
 
@@ -85,9 +90,9 @@ export default function HomePage() {
         <MetricCard label="Indexed sources" value={`${indexed}/${overview.documents.length}`} detail="Ready for retrieval" icon={Database} />
         <MetricCard label="Running jobs" value={running.length} detail="Non-terminal pipeline runs" icon={Workflow} />
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-          <div className="flex items-center justify-between"><span className="text-sm font-medium text-[var(--ink-muted)]">Completed experiments</span><Sparkles className="size-4 text-[var(--accent)]" /></div>
-          <p className="mt-3 text-sm font-semibold text-[var(--ink-secondary)]">Not connected</p>
-          <p className="mt-1 text-xs leading-5 text-[var(--ink-faint)]">Waiting for a real experiment API.</p>
+          <div className="flex items-center justify-between"><span className="text-sm font-medium text-[var(--ink-muted)]">Experiments</span><Sparkles className="size-4 text-[var(--accent)]" /></div>
+          <p className="mt-3 text-2xl font-semibold text-[var(--ink)]">{completedExperiments}</p>
+          <p className="mt-1 text-xs leading-5 text-[var(--ink-faint)]">Durable experiment records</p>
         </div>
       </div>
 
@@ -100,7 +105,7 @@ export default function HomePage() {
         <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
           <div className="flex items-center justify-between border-b border-[var(--border)] p-4"><div><h2 className="text-base font-semibold">Runs requiring attention</h2><p className="mt-1 text-sm text-[var(--ink-muted)]">Failed or cancelled jobs that may need retry or inspection.</p></div><Link href="/runs" className="text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">View runs</Link></div>
           {attentionRuns.length ? <div className="divide-y divide-[var(--border)]">{attentionRuns.slice(0, 5).map((run) => {
-            const runProject = (run as IngestionRun & {project?: Project}).project;
+            const runProject = run.project;
             const projectId = runProject?.project_id;
             const href = projectId ? `/projects/${projectId}/runs/${run.ingestion_run_id}` : "/runs";
             return <Link key={run.ingestion_run_id} href={href} className="flex items-center gap-3 p-4 transition hover:bg-[var(--surface-hover)]"><AlertTriangle className="size-4 shrink-0 text-[var(--warning)]" /><span className="min-w-0 flex-1"><span className="mono block truncate text-xs text-[var(--ink-secondary)]">{run.ingestion_run_id}</span><span className="mt-1 block truncate text-xs text-[var(--ink-faint)]">{runProject?.name ?? "Project unavailable"} · {relativeTime(run.created_at)}</span></span><StatusBadge status={run.status} /></Link>;
@@ -112,7 +117,7 @@ export default function HomePage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2"><CheckCircle2 className="size-4 text-[var(--accent)]" /><h2 className="text-base font-semibold">Recent experiments</h2></div>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">Experiment records are planned for the benchmark product, but no backend endpoint is available yet. This section is intentionally empty instead of showing synthetic experiment results.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">Durable experiment records are available inside each project. Open Experiments to continue active research work and compare preserved evidence.</p>
           </div>
           <Link href="/experiments" className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border)] px-3 text-sm font-medium text-[var(--ink-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]">Open experiments</Link>
         </div>
