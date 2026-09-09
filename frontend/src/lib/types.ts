@@ -40,6 +40,25 @@ export type Project = {
       [key: string]: unknown;
     };
   } | null;
+  /** Server-resolved access used to hide unavailable mutations and navigation. */
+  permissions?: ProjectPermissions;
+};
+
+export type ProjectPermissions = {
+  read: boolean;
+  write: boolean;
+  manage: boolean;
+};
+
+export type ProjectOverviewContract = {
+  project: Project;
+  counts: {
+    studies: number;
+    experiments: number;
+    runs: number;
+    artifacts: number;
+    publications: number;
+  };
 };
 
 export type Document = {
@@ -105,6 +124,33 @@ export type IngestionRun = {
     error_code?: string | null;
     error_message?: string | null;
   } | null;
+};
+
+export type RAGRunSummary = Omit<IngestionRun, "progress" | "embedding_progress"> & {
+  project_id: string;
+};
+
+export type RAGProjectSummary = {
+  project_id: string;
+  document_count: number;
+  indexed_document_count: number;
+  active_run_count: number;
+  failed_run_count: number;
+};
+
+export type RAGWorkspaceOverview = {
+  summaries: RAGProjectSummary[];
+  documents: Document[];
+  runs: RAGRunSummary[];
+  history: QueryHistoryItem[];
+};
+
+export type RAGProjectOverview = {
+  summary: RAGProjectSummary;
+  query_count: number;
+  primary_document: Document | null;
+  recent_runs: RAGRunSummary[];
+  latest_query: QueryHistoryItem | null;
 };
 
 export type IngestionStatus =
