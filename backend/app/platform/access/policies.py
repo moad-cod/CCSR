@@ -1,7 +1,9 @@
-from collections.abc import Collection
+from collections.abc import Collection, Sequence
+from dataclasses import dataclass
 from typing import Literal
 
 from fastapi import Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
@@ -26,6 +28,98 @@ PROJECT_ACTIONS = frozenset(
     {PROJECT_ACTION_READ, PROJECT_ACTION_WRITE, PROJECT_ACTION_MANAGE}
 )
 ProjectAction = Literal["read", "write", "manage"]
+
+
+@dataclass(frozen=True, slots=True)
+class ProjectPermissions:
+    read: bool = False
+    write: bool = False
+    manage: bool = False
+
+
+def _permissions_for_project(
+    project: Project,
+    *,
+    user_id: str,
+    global_role: str,
+    organization_role: str | None,
+) -> ProjectPermissions:
+    if global_role == GLOBAL_ROLE_ADMIN:
+        return ProjectPermissions(read=True, write=True, manage=True)
+    if project.organization_id is None:
+        allowed = project.created_by == user_id
+        return ProjectPermissions(read=allowed, write=allowed, manage=allowed)
+    if organization_role not in {
+        ORGANIZATION_ROLE_OWNER,
+        ORGANIZATION_ROLE_ADMIN,
+        ORGANIZATION_ROLE_MEMBER,
+    }:
+        return ProjectPermissions()
+    may_change = project.created_by == user_id or organization_role in {
+        ORGANIZATION_ROLE_OWNER,
+        ORGANIZATION_ROLE_ADMIN,
+    }
+    return ProjectPermissions(read=True, write=may_change, manage=may_change)
+
+
+async def resolve_project_permissions(
+    db: AsyncSession,
+    project: Project,
+    principal: dict,
+) -> ProjectPermissions:
+    user_id, global_role = _identity(principal)
+    organization_role = None
+    if project.organization_id is not None and global_role != GLOBAL_ROLE_ADMIN:
+        membership = await organization_repository.get_active_membership(
+            db,
+            organization_id=project.organization_id,
+            user_id=user_id,
+        )
+        organization_role = membership.role if membership is not None else None
+    return _permissions_for_project(
+        project,
+        user_id=user_id,
+        global_role=global_role,
+        organization_role=organization_role,
+    )
+
+
+async def resolve_projects_permissions(
+    db: AsyncSession,
+    projects: Sequence[Project],
+    principal: dict,
+) -> dict[str, ProjectPermissions]:
+    """Resolve navigation permissions for many projects in one membership query."""
+    user_id, global_role = _identity(principal)
+    organization_ids = {
+        project.organization_id
+        for project in projects
+        if project.organization_id is not None
+    }
+    roles: dict[str, str] = {}
+    if organization_ids and global_role != GLOBAL_ROLE_ADMIN:
+        from app.platform.organizations.membership import OrganizationMembership
+
+        result = await db.execute(
+            select(
+                OrganizationMembership.organization_id,
+                OrganizationMembership.role,
+            ).where(
+                OrganizationMembership.user_id == user_id,
+                OrganizationMembership.organization_id.in_(organization_ids),
+                OrganizationMembership.deleted_at.is_(None),
+            )
+        )
+        roles = {str(organization_id): role for organization_id, role in result.all()}
+    return {
+        str(project.id): _permissions_for_project(
+            project,
+            user_id=user_id,
+            global_role=global_role,
+            organization_role=roles.get(str(project.organization_id)),
+        )
+        for project in projects
+    }
 
 
 def _identity(principal: dict) -> tuple[str, str]:
