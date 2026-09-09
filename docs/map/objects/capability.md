@@ -12,12 +12,14 @@ direction in [`CONTEXT.md`](../../../CONTEXT.md).
 
 - Future reusable behaviors such as RAG, evaluation, datasets, fine-tuning,
   classification, reproducibility, demonstrations, and publication.
-- Capability-contributed backend workflows and frontend navigation.
+- Capability-contributed backend workflows, aggregate reads, route gates, and
+  frontend navigation.
 - Project creation provisioning and project/account pre-delete cleanup
   contributed by RAGForge.
 - Durable many-capability project enablement through `project_capabilities`.
 
 **Does not hit**
 
-- A one-to-one project type, capability-driven frontend navigation, or a
-  requirement to create a source-code module per project.
+- A one-to-one project type or a requirement to create a source-code module per
+  project. Navigation visibility is not an authorization boundary; backend
+  policies remain authoritative.

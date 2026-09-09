@@ -13,12 +13,14 @@
 Bearer token -> durable session -> user identity + global role
 organization action -> global-admin or membership-role policy
 project/RAG action -> personal ownership or organization project policy
+project response -> resolved read/write/manage permissions -> navigation/actions
 ```
 
 **Hits**
 
 - Organization visibility/mutations, invitations, personal projects, shared
-  organization projects, documents, ingestion runs, and queries.
+  organization projects, documents, ingestion runs, queries, and frontend
+  navigation hints.
 
 **Does not hit**
 
