@@ -1,4 +1,5 @@
-import {WorkspaceEntry} from "@/components/workspace/workspace-entry";
+import {WorkspaceEntry} from "@/modules/ragforge/workspace-entry";
+import {RAGForgeCapabilityGate} from "@/modules/ragforge/capability-gate";
 
 export default async function PlaygroundPage({
   params,
@@ -6,5 +7,5 @@ export default async function PlaygroundPage({
   params: Promise<{projectId: string}>;
 }) {
   const {projectId} = await params;
-  return <WorkspaceEntry projectId={projectId} />;
+  return <RAGForgeCapabilityGate projectId={projectId}><WorkspaceEntry projectId={projectId} /></RAGForgeCapabilityGate>;
 }

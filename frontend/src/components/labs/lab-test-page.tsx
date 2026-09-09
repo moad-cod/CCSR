@@ -10,7 +10,7 @@ import {StatusBadge} from "@/components/status-badge";
 import {Button} from "@/components/ui/button";
 import {ErrorState} from "@/components/ui/error-state";
 import {LoadingState} from "@/components/ui/loading-state";
-import {WorkspaceEntry} from "@/components/workspace/workspace-entry";
+import {WorkspaceEntry} from "@/modules/ragforge/workspace-entry";
 import {apiFetch} from "@/lib/api";
 import type {Document, IngestionRun, Project, QueryHistoryItem} from "@/lib/types";
 import {cn, relativeTime} from "@/lib/utils";
