@@ -3,8 +3,10 @@
 The frontend is one Next.js application serving authenticated CCSR screens and
 a read-only public publication surface. It uses a same-origin backend proxy and
 HttpOnly authentication cookie; only GET publication routes are explicitly
-allowed through that proxy without a cookie. The current project experience
-still assumes RAG data and routes. Login tokens are backed by durable backend
+allowed through that proxy without a cookie. Platform project/research screens
+are separated from capability-specific RAGForge screens. Navigation reads
+backend capabilities and resolved project permissions, while retained routes
+pass through a capability gate. Login tokens are backed by durable backend
 sessions, and logout revokes the backend session before clearing the cookie.
 
 ## Route by task
@@ -15,6 +17,9 @@ sessions, and logout revokes the backend session before clearing the cookie.
 - Client data hooks: `src/hooks/`
 - API proxy/client, server auth, types, and SSE helpers: `src/lib/`
 - Public publication screens: `src/platform/publication/`
+- Platform navigation and project screens: `src/platform/navigation/` and
+  `src/platform/projects/`
+- RAGForge capability gates and screens: `src/modules/ragforge/`
 - Detailed current map: `FRONTEND_MAP.md`
 
 Read [`src/CONTEXT.md`](src/CONTEXT.md) before moving screens or changing route

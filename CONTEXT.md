@@ -16,8 +16,11 @@ The repository remains one deployable modular monolith.
 - Authentication issues JWTs backed by durable, revocable sessions. Users have
   member/admin platform roles, organizations support expiring invitations, and
   shared default-deny policies govern organization and project access.
-- The frontend is one Next.js application with shared UI primitives, but project
-  navigation and data loading still assume RAG capabilities.
+- The frontend is one Next.js application with shared UI primitives. Platform
+  project/research screens and RAGForge screens have separate navigation
+  ownership; links are filtered by durable capabilities and resolved project
+  permissions. Dashboards use bounded aggregate reads instead of per-project
+  request fan-out.
 - PostgreSQL is authoritative for durable application state. Redis is
   best-effort cache/progress transport. MinIO stores ingestion artifacts and
   Qdrant stores RAG vectors.
