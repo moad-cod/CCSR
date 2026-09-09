@@ -1,6 +1,6 @@
 "use client";
 
-import {useMutation, useQueries, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {FlaskConical, Plus} from "lucide-react";
 import {useRouter} from "next/navigation";
 import {useMemo, useState} from "react";
@@ -13,8 +13,9 @@ import {Dialog} from "@/components/ui/dialog";
 import {EmptyState} from "@/components/ui/empty-state";
 import {ErrorState} from "@/components/ui/error-state";
 import {LoadingState} from "@/components/ui/loading-state";
+import {useWorkspaceOverview} from "@/hooks/use-workspace-overview";
 import {apiFetch} from "@/lib/api";
-import type {Chunker, Document, IngestionRun, Organization, Project} from "@/lib/types";
+import type {Chunker, Organization, Project} from "@/lib/types";
 import {LabCard} from "./lab-card";
 import {LabFilters} from "./lab-filters";
 import {inferDomain, type LabDomainId, type LabStats} from "./lab-domain";
@@ -30,26 +31,23 @@ export function LabsDiscoveryPage() {
   const [deleting, setDeleting] = useState<Project | null>(null);
   const [search, setSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState<LabDomainId>("all");
-  const projectsQuery = useQuery({queryKey: ["projects"], queryFn: () => apiFetch<Project[]>("/projects/")});
+  const overview = useWorkspaceOverview({documents: false});
   const organizationsQuery = useQuery({queryKey: ["organizations"], queryFn: () => apiFetch<Organization[]>("/organizations/"), enabled: dialog === "create"});
   const chunkersQuery = useQuery({queryKey: ["chunkers"], queryFn: () => apiFetch<Chunker[]>("/chunkers"), enabled: dialog === "create"});
-  const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
-  const documentQueries = useQueries({queries: projects.map((project) => ({queryKey: ["documents", project.project_id], queryFn: () => apiFetch<Document[]>(`/documents/?project_id=${project.project_id}`), staleTime: 30_000}))});
-  const runQueries = useQueries({queries: projects.map((project) => ({queryKey: ["ingestion-runs", project.project_id], queryFn: () => apiFetch<IngestionRun[]>(`/ingest/runs?project_id=${project.project_id}&limit=30`), staleTime: 15_000}))});
-  const stats = new Map(projects.map((project, index) => {
-    const documents = documentQueries[index]?.data;
-    const runs = runQueries[index]?.data;
-    const latestRun = runs?.[0] ?? null;
+  const projects = useMemo(() => overview.projects, [overview.projects]);
+  const stats = new Map(projects.map((project) => {
+    const summary = overview.summaries.get(project.project_id);
     return [project.project_id, {
-      documents: documents?.length ?? null,
-      active: runs?.filter((run) => !["indexed", "failed", "cancelled"].includes(run.status)).length ?? null,
-      indexed: documents?.filter((document) => document.status === "indexed").length ?? null,
-      latestRun,
+      documents: summary?.document_count ?? 0,
+      active: summary?.active_run_count ?? 0,
+      indexed: summary?.indexed_document_count ?? 0,
+      latestRun: null,
     }];
   }));
-  const create = useMutation({mutationFn: (values: ProjectFormValues) => apiFetch<Project>("/projects/", {method: "POST", body: JSON.stringify({name: values.name, organization_id: values.organization_id || null})}), onSuccess: async (project, values) => {localStorage.setItem(`ragforge:project:${project.project_id}:chunker`, values.chunker); await queryClient.invalidateQueries({queryKey: ["projects"]}); toast.success("Lab created"); router.push(`/projects/${project.project_id}/onboarding`);}, onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to create lab")});
-  const rename = useMutation({mutationFn: (values: ProjectFormValues) => apiFetch<Project>(`/projects/${selected?.project_id}`, {method: "PATCH", body: JSON.stringify({name: values.name})}), onSuccess: async () => {await queryClient.invalidateQueries({queryKey: ["projects"]}); setDialog(null); setSelected(null); toast.success("Lab renamed");}, onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to rename lab")});
-  const remove = useMutation({mutationFn: (projectId: string) => apiFetch(`/projects/${projectId}`, {method: "DELETE"}), onSuccess: async () => {await queryClient.invalidateQueries({queryKey: ["projects"]}); setDeleting(null); toast.success("Lab deleted");}, onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to delete lab")});
+  const refreshProjects = () => Promise.all([queryClient.invalidateQueries({queryKey: ["projects"]}), queryClient.invalidateQueries({queryKey: ["project-overviews"]}), queryClient.invalidateQueries({queryKey: ["ragforge", "workspace-overview"]})]);
+  const create = useMutation({mutationFn: (values: ProjectFormValues) => apiFetch<Project>("/projects/", {method: "POST", body: JSON.stringify({name: values.name, organization_id: values.organization_id || null})}), onSuccess: async (project, values) => {localStorage.setItem(`ragforge:project:${project.project_id}:chunker`, values.chunker); await refreshProjects(); toast.success("Lab created"); router.push(`/projects/${project.project_id}/onboarding`);}, onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to create lab")});
+  const rename = useMutation({mutationFn: (values: ProjectFormValues) => apiFetch<Project>(`/projects/${selected?.project_id}`, {method: "PATCH", body: JSON.stringify({name: values.name})}), onSuccess: async () => {await refreshProjects(); setDialog(null); setSelected(null); toast.success("Lab renamed");}, onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to rename lab")});
+  const remove = useMutation({mutationFn: (projectId: string) => apiFetch(`/projects/${projectId}`, {method: "DELETE"}), onSuccess: async () => {await refreshProjects(); setDeleting(null); toast.success("Lab deleted");}, onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to delete lab")});
   const labRecords = projects.map((project) => ({project, domain: inferDomain(project), stats: stats.get(project.project_id) ?? emptyStats}));
   const filtered = labRecords.filter(({project, domain}) => {
     const matchesSearch = project.name.toLowerCase().includes(search.trim().toLowerCase());
@@ -67,7 +65,7 @@ export function LabsDiscoveryPage() {
     <LabSummary totals={totals} />
     <LabFilters search={search} domainFilter={domainFilter} onSearchChange={setSearch} onDomainFilterChange={setDomainFilter} />
 
-    {projectsQuery.isLoading ? <LoadingState label="Loading labs" rows={6} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 [&>*]:h-72" /> : projectsQuery.isError ? <ErrorState title="Labs could not be loaded" description="The authenticated project API did not return a usable response." onRetry={() => void projectsQuery.refetch()} /> : filtered.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{filtered.map(({project, domain, stats: labStats}) => <LabCard key={project.project_id} project={project} domain={domain} stats={labStats} onRename={() => {setSelected(project); setDialog("rename");}} onDelete={() => setDeleting(project)} />)}</div> : <EmptyState icon={FlaskConical} title={search || domainFilter !== "all" ? "No matching labs" : "No labs yet"} description={search || domainFilter !== "all" ? "Try another search or domain filter." : "Create a lab to organize sources, pipeline runs, traces, and reproducible findings."} action={search || domainFilter !== "all" ? undefined : "Create lab"} onAction={search || domainFilter !== "all" ? undefined : () => setDialog("create")} />}
+    {overview.pending ? <LoadingState label="Loading labs" rows={6} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 [&>*]:h-72" /> : overview.error ? <ErrorState title="Labs could not be loaded" description="The authenticated project API did not return a usable response." onRetry={() => void overview.refetch()} /> : filtered.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{filtered.map(({project, domain, stats: labStats}) => <LabCard key={project.project_id} project={project} domain={domain} stats={labStats} onRename={() => {setSelected(project); setDialog("rename");}} onDelete={() => setDeleting(project)} />)}</div> : <EmptyState icon={FlaskConical} title={search || domainFilter !== "all" ? "No matching labs" : "No labs yet"} description={search || domainFilter !== "all" ? "Try another search or domain filter." : "Create a lab to organize sources, pipeline runs, traces, and reproducible findings."} action={search || domainFilter !== "all" ? undefined : "Create lab"} onAction={search || domainFilter !== "all" ? undefined : () => setDialog("create")} />}
 
     <Dialog open={dialog === "create"} onClose={() => setDialog(null)} title="Create lab" description="Create an isolated research workspace and choose the initial upload preference."><ProjectForm organizations={organizationsQuery.data ?? []} chunkers={chunkersQuery.data ?? []} isPending={create.isPending} submitLabel="Create lab" onCancel={() => setDialog(null)} onSubmit={(values) => create.mutate(values)} /></Dialog>
     <Dialog open={dialog === "rename" && Boolean(selected)} onClose={() => {setDialog(null); setSelected(null);}} title="Rename lab" description="The Qdrant collection and indexed data remain unchanged.">{selected ? <ProjectForm initialName={selected.name} submitLabel="Save lab" isPending={rename.isPending} onCancel={() => {setDialog(null); setSelected(null);}} onSubmit={(values) => rename.mutate(values)} /> : null}</Dialog>
