@@ -9,6 +9,7 @@ import type {Project} from "@/lib/types";
 import {relativeTime} from "@/lib/utils";
 import type {LabDomain, LabStats} from "./lab-domain";
 import {readiness} from "./lab-domain";
+import {hasProjectCapability} from "@/platform/navigation/navigation";
 
 type LabCardProps = {
   project: Project;
@@ -21,6 +22,9 @@ type LabCardProps = {
 export function LabCard({project, stats, domain, onRename, onDelete}: LabCardProps) {
   const Icon = domain.icon;
   const status = readiness(stats);
+  const canWrite = project.permissions?.write ?? true;
+  const canManage = project.permissions?.manage ?? true;
+  const hasRAGForge = hasProjectCapability(project, "ragforge");
 
   return <article className="group relative flex min-h-[286px] flex-col rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]">
     <div className="flex items-start justify-between gap-3">
@@ -31,14 +35,14 @@ export function LabCard({project, stats, domain, onRename, onDelete}: LabCardPro
         </div>
         <h2 className="mt-4 line-clamp-2 text-lg font-semibold leading-6 text-[var(--ink)]">{project.name}</h2>
       </div>
-      <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild><button className="icon-button size-8" aria-label={`Actions for ${project.name}`}><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger></TooltipTrigger><TooltipContent>Lab actions</TooltipContent></Tooltip><DropdownMenuContent align="end"><DropdownMenuItem onSelect={onRename}><Pencil className="size-3.5" />Rename</DropdownMenuItem><DropdownMenuItem className="text-[var(--danger)] data-[highlighted]:text-[var(--danger)]" onSelect={onDelete}><Trash2 className="size-3.5" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+      {canWrite || canManage ? <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild><button className="icon-button size-8" aria-label={`Actions for ${project.name}`}><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger></TooltipTrigger><TooltipContent>Lab actions</TooltipContent></Tooltip><DropdownMenuContent align="end">{canWrite ? <DropdownMenuItem onSelect={onRename}><Pencil className="size-3.5" />Rename</DropdownMenuItem> : null}{canManage ? <DropdownMenuItem className="text-[var(--danger)] data-[highlighted]:text-[var(--danger)]" onSelect={onDelete}><Trash2 className="size-3.5" />Delete</DropdownMenuItem> : null}</DropdownMenuContent></DropdownMenu> : null}
     </div>
 
     <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--ink-secondary)]">
       A local-first research lab for sources, pipeline runs, playground testing, retrieval traces, and reproducibility evidence.
     </p>
 
-    <div className="mt-5 grid grid-cols-3 gap-2">
+    {hasRAGForge ? <div className="mt-5 grid grid-cols-3 gap-2">
       <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
         <span className="block text-[8px] uppercase tracking-[0.12em] text-[var(--ink-disabled)]">Sources</span>
         <b className="mt-1 block text-lg font-semibold text-[var(--ink)]">{stats.documents ?? "..."}</b>
@@ -51,7 +55,7 @@ export function LabCard({project, stats, domain, onRename, onDelete}: LabCardPro
         <span className="block text-[8px] uppercase tracking-[0.12em] text-[var(--ink-disabled)]">Runs</span>
         <b className="mt-1 block text-lg font-semibold text-[var(--ink)]">{stats.active ?? "..."}</b>
       </div>
-    </div>
+    </div> : <div className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-3 text-xs text-[var(--ink-muted)]">Platform research only · no RAGForge source pipeline enabled</div>}
 
     <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-[var(--ink-muted)]">
       <StatusBadge status={status} />
