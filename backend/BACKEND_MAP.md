@@ -40,13 +40,16 @@ flowchart LR
     API --> R2[(Cloudflare R2)]
 ```
 
-The main application entry point is `app/main.py`. It creates the FastAPI application, mounts every router, and provides `GET /health`.
+The stable application entry point is `app/main.py`. It calls
+`app/composition.py`, which explicitly registers capabilities, workflows,
+execution adapters/handlers, exception mappings, routers, and `GET /health`.
 
 ## 2. Repository layout
 
 | Path | Responsibility |
 | --- | --- |
-| `app/main.py` | FastAPI app construction and router registration. |
+| `app/main.py` | Stable `app.main:app` ASGI entry point. |
+| `app/composition.py` | FastAPI construction plus explicit capability, execution, exception, and router assembly. |
 | `app/platform/` | Canonical account, authentication, organization, and membership ownership. |
 | `app/modules/ragforge/` | Canonical RAG APIs, models, repositories, chunking, ingestion, indexing, retrieval, generation, and trace behavior. |
 | `app/api/`, `app/models/`, `app/repositories/` | Generic project code plus compatibility aliases for mechanically moved modules. |
@@ -835,14 +838,14 @@ These are important implementation facts, not necessarily defects in every deplo
 8. **Celery is implemented for benchmarking, but the infrastructure E2E suite is still Airflow-oriented.** Celery has focused unit coverage and benchmark validation; the older `tests/e2e/test_control_plane.py` still waits for Airflow success.
 9. **Embedding-run tracking is active for durable file ingestion.** The Silver-to-Gold stage updates `EmbeddingRun` records through the internal pipeline API; synchronous URL/GDrive/multimodal paths still do not create this lineage.
 10. **CrossEncoder reranking is optional.** It is referenced in code but intentionally absent from the base dependencies, so default installations preserve RRF order.
-11. **No startup dependency checks or CORS configuration exist in `app/main.py`.** `/health` only confirms that the FastAPI process can answer.
+11. **No startup dependency checks or CORS configuration exist in application composition.** `/health` only confirms that the FastAPI process can answer.
 12. **Qdrant/PostgreSQL updates are not one atomic transaction.** Deterministic indexing makes retry/rebuild the recovery mechanism.
 
 ## 16. Where to make common changes
 
 | Change | Start here | Also inspect |
 | --- | --- | --- |
-| Add an endpoint | `app/api/<domain>.py` | `app/main.py`, request/response tests. |
+| Add an endpoint | owning router package | `app/composition.py`, request/response tests. |
 | Add a database entity/column | `app/models/` | Alembic migration, repository, schema validation, model/database tests. |
 | Change ingestion statuses | `app/modules/ragforge/models/statuses.py` | `repositories/ingestion_runs.py`, migration checks, event mappings, DAG callbacks, API literals. |
 | Add a file format | `app/modules/ragforge/services/parser.py` | `SUPPORTED_MIME_TYPES`/`SUPPORTED_EXTENSIONS` in `app/modules/ragforge/api/ingest.py`, dependencies, tests. |
