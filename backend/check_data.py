@@ -7,4 +7,4 @@ from scripts import check_data
 
 
 if __name__ == "__main__":
-    check_data.main()
+    raise SystemExit(check_data.main())
