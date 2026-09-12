@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import Any
-
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.platform.execution.contracts import RegisteredWorkflowDefinition
-from app.platform.execution.adapters import AirflowExecutionAdapter, CeleryExecutionAdapter
 from app.platform.execution.gateway import execution_gateway
 from app.platform.execution.model import GenericRun
 from app.platform.execution.registry import ExecutionRegistry, execution_registry
@@ -25,12 +21,6 @@ CELERY_INGESTION_HANDLER = "ragforge.ingestion.workflow"
 class IngestDocumentInput(BaseModel):
     ingestion_run_id: str
     input_size_bytes: int | None = Field(default=None, ge=0)
-
-
-async def _dispatch_celery_ingestion(payload: Mapping[str, Any]) -> str | None:
-    from app.workers.tasks import dispatch_ingestion_workflow
-
-    return await dispatch_ingestion_workflow(str(payload["ingestion_run_id"]))
 
 
 def ragforge_ingestion_workflow_definition(
@@ -64,13 +54,11 @@ def ragforge_ingestion_workflow_definition(
 
 
 def register_ragforge_workflows(registry: ExecutionRegistry = execution_registry) -> None:
+    """Register RAGForge workflow definitions without concrete adapters."""
     registry.register_workflow(
         ragforge_ingestion_workflow_definition(),
         replace=True,
     )
-    registry.register_adapter(AirflowExecutionAdapter())
-    registry.register_adapter(CeleryExecutionAdapter())
-    registry.register_handler("celery", CELERY_INGESTION_HANDLER, _dispatch_celery_ingestion)
 
 
 async def create_generic_ingestion_run(
