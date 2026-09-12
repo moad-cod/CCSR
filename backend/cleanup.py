@@ -7,4 +7,4 @@ from scripts import cleanup
 
 
 if __name__ == "__main__":
-    cleanup.main()
+    raise SystemExit(cleanup.main())
