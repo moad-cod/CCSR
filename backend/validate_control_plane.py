@@ -3,8 +3,8 @@
 Prefer ``python -m scripts.validate_control_plane`` from the backend directory.
 """
 
-from scripts.validate_control_plane import main
+from scripts import validate_control_plane
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(validate_control_plane.main())
