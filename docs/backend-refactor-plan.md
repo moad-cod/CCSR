@@ -842,6 +842,19 @@ repository inspection was read-only apart from this file.
 
 ## Proposed phases
 
+### Pre-Phase 2 known failure baseline
+
+The full unit suite immediately before Phase 2 reported 138 passes and these
+four pre-existing RAG observability errors. Phase 2 must not change their error
+types or behavior and does not authorize fixing them:
+
+| Test | Error type | Baseline behavior |
+| --- | --- | --- |
+| `RagObservabilityTests.test_cache_hit_is_logged_with_cached_retrieval_trace` | `fastapi.exceptions.HTTPException` | `403: Access denied` from `app.platform.access.policies._identity` |
+| `RagObservabilityTests.test_empty_retrieval_still_logs_query` | `fastapi.exceptions.HTTPException` | `403: Access denied` from `app.platform.access.policies._identity` |
+| `RagObservabilityTests.test_provider_failure_still_commits_query_and_retrieval_logs` | `AttributeError` | `insert_retrievals.await_args` is `None`, so accessing `.args` fails |
+| `RagObservabilityTests.test_successful_query_logs_query_retrieval_scores_and_usage` | `fastapi.exceptions.HTTPException` | `403: Access denied` from `app.platform.access.policies._identity` |
+
 ### Phase 0 — Discovery (this document)
 
 Complete. No application code or runtime configuration changed. Await approval.
