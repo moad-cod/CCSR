@@ -7,4 +7,4 @@ from scripts import create_tables
 
 
 if __name__ == "__main__":
-    create_tables.main()
+    raise SystemExit(create_tables.main())
