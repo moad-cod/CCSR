@@ -148,6 +148,132 @@ documents.id
 
 ---
 
+# Worked Example — Creating and Sharing a Lab in CCSR
+
+In the current product language, a **lab is a project**. There is no separate
+`labs` table. An organization is the team boundary, while a project is the
+working boundary that owns documents, ingestion history, retrieval data, and
+enabled capabilities.
+
+Suppose researcher Amina belongs to the organization **Atlas Research** and
+creates a lab called **Climate Literature Review**.
+
+## 1. The user creates the lab
+
+The frontend sends a request equivalent to:
+
+```http
+POST /projects
+Authorization: Bearer <session-backed JWT>
+Content-Type: application/json
+
+{
+  "name": "Climate Literature Review",
+  "organization_id": "org_atlas"
+}
+```
+
+The platform performs the following work in one database transaction:
+
+1. It validates Amina's durable login session.
+2. It verifies that Amina is an active member of `org_atlas`.
+3. It creates the generic `projects` row with Amina as `created_by`.
+4. It enables every default capability in `project_capabilities`.
+5. The registered RAGForge lifecycle hook creates the lab's
+   `rag_project_configs` row.
+6. It commits the project and capability configuration together.
+
+The resulting control-plane records are conceptually:
+
+| Record | Example value | Responsibility |
+| --- | --- | --- |
+| `organizations` | `org_atlas` | Defines the team and membership boundary. |
+| `organization_memberships` | Amina → `org_atlas` → member | Grants organization-scoped access. |
+| `projects` | `project_climate`, name `Climate Literature Review` | Gives the lab its stable identity and ownership boundary. |
+| `project_capabilities` | `project_climate` → `ragforge` | Declares that this project can use RAGForge. |
+| `rag_project_configs` | collection `project_<uuid>`, hybrid retrieval | Stores only RAGForge-specific settings. |
+
+This separation is important: CCSR can add other capabilities to the same
+project later without adding a `project.type` column or putting
+capability-specific settings in the generic project record.
+
+## 2. The lab is shared through organization membership
+
+The project does not copy data to every researcher. Instead, each request is
+authorized against the project's organization and the caller's active
+membership:
+
+```text
+Atlas Research organization
+├── owner/admin members      → read and manage organization projects
+├── regular members        → read organization projects
+└── Climate Literature Review project
+    ├── creator (Amina)     → read and write
+    └── RAGForge capability → documents, ingestion, and queries
+```
+
+Organization owners and administrators can write to organization projects.
+The project creator can also write. Regular organization members currently
+receive read access. A user outside the organization receives a not-found
+response so the API does not reveal that the private lab exists. Platform
+administrators can access all projects.
+
+A project with no `organization_id` is a personal lab and is visible only to
+its creator and platform administrators.
+
+## 3. A shared document moves through the RAGForge data plane
+
+When Amina uploads `climate-report.pdf`, the project ID accompanies every
+durable record and every derived artifact:
+
+```text
+Browser
+  → authenticated CCSR project request
+  → PostgreSQL: document + document_version + ingestion_run
+  → MinIO Bronze: immutable raw upload
+  → Airflow or Celery: the same registered ingestion stages
+  → MinIO Silver: parsed and cleaned chunks
+  → MinIO Gold: embedded chunk metadata
+  → Qdrant: vectors carrying project/document/version lineage
+  → PostgreSQL: chunk IDs, Qdrant point IDs, and indexed status
+  → Redis/SSE: best-effort live progress for the browser
+```
+
+The storage responsibilities remain distinct:
+
+| Store | Lab data it holds | Why |
+| --- | --- | --- |
+| PostgreSQL | Identity, ownership, versions, run state, and lineage | Durable source of truth. |
+| MinIO | Bronze, Silver, and Gold artifacts | Rebuildable file and pipeline data. |
+| Qdrant | Search vectors and project-scoped payload metadata | Derived retrieval index. |
+| Redis | Short-lived cache and progress events | Fast transport, never durable authority. |
+
+If researcher Youssef is later added to Atlas Research, he sees the existing
+lab through organization membership. The underlying documents and vectors stay
+in the same project-scoped stores; CCSR shares authorized access rather than
+duplicating the data.
+
+## 4. Queries preserve the same boundary
+
+When an authorized member asks a question, RAGForge loads the project's
+capability configuration, filters retrieval by `project_id`, and records the
+query and selected chunks in PostgreSQL:
+
+```text
+member question
+  → authorize project read access
+  → load rag_project_configs
+  → retrieve only project_climate vectors from Qdrant
+  → generate the answer
+  → persist query_logs and retrieval_logs
+  → stream answer events to the member
+```
+
+The full trace therefore answers both sides of the CCSR model: **who is allowed
+to use the lab** and **how the lab's data was processed to produce an answer**.
+
+---
+
 # Task 1 — Create Core Application Tables
 
 ## Goal
