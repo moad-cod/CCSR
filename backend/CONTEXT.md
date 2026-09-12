@@ -7,7 +7,9 @@ still in their historical packages.
 
 ## Route by task
 
-- HTTP composition and routes: `app/main.py`; route implementations live with
+- HTTP composition and routes: `app/main.py` remains the ASGI entry point while
+  `app/composition.py` explicitly registers capabilities, execution adapters,
+  handlers, exception mappings, and routers. Route implementations live with
   their owning platform or product package.
 - Authentication and accounts: `app/platform/access/` and
   `app/platform/accounts/`; settings remain in `app/core/`.
