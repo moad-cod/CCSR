@@ -6,7 +6,7 @@ cleanup, gated by durable capability associations.
 **Authoritative current sources:** platform contracts and registry in
 [`capabilities/`](../../../backend/app/platform/capabilities), RAGForge hooks in
 [`lifecycle.py`](../../../backend/app/modules/ragforge/lifecycle.py), and
-registration in [`main.py`](../../../backend/app/main.py).
+registration in [`composition.py`](../../../backend/app/composition.py).
 
 **Current movement**
 

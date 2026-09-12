@@ -4,7 +4,7 @@
 
 **Authoritative sources:** lifecycle contracts and registry in
 [`capabilities/`](../../../backend/app/platform/capabilities), built-in
-registration in [`main.py`](../../../backend/app/main.py), current project
+registration in [`composition.py`](../../../backend/app/composition.py), current project
 schema in [`project.py`](../../../backend/app/models/project.py), and the product
 direction in [`CONTEXT.md`](../../../CONTEXT.md).
 
