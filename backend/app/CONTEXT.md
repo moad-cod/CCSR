@@ -1,8 +1,11 @@
 # FastAPI application context
 
-`app/main.py` is the composition root. Authentication and organizations now
-live under `platform/`, while pure RAGForge code lives under
-`modules/ragforge/`. Historical paths remain as compatibility aliases.
+`app/main.py` is the stable ASGI entry point and delegates application assembly
+to `app/composition.py`. Composition explicitly registers capabilities,
+workflow definitions, concrete execution adapters/handlers, exception mappings,
+and routers. Authentication and organizations live under `platform/`, while
+pure RAGForge code remains under `modules/ragforge/`. Historical paths remain
+as compatibility aliases.
 
 ## Current ownership guide
 
