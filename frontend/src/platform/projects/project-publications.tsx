@@ -1,0 +1,23 @@
+"use client";
+
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {ExternalLink, LoaderCircle, Plus, ScrollText} from "lucide-react";
+import Link from "next/link";
+import {useState} from "react";
+import {toast} from "sonner";
+import {StatusBadge} from "@/components/status-badge";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {apiFetch} from "@/lib/api";
+import type {ProjectPublication, ResearchStudy} from "@/lib/types";
+import {relativeTime} from "@/lib/utils";
+
+export function ProjectPublications({projectId, studies, canManage}: {projectId: string; studies: ResearchStudy[]; canManage: boolean}) {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState(""); const [summary, setSummary] = useState(""); const [studyId, setStudyId] = useState("");
+  const publications = useQuery({queryKey: ["project-publications", projectId], queryFn: () => apiFetch<ProjectPublication[]>(`/projects/${projectId}/publications`)});
+  const create = useMutation({mutationFn: () => apiFetch<ProjectPublication>(`/projects/${projectId}/publications`, {method: "POST", body: JSON.stringify({title, summary: summary || null, research_study_id: studyId || null, state: "draft", finding_ids: [], artifact_ids: []})}), onSuccess: async () => {setTitle(""); setSummary(""); await queryClient.invalidateQueries({queryKey: ["project-publications", projectId]}); toast.success("Publication draft created");}, onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to create publication")});
+  const transition = useMutation({mutationFn: ({id, action}: {id: string; action: "publish" | "unpublish"}) => apiFetch<ProjectPublication>(`/projects/${projectId}/publications/${id}/${action}`, {method: "POST"}), onSuccess: async () => {await queryClient.invalidateQueries({queryKey: ["project-publications", projectId]}); toast.success("Publication state updated");}, onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to update publication state")});
+  return <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)]"><div className="border-b border-[var(--border)] p-4"><div className="flex items-center gap-2"><ScrollText className="size-4 text-[var(--research-violet)]" /><h2 className="text-sm font-semibold">Publications</h2></div><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Author private drafts and publish immutable public-safe revisions.</p></div><div className="grid gap-5 p-4 lg:grid-cols-[.85fr_1.15fr]"><div className="space-y-3"><Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Publication title" /><Textarea rows={3} value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="Public-safe summary" /><select value={studyId} onChange={(event) => setStudyId(event.target.value)} className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-sm"><option value="">No linked study</option>{studies.map((study) => <option key={study.id} value={study.id}>{study.title}</option>)}</select><Button disabled={!title.trim() || create.isPending} onClick={() => create.mutate()}>{create.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}Create draft</Button></div><div className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">{publications.data?.map((publication) => <article key={publication.id} className="p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-xs font-semibold">{publication.title}</p><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Revision {publication.current_revision_number ?? "—"} · updated {relativeTime(publication.updated_at)}</p></div><StatusBadge status={publication.state} /></div><div className="mt-3 flex flex-wrap gap-2">{publication.state === "public" ? <Link href={`/publications/${publication.slug}`} className="inline-flex items-center gap-1 text-[10px] text-[var(--accent)]">Public page<ExternalLink className="size-3" /></Link> : null}{canManage ? <Button variant="ghost" size="sm" disabled={transition.isPending} onClick={() => transition.mutate({id: publication.id, action: publication.state === "public" ? "unpublish" : "publish"})}>{publication.state === "public" ? "Unpublish" : "Publish"}</Button> : null}</div></article>)}{!publications.isLoading && !publications.data?.length ? <p className="p-6 text-center text-xs text-[var(--ink-muted)]">No publication drafts yet.</p> : null}</div></div></section>;
+}
