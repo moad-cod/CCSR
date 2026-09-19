@@ -15,6 +15,58 @@ export type Organization = {
   updated_at: string;
 };
 
+export type OrganizationInvitation = {
+  invitation_id: string;
+  organization_id: string;
+  email: string;
+  role: "admin" | "member";
+  status: string;
+  expires_at: string;
+  created_at: string;
+  invitation_token?: string | null;
+};
+
+export type AuthSession = {
+  session_id: string;
+  expires_at: string;
+  revoked_at: string | null;
+  created_at: string;
+  current: boolean;
+};
+
+export type QuotaPolicy = {
+  id: string;
+  user_id: string;
+  daily_run_limit: number;
+  monthly_run_limit: number;
+  concurrent_run_limit: number;
+  max_runtime_seconds: number | null;
+  max_input_bytes: number | null;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type QuotaUsage = {
+  policy: QuotaPolicy;
+  daily_used: number;
+  monthly_used: number;
+  active_runs: number;
+};
+
+export type AuditEvent = {
+  id: string;
+  actor_user_id: string | null;
+  actor_global_role: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  project_id: string | null;
+  outcome: string;
+  details: Record<string, unknown>;
+  created_at: string;
+};
+
 export type Project = {
   project_id: string;
   organization_id: string | null;
@@ -59,6 +111,61 @@ export type ProjectOverviewContract = {
     artifacts: number;
     publications: number;
   };
+};
+
+export type WorkflowDefinition = {
+  id: string;
+  workflow_key: string;
+  version: string;
+  capability_key: string;
+  name: string;
+  description: string;
+  engine: string;
+  input_schema: Record<string, unknown>;
+  output_schema: Record<string, unknown>;
+  resource_requirements: Record<string, unknown>;
+  runtime_limit_seconds: number | null;
+  member_execution_allowed: boolean;
+  artifact_types: string[];
+  publication_status: string;
+};
+
+export type GenericRun = {
+  id: string;
+  project_id: string;
+  workflow_definition_id: string;
+  requested_by: string;
+  experiment_id: string | null;
+  engine: string;
+  external_execution_id: string | null;
+  status: string;
+  input_snapshot: Record<string, unknown>;
+  output_summary: Record<string, unknown> | null;
+  quota_cost: number | string;
+  started_at: string | null;
+  completed_at: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ArtifactRecord = {
+  id: string;
+  project_id: string;
+  run_id: string | null;
+  research_study_id: string | null;
+  experiment_id: string | null;
+  artifact_type: string;
+  storage_provider: string;
+  storage_uri: string;
+  version: string;
+  visibility: string;
+  checksum: string | null;
+  size_bytes: number | null;
+  created_by: string | null;
+  artifact_metadata: Record<string, unknown>;
+  created_at: string;
 };
 
 export type Document = {
@@ -303,4 +410,20 @@ export type PublicPublication = {
     findings: Array<{id: string; experiment_id: string | null; title: string; statement: string; evidence_summary: string | null}>;
     artifacts: Array<{id: string; type: string; version: string; checksum: string | null; size_bytes: number | null; metadata: Record<string, unknown>}>;
   };
+};
+
+export type ProjectPublication = {
+  id: string;
+  project_id: string;
+  research_study_id: string | null;
+  slug: string;
+  title: string;
+  summary: string | null;
+  state: "private" | "draft" | "public";
+  current_revision_number: number | null;
+  finding_ids: string[];
+  artifact_ids: string[];
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
