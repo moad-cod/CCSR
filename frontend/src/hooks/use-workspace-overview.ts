@@ -2,7 +2,7 @@
 
 import {useQuery} from "@tanstack/react-query";
 import {apiFetch} from "@/lib/api";
-import type {ProjectOverviewContract, RAGWorkspaceOverview} from "@/lib/types";
+import type {Project, ProjectOverviewContract, RAGWorkspaceOverview} from "@/lib/types";
 
 export function useWorkspaceOverview(options: {documents?: boolean; runs?: boolean; history?: boolean; enabled?: boolean} = {}) {
   const includes = [
@@ -22,8 +22,11 @@ export function useWorkspaceOverview(options: {documents?: boolean; runs?: boole
     enabled: options.enabled !== false,
   });
   const projectOverviews = projectsQuery.data ?? [];
-  const projects = projectOverviews.map((item) => item.project);
-  const platformSummaries = new Map(projectOverviews.map((item) => [item.project.project_id, item.counts]));
+  // Accept the legacy project-list shape during rolling deployments and in
+  // retained consumers while the bounded overview contract becomes universal.
+  const rows = projectOverviews as Array<ProjectOverviewContract | Project>;
+  const projects = rows.map((item) => "project" in item ? item.project : item);
+  const platformSummaries = new Map(rows.flatMap((item) => "project" in item ? [[item.project.project_id, item.counts] as const] : []));
   const projectMap = new Map(projects.map((project) => [project.project_id, project]));
   const documents = (overviewQuery.data?.documents ?? []).map((document) => ({...document, project: projectMap.get(document.project_id)}));
   const runs = (overviewQuery.data?.runs ?? []).map((run) => ({...run, project: projectMap.get(run.project_id)}));
