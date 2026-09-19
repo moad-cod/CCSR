@@ -3,8 +3,7 @@
 import {useQuery} from "@tanstack/react-query";
 import {Archive, ArrowRight, BookOpenText, Database, FlaskConical, MessageSquareText, ScrollText, Workflow} from "lucide-react";
 import Link from "next/link";
-import {MetricCard} from "@/components/metric-card";
-import {PageHeader} from "@/components/page-header";
+import {DashboardPanel, MetricCell} from "@/components/dashboard";
 import {StatusBadge} from "@/components/status-badge";
 import {Button} from "@/components/ui/button";
 import {ErrorState} from "@/components/ui/error-state";
@@ -42,31 +41,40 @@ export function ProjectOverview({projectId}: {projectId: string}) {
           ? {label: "Open playground", href: `/projects/${projectId}/playground`, Icon: MessageSquareText, description: "Test grounded answers against indexed research evidence."}
           : {label: "Plan experiment", href: `/projects/${projectId}/experiments`, Icon: FlaskConical, description: "Add an experiment to the durable research hierarchy."};
   const NextIcon = nextAction.Icon;
+  const evidenceState = counts.studies === 0
+    ? "Research definition required"
+    : hasRAGForge && !ragSummary?.document_count
+      ? "Sources required"
+      : hasRAGForge && ragSummary?.active_run_count
+        ? "Processing"
+        : hasRAGForge && ragSummary?.indexed_document_count && !rag.data?.query_count
+          ? "Ready for testing"
+          : counts.artifacts || rag.data?.query_count
+            ? "Evidence available"
+            : "Research in progress";
 
-  return <div className="space-y-6">
-    <PageHeader eyebrow="Project overview" title={project.name} description="Capability-neutral research state with separate summaries for each enabled product module." actions={<Link href={nextAction.href}><Button><ArrowRight className="size-4" />{nextAction.label}</Button></Link>} />
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      <MetricCard label="Studies" value={counts.studies} detail="Durable research programs" icon={BookOpenText} />
-      <MetricCard label="Experiments" value={counts.experiments} detail="Research executions" icon={FlaskConical} />
-      <MetricCard label="Runs" value={counts.runs} detail="Generic workflow runs" icon={Workflow} />
-      <MetricCard label="Artifacts" value={counts.artifacts} detail="Registered evidence" icon={Archive} />
-      <MetricCard label="Publications" value={counts.publications} detail="Private, draft, or public" icon={ScrollText} />
+  return <div className="dashboard-page space-y-5">
+    <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="dashboard-eyebrow">Project overview</p><h1 className="dashboard-title">{project.name}</h1><p className="mt-2 text-sm text-[var(--ink-secondary)]">Platform research and enabled capability evidence</p></div><Link href={nextAction.href}><Button><ArrowRight className="size-4" />{nextAction.label}</Button></Link></header>
+
+    <div className="grid gap-4 lg:grid-cols-12">
+      <DashboardPanel className="lg:col-span-4" title="Research readiness" description="Categorical state from current project evidence"><div className="p-5"><p className="text-[10px] uppercase tracking-[.12em] text-[var(--ink-muted)]">Current state</p><p className="mt-2 text-xl font-semibold tracking-[-.025em]">{evidenceState}</p><p className="mt-4 text-[11px] leading-5 text-[var(--ink-muted)]">Derived from durable studies, enabled RAGForge sources, ingestion state, indexed evidence, and persisted queries.</p></div></DashboardPanel>
+      <DashboardPanel className="lg:col-span-8" title="Platform research evidence" description="Capability-neutral durable records"><div className="grid grid-cols-2 md:grid-cols-5"><MetricCell label="Studies" value={counts.studies} icon={BookOpenText} /><MetricCell label="Experiments" value={counts.experiments} icon={FlaskConical} accent="violet" /><MetricCell label="Runs" value={counts.runs} icon={Workflow} /><MetricCell label="Artifacts" value={counts.artifacts} icon={Archive} accent="violet" /><MetricCell label="Publications" value={counts.publications} icon={ScrollText} /></div></DashboardPanel>
     </div>
 
-    <section className="rounded-xl border border-[var(--accent-border)] bg-[var(--surface)] p-5">
+    <section className="rounded-[14px] border border-[var(--accent-border)] bg-[var(--surface)] p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]"><NextIcon className="size-5" /></span><div><p className="text-[9px] font-semibold uppercase tracking-[.14em] text-[var(--ink-muted)]">Next action</p><h2 className="mt-1 text-sm font-semibold">{nextAction.label}</h2><p className="mt-1 text-xs leading-5 text-[var(--ink-muted)]">{nextAction.description}</p></div></div>
         <Link href={nextAction.href} className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[var(--accent-soft)] px-3 text-xs font-medium text-[var(--accent-hover)] hover:bg-[var(--accent-muted)]">Continue<ArrowRight className="size-3.5" /></Link>
       </div>
     </section>
 
-    {hasRAGForge && rag.data ? <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+    {hasRAGForge && rag.data ? <section className="rounded-[14px] border border-[var(--border)] bg-[var(--surface)]">
       <div className="border-b border-[var(--border)] p-4"><p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--accent)]">RAGForge capability</p><h2 className="mt-1 text-sm font-semibold">Retrieval workspace</h2></div>
       <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Indexed sources" value={`${rag.data.summary.indexed_document_count}/${rag.data.summary.document_count}`} detail="Ready for retrieval" icon={Database} />
-        <MetricCard label="Active ingestion" value={rag.data.summary.active_run_count} detail="Non-terminal runs" icon={Workflow} />
-        <MetricCard label="Failed ingestion" value={rag.data.summary.failed_run_count} detail="Runs requiring attention" icon={Archive} />
-        <MetricCard label="Queries" value={rag.data.query_count} detail="Persisted playground history" icon={MessageSquareText} />
+        <MetricCell label="Indexed sources" value={`${rag.data.summary.indexed_document_count}/${rag.data.summary.document_count}`} detail="Ready for retrieval" icon={Database} />
+        <MetricCell label="Active ingestion" value={rag.data.summary.active_run_count} detail="Non-terminal runs" icon={Workflow} />
+        <MetricCell label="Failed ingestion" value={rag.data.summary.failed_run_count} detail="Needs review" icon={Archive} />
+        <MetricCell label="Persisted queries" value={rag.data.query_count} detail="Playground evidence" icon={MessageSquareText} accent="violet" />
       </div>
       <div className="grid border-t border-[var(--border)] xl:grid-cols-2">
         <div className="border-b border-[var(--border)] xl:border-b-0 xl:border-r"><div className="flex items-center justify-between p-4"><div><h3 className="text-sm font-semibold">Recent ingestion</h3><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Module-owned pipeline activity</p></div><Link href={`/projects/${projectId}/pipelines`} className="text-[10px] text-[var(--accent)]">View pipelines</Link></div><div className="divide-y divide-[var(--border)]">{rag.data.recent_runs.map((run) => <Link key={run.ingestion_run_id} href={`/projects/${projectId}/runs/${run.ingestion_run_id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-elevated)]"><span className="min-w-0 flex-1"><span className="mono block truncate text-[9px] text-[var(--ink-secondary)]">{run.ingestion_run_id}</span><span className="mt-1 block text-[8px] text-[var(--ink-disabled)]">{relativeTime(run.created_at)}</span></span><StatusBadge status={run.status} /></Link>)}{!rag.data.recent_runs.length ? <p className="p-8 text-center text-[10px] text-[var(--ink-muted)]">No ingestion runs yet.</p> : null}</div></div>
