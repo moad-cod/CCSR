@@ -1,11 +1,11 @@
 "use client";
 
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {AlertTriangle, ArrowRight, BookOpen, CheckCircle2, Database, FolderKanban, LoaderCircle, Plus, Sparkles, Workflow} from "lucide-react";
+import {AlertTriangle, ArrowRight, BookOpenText, CheckCircle2, Database, FlaskConical, FolderKanban, LoaderCircle, MessageSquareText, Plus, Workflow} from "lucide-react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import {MetricCard} from "@/components/metric-card";
-import {PageHeader} from "@/components/page-header";
+import {useMemo, useState} from "react";
+import {DashboardPanel, EvidenceBar, MetricCell} from "@/components/dashboard";
 import {ProjectForm, type ProjectFormValues} from "@/components/project-form";
 import {StatusBadge} from "@/components/status-badge";
 import {Button} from "@/components/ui/button";
@@ -14,23 +14,29 @@ import {ErrorState} from "@/components/ui/error-state";
 import {LoadingState} from "@/components/ui/loading-state";
 import {useWorkspaceOverview} from "@/hooks/use-workspace-overview";
 import {apiFetch} from "@/lib/api";
-import type {Chunker, Organization, Project} from "@/lib/types";
+import type {Chunker, Organization, Project, QueryHistoryItem, RAGRunSummary} from "@/lib/types";
 import {relativeTime} from "@/lib/utils";
-import {useState} from "react";
+import {hasProjectCapability} from "@/platform/navigation/navigation";
 
-const experimentSteps = [
-  "Create a project",
-  "Add sources or an evaluation dataset",
-  "Choose a retrieval strategy",
-  "Select Airflow or Celery",
-  "Run, evaluate, compare, and preserve findings",
-];
+type Range = "7D" | "30D" | "All";
+const dateKey = (value: string) => new Date(value).toISOString().slice(0, 10);
 
-function SectionEmpty({title, description}: {title: string; description: string}) {
-  return <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-muted)]">
-    <p className="font-medium text-[var(--ink-secondary)]">{title}</p>
-    <p className="mt-1 max-w-xl leading-6">{description}</p>
-  </div>;
+function ResearchActivity({runs, queries}: {runs: RAGRunSummary[]; queries: QueryHistoryItem[]}) {
+  const [range, setRange] = useState<Range>("30D");
+  const points = useMemo(() => {
+    const cutoff = range === "All" ? 0 : Date.now() - Number.parseInt(range) * 86_400_000;
+    const selectedRuns = runs.filter((item) => new Date(item.created_at).getTime() >= cutoff);
+    const selectedQueries = queries.filter((item) => new Date(item.created_at).getTime() >= cutoff);
+    const keys = [...new Set([...selectedRuns.map((item) => dateKey(item.created_at)), ...selectedQueries.map((item) => dateKey(item.created_at))])].sort().slice(-30);
+    return keys.map((key) => ({key, runs: selectedRuns.filter((item) => dateKey(item.created_at) === key).length, queries: selectedQueries.filter((item) => dateKey(item.created_at) === key).length}));
+  }, [queries, range, runs]);
+  const maximum = Math.max(1, ...points.flatMap((point) => [point.runs, point.queries]));
+  const summary = points.length ? `${points.reduce((sum, point) => sum + point.runs, 0)} ingestion runs and ${points.reduce((sum, point) => sum + point.queries, 0)} persisted queries across ${points.length} active days.` : `No runs or persisted queries were recorded in the selected ${range.toLowerCase()} range.`;
+
+  return <DashboardPanel className="min-h-[360px] lg:col-span-7" title="Research activity" description="Runs and queries across accessible Labs" action={<div className="segmented-nav" aria-label="Activity range">{(["7D", "30D", "All"] as Range[]).map((item) => <button key={item} aria-pressed={range === item} onClick={() => setRange(item)}>{item}</button>)}</div>}>
+    <div className="flex items-center gap-4 border-b border-[var(--border)] px-5 py-3 text-[10px] text-[var(--ink-muted)]"><span className="flex items-center gap-2"><i className="size-2 rounded-full bg-[var(--accent)]" />Ingestion runs</span><span className="flex items-center gap-2"><i className="size-2 rounded-full bg-[var(--research-violet)]" />Persisted queries</span></div>
+    {points.length ? <div className="px-5 pb-5 pt-8"><div className="activity-chart" role="img" aria-label={summary}>{points.map((point) => <div key={point.key} className="activity-chart-column" title={`${point.key}: ${point.runs} runs, ${point.queries} queries`}><div className="flex h-full items-end justify-center gap-0.5"><span className="activity-bar bg-[var(--accent)]" style={{height: `${Math.max(point.runs ? 8 : 0, point.runs / maximum * 100)}%`}} /><span className="activity-bar bg-[var(--research-violet)]" style={{height: `${Math.max(point.queries ? 8 : 0, point.queries / maximum * 100)}%`}} /></div><span>{new Date(`${point.key}T00:00:00`).toLocaleDateString(undefined, {month: "short", day: "numeric"})}</span></div>)}</div><p className="sr-only">{summary}</p></div> : <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center"><Workflow className="size-6 text-[var(--ink-disabled)]" /><p className="mt-3 text-sm font-medium">No activity in this range</p><p className="mt-1 max-w-sm text-xs leading-5 text-[var(--ink-muted)]">Run ingestion or save a playground query to create real timeline evidence.</p></div>}
+  </DashboardPanel>;
 }
 
 export default function HomePage() {
@@ -40,93 +46,33 @@ export default function HomePage() {
   const overview = useWorkspaceOverview({documents: true, runs: true, history: true});
   const organizationsQuery = useQuery({queryKey: ["organizations"], queryFn: () => apiFetch<Organization[]>("/organizations/"), enabled: createOpen});
   const chunkersQuery = useQuery({queryKey: ["chunkers"], queryFn: () => apiFetch<Chunker[]>("/chunkers"), enabled: createOpen});
-  const create = useMutation({
-    mutationFn: (values: ProjectFormValues) => apiFetch<Project>("/projects/", {method: "POST", body: JSON.stringify({name: values.name, organization_id: values.organization_id || null})}),
-    onSuccess: async (project, values) => {
-      localStorage.setItem(`ragforge:project:${project.project_id}:chunker`, values.chunker);
-      await Promise.all([
-        queryClient.invalidateQueries({queryKey: ["projects"]}),
-        queryClient.invalidateQueries({queryKey: ["project-overviews"]}),
-        queryClient.invalidateQueries({queryKey: ["ragforge", "workspace-overview"]}),
-      ]);
-      setCreateOpen(false);
-      router.push(`/projects/${project.project_id}/onboarding`);
-    },
-  });
-  if (overview.pending) return <LoadingState label="Loading home dashboard" rows={6} />;
+  const create = useMutation({mutationFn: (values: ProjectFormValues) => apiFetch<Project>("/projects/", {method: "POST", body: JSON.stringify({name: values.name, organization_id: values.organization_id || null})}), onSuccess: async (project, values) => {localStorage.setItem(`ragforge:project:${project.project_id}:chunker`, values.chunker); await Promise.all([queryClient.invalidateQueries({queryKey: ["projects"]}), queryClient.invalidateQueries({queryKey: ["project-overviews"]}), queryClient.invalidateQueries({queryKey: ["ragforge", "workspace-overview"]})]); setCreateOpen(false); router.push(`/projects/${project.project_id}/onboarding`);}});
+  if (overview.pending) return <LoadingState label="Loading research workspace" rows={7} />;
   if (overview.error) return <ErrorState title="Workspace summary could not be loaded" description="One or more control-plane endpoints returned an error." onRetry={() => void overview.refetch()} />;
 
   const indexed = overview.documents.filter((document) => document.status === "indexed").length;
-  const running = overview.runs.filter((run) => !["indexed", "failed", "cancelled"].includes(run.status));
-  const attentionRuns = overview.runs.filter((run) => ["failed", "cancelled"].includes(run.status));
-  const recentProjects = [...overview.projects].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 5);
-  const isEmptyWorkspace = overview.projects.length === 0;
-  const completedExperiments = [...overview.platformSummaries.values()].reduce((total, summary) => total + summary.experiments, 0);
+  const completedRuns = overview.runs.filter((run) => run.status === "indexed" || run.status.includes("completed")).length;
+  const activeRuns = overview.runs.filter((run) => !["indexed", "failed", "cancelled"].includes(run.status));
+  const failedRuns = overview.runs.filter((run) => ["failed", "cancelled"].includes(run.status));
+  const artifacts = [...overview.platformSummaries.values()].reduce((sum, item) => sum + item.artifacts, 0);
+  const recentProjects = [...overview.projects].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 6);
+  const ragProjects = overview.projects.filter((project) => hasProjectCapability(project, "ragforge"));
+  const readiness = overview.projects.length === 0 ? "Getting started" : ragProjects.length === 0 ? (artifacts ? "Evidence available" : "Research in progress") : overview.documents.length === 0 ? "Sources required" : activeRuns.length ? "Processing" : indexed === 0 ? "Processing required" : overview.history.length === 0 ? "Ready for testing" : "Evidence available";
+  const health = overview.runs.length === 0 ? "No run evidence" : failedRuns.length ? "Attention required" : activeRuns.length ? "Processing" : "Healthy";
+  const nextAction = overview.projects.length === 0 ? {label: "Create the first Lab", href: "/projects", detail: "Start a project-backed research workspace."} : ragProjects.length === 0 ? {label: "Define research", href: `/projects/${overview.projects[0].project_id}/research`, detail: "Build the durable study, question, and hypothesis hierarchy."} : overview.documents.length === 0 ? {label: "Add the first source", href: `/projects/${ragProjects[0].project_id}/sources`, detail: "Create evidence for retrieval and ingestion."} : failedRuns.length ? {label: "Review failed ingestion", href: "/runs", detail: "Inspect failed or cancelled pipeline stages."} : activeRuns.length ? {label: "Monitor active ingestion", href: "/runs", detail: "Follow current pipeline progress."} : indexed > 0 && overview.history.length === 0 ? {label: "Open the RAG Playground", href: `/projects/${overview.documents.find((item) => item.status === "indexed")?.project_id ?? ragProjects[0].project_id}/playground`, detail: "Test indexed evidence with a grounded query."} : {label: "Review research evidence", href: "/history", detail: "Inspect persisted answers and retrieval traces."};
 
-  const createAction = <Button className="w-full sm:w-auto" disabled={create.isPending} onClick={() => setCreateOpen(true)}>{create.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}Create project</Button>;
-
-  return <div className="mx-auto max-w-6xl space-y-6">
-    <PageHeader eyebrow="Workspace" title="Home" description="A focused starting point for project-scoped research questions, source readiness, pipeline health, and reproducible evaluation work." actions={createAction} />
-
-    {isEmptyWorkspace ? <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
-      <div className="max-w-2xl">
-        <p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--accent)]">Guided workflow</p>
-        <h2 className="mt-2 text-xl font-semibold text-[var(--ink)]">Create your first research workspace</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--ink-secondary)]">Start with the mature retrieval workflow, then preserve sources, runs, traces, and evaluation context.</p>
-      </div>
-      <ol className="mt-5 grid gap-2 md:grid-cols-5">
-        {experimentSteps.map((step, index) => <li key={step} className="rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-3">
-          <span className="flex size-7 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-xs font-semibold text-[var(--accent)]">{index + 1}</span>
-          <p className="mt-3 text-sm font-medium leading-5 text-[var(--ink-secondary)]">{step}</p>
-        </li>)}
-      </ol>
-      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-        <Button className="w-full sm:w-auto" disabled={create.isPending} onClick={() => setCreateOpen(true)}>{create.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}Create project</Button>
-        <Link href="/experiments" className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink-secondary)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] sm:w-auto"><BookOpen className="size-4" />Learn how experiments work</Link>
-      </div>
-    </section> : <>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Active projects" value={overview.projects.length} detail="Project workspaces available" icon={FolderKanban} />
-        <MetricCard label="Indexed sources" value={`${indexed}/${overview.documents.length}`} detail="Ready for retrieval" icon={Database} />
-        <MetricCard label="Running jobs" value={running.length} detail="Non-terminal pipeline runs" icon={Workflow} />
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-          <div className="flex items-center justify-between"><span className="text-sm font-medium text-[var(--ink-muted)]">Experiments</span><Sparkles className="size-4 text-[var(--accent)]" /></div>
-          <p className="mt-3 text-2xl font-semibold text-[var(--ink)]">{completedExperiments}</p>
-          <p className="mt-1 text-xs leading-5 text-[var(--ink-faint)]">Durable experiment records</p>
-        </div>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-        <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-          <div className="flex items-center justify-between border-b border-[var(--border)] p-4"><div><h2 className="text-base font-semibold">Recent projects</h2><p className="mt-1 text-sm text-[var(--ink-muted)]">Continue from overview, sources, playground, pipelines, or evaluation.</p></div><Link href="/projects" className="text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">View all</Link></div>
-          {recentProjects.length ? <div className="divide-y divide-[var(--border)]">{recentProjects.map((project) => <Link key={project.project_id} href={`/projects/${project.project_id}/overview`} className="flex items-center gap-3 p-4 transition hover:bg-[var(--surface-hover)]"><span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><FolderKanban className="size-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{project.name}</span><span className="mt-1 block text-xs text-[var(--ink-faint)]">Updated {relativeTime(project.updated_at)}</span></span><ArrowRight className="size-4 text-[var(--ink-faint)]" /></Link>)}</div> : <div className="p-4"><SectionEmpty title="No recent projects" description="Create a project to start assembling sources and running playground checks." /></div>}
-        </section>
-
-        <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-          <div className="flex items-center justify-between border-b border-[var(--border)] p-4"><div><h2 className="text-base font-semibold">Runs requiring attention</h2><p className="mt-1 text-sm text-[var(--ink-muted)]">Failed or cancelled jobs that may need retry or inspection.</p></div><Link href="/runs" className="text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">View runs</Link></div>
-          {attentionRuns.length ? <div className="divide-y divide-[var(--border)]">{attentionRuns.slice(0, 5).map((run) => {
-            const runProject = run.project;
-            const projectId = runProject?.project_id;
-            const href = projectId ? `/projects/${projectId}/runs/${run.ingestion_run_id}` : "/runs";
-            return <Link key={run.ingestion_run_id} href={href} className="flex items-center gap-3 p-4 transition hover:bg-[var(--surface-hover)]"><AlertTriangle className="size-4 shrink-0 text-[var(--warning)]" /><span className="min-w-0 flex-1"><span className="mono block truncate text-xs text-[var(--ink-secondary)]">{run.ingestion_run_id}</span><span className="mt-1 block truncate text-xs text-[var(--ink-faint)]">{runProject?.name ?? "Project unavailable"} · {relativeTime(run.created_at)}</span></span><StatusBadge status={run.status} /></Link>;
-          })}</div> : <div className="p-4"><SectionEmpty title="No runs need attention" description="Failed and cancelled pipeline runs will appear here when the backend reports them." /></div>}
-        </section>
-      </div>
-
-      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2"><CheckCircle2 className="size-4 text-[var(--accent)]" /><h2 className="text-base font-semibold">Recent experiments</h2></div>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">Durable experiment records are available inside each project. Open Experiments to continue active research work and compare preserved evidence.</p>
-          </div>
-          <Link href="/experiments" className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--border)] px-3 text-sm font-medium text-[var(--ink-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]">Open experiments</Link>
-        </div>
-      </section>
-    </>}
-
-    <Dialog open={createOpen} onClose={() => setCreateOpen(false)} title="Create project" description="Create an isolated workspace and choose the initial upload preference.">
-      <ProjectForm organizations={organizationsQuery.data ?? []} chunkers={chunkersQuery.data ?? []} isPending={create.isPending} onCancel={() => setCreateOpen(false)} onSubmit={(values) => create.mutate(values)} />
-      {create.isError ? <p className="mt-3 rounded-lg border border-[var(--danger-border)] bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger-soft-text)]">{create.error instanceof Error ? create.error.message : "Unable to create project"}</p> : null}
-    </Dialog>
+  return <div className="dashboard-page space-y-5">
+    <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="dashboard-eyebrow">Workspace overview</p><h1 className="dashboard-title">Research Workspace</h1><p className="mt-2 text-sm text-[var(--ink-secondary)]">Evidence-backed activity across your Labs</p></div><Button onClick={() => setCreateOpen(true)} disabled={create.isPending}>{create.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}Create project</Button></header>
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      <DashboardPanel className="lg:col-span-5" title="Research readiness" description="Derived from projects, sources, pipeline state, and persisted queries"><div className="border-b border-[var(--border)] px-5 py-6"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">Current state</p><p className="mt-2 text-2xl font-semibold tracking-[-0.03em]">{readiness}</p></div><span className="research-orbit" aria-hidden="true"><span /></span></div><p className="mt-4 max-w-md text-[11px] leading-5 text-[var(--ink-muted)]">Readiness advances from having a Lab, to sources, completed indexing, and finally persisted query evidence. It is categorical because the API does not define a weighted score.</p></div><div className="grid grid-cols-2"><MetricCell label="Projects" value={overview.projects.length} icon={FolderKanban} /><MetricCell label="Indexed sources" value={indexed} icon={Database} /><MetricCell label="Completed runs" value={completedRuns} icon={Workflow} /><MetricCell label="Persisted queries" value={overview.history.length} icon={MessageSquareText} accent="violet" /></div></DashboardPanel>
+      <ResearchActivity runs={overview.runs} queries={overview.history} />
+    </div>
+    <DashboardPanel title="Recent Labs" description="Latest project workspaces and their current RAGForge evidence" action={<Link href="/labs" className="dashboard-link">View all <ArrowRight className="size-3.5" /></Link>}><div className="recent-labs-strip">{recentProjects.length ? recentProjects.map((project) => {const summary = overview.summaries.get(project.project_id); const ragEnabled = hasProjectCapability(project, "ragforge"); const state = !ragEnabled ? "Platform research" : !summary?.document_count ? "Sources required" : summary.active_run_count ? "Processing" : summary.failed_run_count ? "Attention required" : summary.indexed_document_count ? "Ready for testing" : "Indexing required"; return <Link key={project.project_id} href={`/projects/${project.project_id}/overview`} className="recent-lab"><span className="flex size-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--accent)]"><FlaskConical className="size-4" /></span><span className="mt-4 block truncate text-sm font-semibold">{project.name}</span><span className="mt-1 block text-[10px] text-[var(--ink-muted)]">Updated {relativeTime(project.updated_at)}</span><span className="mt-4 flex items-center justify-between gap-3 text-[10px]"><span className="truncate text-[var(--ink-secondary)]">{state}</span><ArrowRight className="size-3.5 shrink-0 text-[var(--ink-disabled)]" /></span></Link>;}) : <div className="p-8 text-center"><FlaskConical className="mx-auto size-6 text-[var(--ink-disabled)]" /><p className="mt-3 text-sm font-medium">No Labs yet</p><p className="mt-1 text-xs text-[var(--ink-muted)]">Create a project to begin assembling research evidence.</p></div>}</div></DashboardPanel>
+    <div className="grid gap-4 lg:grid-cols-3">
+      <DashboardPanel title="Evidence coverage" description="Availability across current backend records"><div className="space-y-5 p-5"><EvidenceBar label="Sources" state={overview.documents.length ? "Available" : "Missing"} value={overview.documents.length ? 100 : 3} /><EvidenceBar label="Runs" state={overview.runs.length ? "Available" : "Missing"} value={overview.runs.length ? 100 : 3} tone="success" /><EvidenceBar label="Queries" state={overview.history.length ? "Available" : "Missing"} value={overview.history.length ? 100 : 3} tone="violet" /><EvidenceBar label="Artifacts" state={artifacts ? "Available" : "Missing"} value={artifacts ? 100 : 3} tone="violet" /></div></DashboardPanel>
+      <DashboardPanel title="Pipeline health" description="Operational evidence from ingestion runs"><div className="p-5"><div className="flex items-center gap-3"><span className={`flex size-10 items-center justify-center rounded-xl ${failedRuns.length ? "bg-[var(--warning-soft)] text-[var(--warning)]" : "bg-[var(--success-soft)] text-[var(--success)]"}`}>{failedRuns.length ? <AlertTriangle className="size-5" /> : <CheckCircle2 className="size-5" />}</span><div><p className="text-lg font-semibold">{health}</p><p className="text-[10px] text-[var(--ink-muted)]">No synthetic health score</p></div></div><div className="mt-6 grid grid-cols-3 divide-x divide-[var(--border)] border-y border-[var(--border)] py-4 text-center"><div><b className="font-mono text-lg tabular-nums">{completedRuns}</b><span className="mt-1 block text-[9px] text-[var(--ink-muted)]">Completed</span></div><div><b className="font-mono text-lg tabular-nums">{activeRuns.length}</b><span className="mt-1 block text-[9px] text-[var(--ink-muted)]">Active</span></div><div><b className="font-mono text-lg tabular-nums">{failedRuns.length}</b><span className="mt-1 block text-[9px] text-[var(--ink-muted)]">Attention</span></div></div>{failedRuns[0] ? <Link href={failedRuns[0].project ? `/projects/${failedRuns[0].project.project_id}/runs/${failedRuns[0].ingestion_run_id}` : "/runs"} className="mt-4 flex items-center justify-between text-xs text-[var(--ink-secondary)]"><span className="truncate">Latest issue · {relativeTime(failedRuns[0].created_at)}</span><StatusBadge status={failedRuns[0].status} /></Link> : null}</div></DashboardPanel>
+      <DashboardPanel title="Next action" description="Recommended from current workspace evidence"><div className="flex min-h-56 flex-col p-5"><span className="flex size-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]"><BookOpenText className="size-5" /></span><h3 className="mt-5 text-lg font-semibold">{nextAction.label}</h3><p className="mt-2 text-xs leading-5 text-[var(--ink-muted)]">{nextAction.detail}</p><Link href={nextAction.href} className="mt-auto inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 text-xs font-semibold text-[var(--background)] hover:bg-[var(--accent-hover)]">Continue <ArrowRight className="size-3.5" /></Link></div></DashboardPanel>
+    </div>
+    <Dialog open={createOpen} onClose={() => setCreateOpen(false)} title="Create project" description="Create an isolated workspace and choose the initial upload preference."><ProjectForm organizations={organizationsQuery.data ?? []} chunkers={chunkersQuery.data ?? []} isPending={create.isPending} onCancel={() => setCreateOpen(false)} onSubmit={(values) => create.mutate(values)} />{create.isError ? <p className="mt-3 rounded-lg border border-[var(--danger-border)] bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger-soft-text)]">{create.error instanceof Error ? create.error.message : "Unable to create project"}</p> : null}</Dialog>
   </div>;
 }
