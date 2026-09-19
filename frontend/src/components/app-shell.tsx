@@ -2,7 +2,6 @@
 
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {
-  Bell,
   Building2,
   ChevronDown,
   ChevronRight,
@@ -10,8 +9,6 @@ import {
   FolderKanban,
   LogOut,
   Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
   Search,
   Sparkles,
   UserRound,
@@ -65,10 +62,8 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const projectId = projectIdFromPath(pathname);
-  const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" && localStorage.getItem("ragforge:sidebar-collapsed") === "true");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedResultIndex, setSelectedResultIndex] = useState(0);
@@ -104,7 +99,6 @@ export function AppShell({children}: {children: React.ReactNode}) {
       }
       if (event.key === "Escape") {
         setPaletteOpen(false);
-        setNotificationsOpen(false);
         setUserMenuOpen(false);
         setMobileOpen(false);
       }
@@ -118,13 +112,6 @@ export function AppShell({children}: {children: React.ReactNode}) {
     const timer = window.setTimeout(() => searchRef.current?.focus(), 20);
     return () => window.clearTimeout(timer);
   }, [paletteOpen]);
-
-  function toggleCollapsed() {
-    setCollapsed((value) => {
-      localStorage.setItem("ragforge:sidebar-collapsed", String(!value));
-      return !value;
-    });
-  }
 
   async function logout() {
     await authFetch("/logout");
@@ -182,18 +169,18 @@ export function AppShell({children}: {children: React.ReactNode}) {
         <Link href="/home" className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--accent)] transition hover:bg-[var(--surface-hover)]" aria-label="CCSR home">
           <Sparkles className="size-4.5" />
         </Link>
-        {(!collapsed || mobile) ? <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold leading-5 tracking-tight text-[var(--ink)]">CCSR</span><span className="block truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Research control</span></span> : null}
+        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold leading-5 tracking-tight text-[var(--ink)]">CCSR</span><span className="block truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Research control</span></span>
         {mobile ? <button className="icon-button" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X className="size-4" /></button> : null}
       </div>
       <nav className="flex-1 overflow-y-auto px-2.5 py-3.5" aria-label="Primary navigation">
-        {projectId && project ? <div className={cn("mb-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3", collapsed && !mobile && "hidden")}>
+        {projectId && project ? <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
           <Link href="/projects" onClick={() => setMobileOpen(false)} className="inline-flex items-center gap-1 text-[9px] font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]"><ChevronRight className="size-3 rotate-180" />All projects</Link>
           <p className="mt-2 truncate text-[12px] font-semibold leading-5 text-[var(--ink)]">{project.name}</p>
           <p className="mono mt-1 truncate text-[8px] text-[var(--ink-disabled)]">{project.project_id}</p>
         </div> : null}
         <div className="space-y-5">
           {nav.map((group) => <div key={group.label}>
-            {(!collapsed || mobile) ? <p className="mb-2 px-2.5 text-[8px] font-semibold uppercase tracking-[.16em] text-[var(--ink-disabled)]">{group.label}</p> : null}
+            <p className="mb-2 px-2.5 text-[8px] font-semibold uppercase tracking-[.16em] text-[var(--ink-disabled)]">{group.label}</p>
             <div className="space-y-1">
               {group.items.map((item) => {
                 const Icon = item.icon;
@@ -201,49 +188,36 @@ export function AppShell({children}: {children: React.ReactNode}) {
                 return <Link
                   key={`${group.label}:${item.label}`}
                   href={item.href}
-                  title={collapsed && !mobile ? item.label : undefined}
                   aria-current={selected ? "page" : undefined}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     "group flex h-9 items-center gap-3 rounded-lg border px-2.5 text-[13px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
                     selected ? "border-[var(--accent-border)] bg-[var(--surface-active)] text-[var(--ink)]" : "border-transparent text-[var(--ink-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]",
-                    collapsed && !mobile && "justify-center px-0",
                   )}
                 >
                   <Icon className={cn("size-[16px] shrink-0", selected ? "text-[var(--accent)]" : "text-[var(--ink-muted)] group-hover:text-[var(--ink-secondary)]")} strokeWidth={1.8} />
-                  {(!collapsed || mobile) ? <span>{item.label}</span> : <span className="sr-only">{item.label}</span>}
+                  <span>{item.label}</span>
                 </Link>;
               })}
             </div>
           </div>)}
         </div>
       </nav>
-      <div className="border-t border-[var(--border)] p-2.5">
-        <button onClick={toggleCollapsed} className={cn("hidden h-9 w-full items-center gap-3 rounded-lg px-2.5 text-[11px] text-[var(--ink-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] md:flex", collapsed && "justify-center px-0")} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-          {collapsed ? <PanelLeftOpen className="size-4" /> : <><PanelLeftClose className="size-4" /><span>Collapse sidebar</span></>}
-        </button>
-      </div>
     </div>
   );
 
-  return <div className="min-h-dvh bg-[var(--background)] text-[var(--ink)]">
-    <a href="#main-content" className="skip-link">Skip to content</a>
-    <aside className={cn("fixed inset-y-0 left-0 z-50 hidden border-r border-[var(--border)] bg-[var(--sidebar)] transition-[width] duration-200 md:block", collapsed ? "w-[72px]" : "w-[264px]")}>{sidebar()}</aside>
+  const desktopItems = workspaceNavigation(projects).flatMap((group) => group.items).filter((item) => ["Home", "Labs", "Projects", "Runs", "Observability"].includes(item.label));
 
-    <div className={cn("min-h-dvh transition-[padding] duration-200", collapsed ? "md:pl-[72px]" : "md:pl-[264px]")}>
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-[var(--background-chrome)] px-3 backdrop-blur sm:px-5">
-        <div className="flex min-w-0 items-center gap-2">
+  return <div className="app-frame text-[var(--ink)]">
+    <a href="#main-content" className="skip-link">Skip to content</a>
+    <div className="min-h-full">
+      <header className="sticky top-0 z-40 flex h-[66px] items-center justify-between border-b border-[var(--border)] bg-[var(--background-chrome)] px-3 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3">
           <button className="icon-button md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu className="size-5" /></button>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold leading-5 text-[var(--ink)] sm:hidden">{currentLabel}</p>
-            <p className="mt-0.5 truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[var(--ink-disabled)] sm:hidden">Control plane</p>
-          </div>
-          <nav className="hidden min-w-0 items-center gap-1.5 sm:flex" aria-label="Breadcrumbs">
-            <Link href="/home" className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">CCSR</Link>
-            {breadcrumbs.slice(-3).map((label, index, shown) => <span key={`${label}-${index}`} className="flex min-w-0 items-center gap-1.5">
-              <ChevronRight className="size-3 shrink-0 text-[var(--ink-disabled)]" />
-              <span className={cn("max-w-40 truncate text-[11px] capitalize", index === shown.length - 1 ? "text-[var(--ink)]" : "text-[var(--ink-muted)]")}>{label}</span>
-            </span>)}
+          <Link href="/home" className="hidden items-center gap-2.5 md:flex"><span className="flex size-8 items-center justify-center rounded-lg border border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"><Sparkles className="size-4" /></span><span><b className="block text-[13px] leading-4">CCSR</b><small className="block font-mono text-[7px] uppercase tracking-[.15em] text-[var(--ink-muted)]">Research</small></span></Link>
+          <span className="truncate text-sm font-semibold md:hidden">{currentLabel}</span>
+          <nav className="ml-2 hidden items-center gap-1 lg:flex" aria-label="Primary navigation">
+            {desktopItems.map((item) => {const Icon = item.icon; const selected = active(item); return <Link key={item.label} href={item.href} aria-current={selected ? "page" : undefined} className={cn("flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-medium transition", selected ? "bg-[var(--accent-soft)] text-[var(--accent-hover)]" : "text-[var(--ink-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]")}><Icon className="size-3.5" />{item.label}</Link>;})}
           </nav>
         </div>
 
@@ -279,11 +253,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
             <Search className="size-3.5" /><span className="flex-1">Search projects</span><kbd className="rounded border border-[var(--border)] px-1.5 py-0.5 text-[8px]">⌘ K</kbd>
           </button>
           <button className="icon-button lg:hidden" onClick={openPalette} aria-label="Open global search"><Search className="size-4" /></button>
-          <DropdownMenu open={notificationsOpen} onOpenChange={(nextOpen) => {setNotificationsOpen(nextOpen); if (nextOpen) setUserMenuOpen(false);}}>
-            <DropdownMenuTrigger asChild><button className="icon-button" aria-label="Notifications"><Bell className="size-4" /></button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72 p-4"><p className="text-xs font-semibold">Notifications</p><div className="mt-4 rounded-lg bg-[var(--surface)] p-4 text-center"><Bell className="mx-auto size-4 text-[var(--ink-disabled)]" /><p className="mt-2 text-[10px] text-[var(--ink-secondary)]">No new notifications</p><p className="mt-1 text-[8px] text-[var(--ink-disabled)]">Pipeline failures remain visible in ingestion runs.</p></div></DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu open={userMenuOpen} onOpenChange={(nextOpen) => {setUserMenuOpen(nextOpen); if (nextOpen) setNotificationsOpen(false);}}>
+          <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
             <DropdownMenuTrigger asChild><button className="flex h-9 items-center gap-2 rounded-[10px] px-1.5 hover:bg-[var(--surface-hover)]" aria-label="User menu">
               <span className="flex size-7 items-center justify-center rounded-full bg-[var(--surface-raised)] text-[9px] font-semibold text-[var(--accent-hover)]">{user ? initials(user.full_name, user.email) : "…"}</span>
               <ChevronDown className="hidden size-3 text-[var(--ink-muted)] sm:block" />
