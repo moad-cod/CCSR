@@ -65,7 +65,7 @@ export function LabExperimentsPage({projectId}: {projectId: string}) {
   const readyForComparison = indexed.length > 0 && queries.length > 0;
 
   return <div className="space-y-6">
-    <PageHeader eyebrow={project.data?.name ?? "Experiments"} title="Experiments" description="Durable experiment definitions alongside current pipeline and query evidence." actions={<Link href={`/projects/${projectId}/test`}><Button><Beaker className="size-4" />Run test</Button></Link>} />
+    <PageHeader eyebrow={project.data?.name ?? "Experiments"} title="Experiments" description="Durable experiment definitions alongside current pipeline and query evidence." actions={<><Link href={`/projects/${projectId}/experiments/new`}><Button variant="secondary"><FlaskConical className="size-4" />New experiment</Button></Link><Link href={`/projects/${projectId}/test`}><Button><Beaker className="size-4" />Run test</Button></Link></>} />
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <MetricCard label="Experiments" value={formalExperiments.length} detail={`${formalExperiments.filter((item) => item.status === "completed").length} completed`} icon={FlaskConical} />
       <MetricCard label="Corpus coverage" value={`${retrievalCoverage}%`} detail={`${indexed.length}/${docs.length} sources indexed`} icon={FileStack} />
