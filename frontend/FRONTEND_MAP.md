@@ -368,6 +368,16 @@ test coverage confirms they are no longer referenced.
 
 Core tokens live in `frontend/src/app/globals.css`.
 
+Authenticated screens use a compact horizontal application shell. On large
+screens it sits inside a restrained rounded frame; tablet and mobile layouts
+use the full viewport and retain the navigation drawer. Dashboard composition
+uses the shared `DashboardPanel`, `MetricCell`, and `EvidenceBar` primitives.
+
+The Home dashboard derives categorical research readiness, pipeline health,
+evidence coverage, recent Labs, and timestamp-based run/query activity from the
+existing bounded workspace aggregates. It does not synthesize scores, activity,
+or unsupported research records.
+
 Current identity:
 
 - dark graphite background: `--background: #090B10`
