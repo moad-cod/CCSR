@@ -173,8 +173,9 @@ frontend/
 | `/history` | Global RAG query history | Cross-project persisted query history for RAGForge-enabled projects. | `GET /projects/overview`; `GET /rag/workspace/overview?include=history` |
 | `/runs` | Global RAG ingestion runs | Cross-project ingestion run list without per-project requests. | `GET /projects/overview`; `GET /rag/workspace/overview?include=documents,runs` |
 | `/observability` | Global RAG observability | Aggregated source, ingestion, query, latency, cache, and failure evidence. | `GET /projects/overview`; `GET /rag/workspace/overview?include=documents,runs,history` |
-| `/organization` | Organization management | Organization list, create, rename, delete, active organization indication. | `GET /organizations/`; `POST /organizations/`; `PATCH /organizations/{organization_id}`; `DELETE /organizations/{organization_id}`; `GET /auth/me` |
-| `/settings/profile` | Profile settings | Current-user profile, organization selection, optional password update. | `GET /auth/me`; `PATCH /auth/me`; `GET /organizations/` |
+| `/organization` | Organization management | Organization CRUD, invitation creation/revocation/acceptance, and active organization indication. | Organization and invitation APIs; `GET /auth/me` |
+| `/settings/profile` | Profile and access settings | Current-user profile, organization selection, password update, durable sessions, quota usage, and account deletion. | Account, session, organization, and quota APIs |
+| `/admin` | Platform administration | Admin-only role, quota, manual artifact, and audit-event controls. | `/auth/users/{user_id}/role`; `/admin/quotas/users/{user_id}`; `/admin/artifacts`; `/admin/audit-events` |
 
 ### Project Lab Routes
 
@@ -196,8 +197,8 @@ frontend/
 | `/projects/[projectId]/history/[queryId]` | Query detail | Persisted question, answer, provider/model metadata, latency, retrieval trace, citations. | `GET /rag/queries/{query_log_id}`; `GET /projects/{project_id}` |
 | `/projects/[projectId]/documents/[documentId]` | Source detail | Document overview, status, versions, linked runs, metadata, upload new version, delete. | `GET /documents/{document_id}`; `GET /projects/{project_id}`; `GET /documents/{document_id}/versions`; `GET /ingest/runs?project_id=...&limit=100`; `POST /ingest/file`; `DELETE /documents/{document_id}` |
 | `/projects/[projectId]/observability` | Project observability | Project-scoped observability using the shared observability component. | `GET /projects/{project_id}`; `GET /documents/?project_id=...`; `GET /ingest/runs?project_id=...&limit=100`; `GET /rag/projects/{project_id}/history?limit=100` |
-| `/projects/[projectId]/experiments/new` | Planned experiment creation | Project-scoped planned page for future persisted experiment creation. | `GET /projects/{project_id}` through `ProjectPlannedFeaturePage` |
-| `/projects/[projectId]/experiments/[experimentId]` | Planned experiment detail | Project-scoped planned page for future experiment detail records. | `GET /projects/{project_id}` through `ProjectPlannedFeaturePage` |
+| `/projects/[projectId]/experiments/new` | Experiment creation | Creates a durable experiment under an existing research study with a configuration snapshot. | Research study and experiment APIs |
+| `/projects/[projectId]/experiments/[experimentId]` | Experiment detail | Displays the durable experiment definition and configuration snapshot. | `GET /projects/{project_id}/research/experiments` |
 
 ### Planned Or Compatibility Routes
 
@@ -418,7 +419,6 @@ contracts exist:
 - evaluator score contracts
 - formal comparison matrices
 - cost/resource metrics
-- authenticated publication authoring UI
 - reproducibility manifest export/import
 - knowledge graph or paper relationship browser
 - persisted project descriptions
