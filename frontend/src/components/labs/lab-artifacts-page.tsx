@@ -12,7 +12,7 @@ import {EmptyState} from "@/components/ui/empty-state";
 import {ErrorState} from "@/components/ui/error-state";
 import {LoadingState} from "@/components/ui/loading-state";
 import {apiFetch} from "@/lib/api";
-import type {Document, DocumentVersion, IngestionRun, Project, QueryHistoryItem} from "@/lib/types";
+import type {ArtifactRecord, Document, DocumentVersion, IngestionRun, Project, QueryHistoryItem} from "@/lib/types";
 import {relativeTime} from "@/lib/utils";
 
 type ArtifactTone = "neutral" | "success" | "warning" | "info";
@@ -60,6 +60,7 @@ export function LabArtifactsPage({projectId}: {projectId: string}) {
   const documents = useQuery({queryKey: ["documents", projectId], queryFn: () => apiFetch<Document[]>(`/documents/?project_id=${projectId}`)});
   const runs = useQuery({queryKey: ["ingestion-runs", projectId], queryFn: () => apiFetch<IngestionRun[]>(`/ingest/runs?project_id=${projectId}&limit=100`)});
   const history = useQuery({queryKey: ["query-history", projectId], queryFn: () => apiFetch<QueryHistoryItem[]>(`/rag/projects/${projectId}/history?limit=100`)});
+  const registeredArtifacts = useQuery({queryKey: ["artifacts", projectId], queryFn: () => apiFetch<ArtifactRecord[]>(`/artifacts?project_id=${projectId}&limit=100`)});
   const docs = documents.data ?? [];
   const versionQueries = useQueries({
     queries: docs.slice(0, 12).map((document) => ({
@@ -68,8 +69,8 @@ export function LabArtifactsPage({projectId}: {projectId: string}) {
       staleTime: 30_000,
     })),
   });
-  const loading = project.isLoading || documents.isLoading || runs.isLoading || history.isLoading;
-  const error = project.isError || documents.isError || runs.isError || history.isError;
+  const loading = project.isLoading || documents.isLoading || runs.isLoading || history.isLoading || registeredArtifacts.isLoading;
+  const error = project.isError || documents.isError || runs.isError || history.isError || registeredArtifacts.isError;
   if (loading) return <LoadingState label="Loading lab artifacts" rows={5} />;
   if (error) return <ErrorState title="Artifacts could not be loaded" description="Source, run, or query-history endpoints returned an error." onRetry={() => void Promise.all([project.refetch(), documents.refetch(), runs.refetch(), history.refetch()])} />;
 
@@ -84,7 +85,8 @@ export function LabArtifactsPage({projectId}: {projectId: string}) {
   const silver = runItems.filter((run) => run.progress.silver).length;
   const gold = runItems.filter((run) => run.progress.gold).length;
   const qdrant = runItems.filter((run) => run.progress.qdrant).length;
-  const hasArtifacts = docs.length || runItems.length || queries.length || versions.length;
+  const artifactRecords = registeredArtifacts.data ?? [];
+  const hasArtifacts = artifactRecords.length || docs.length || runItems.length || queries.length || versions.length;
   const codeReferences: {label: string; path: string; icon: LucideIcon}[] = [
     {label: "Query API", path: "backend/app/api/query.py", icon: FileCode2},
     {label: "Document API", path: "backend/app/api/documents.py", icon: FileCode2},
@@ -122,6 +124,7 @@ export function LabArtifactsPage({projectId}: {projectId: string}) {
     <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
       <div className="border-b border-[var(--border)] p-4"><h2 className="text-sm font-semibold">Artifact registry</h2><p className="mt-1 text-[9px] text-[var(--ink-muted)]">Typed research objects from implemented backend evidence; unavailable registries are labeled plainly.</p></div>
       {hasArtifacts ? <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+        {artifactRecords.map((artifact) => <ArtifactCard key={artifact.id} type={artifact.artifact_type} title={`${artifact.artifact_type} · v${artifact.version}`} detail={`${artifact.storage_provider} artifact with ${artifact.visibility} visibility${artifact.size_bytes === null ? "" : ` · ${artifact.size_bytes.toLocaleString()} bytes`}.`} icon={Archive} status={artifact.visibility} meta={artifact.storage_uri} />)}
         {docs.slice(0, 6).map((document) => <ArtifactCard key={`dataset:${document.document_id}`} type="Dataset" title={document.filename ?? document.document_id} detail={`${document.source_type ?? "source"} document registered in the Lab corpus.`} icon={Boxes} status={document.status} href={`/projects/${projectId}/documents/${document.document_id}`} meta={document.document_id} />)}
         {modelNames.length ? modelNames.slice(0, 4).map((model) => <ArtifactCard key={`model:${model}`} type="Model" title={model} detail="Observed in document version metadata or persisted query history." icon={Package} tone="info" meta="Model registry is not first-class yet." />) : <ArtifactCard type="Model" title="No model artifact recorded yet" detail="Run ingestion or tests to expose embedding and generation model names." icon={Package} tone="warning" />}
         {chunkers.map((chunker) => <ArtifactCard key={`config:${chunker}`} type="Config" title={chunker} detail="Chunking configuration observed on a document version." icon={Settings2} tone="info" />)}
