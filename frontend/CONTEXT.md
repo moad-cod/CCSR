@@ -9,6 +9,12 @@ backend capabilities and resolved project permissions, while retained routes
 pass through a capability gate. Login tokens are backed by durable backend
 sessions, and logout revokes the backend session before clearing the cookie.
 
+Backend-backed control-plane surfaces include durable sessions and quota usage,
+organization invitations, generic workflow/run inspection, registered
+artifacts, research graph authoring, experiment definitions, publication
+lifecycle actions, and role-gated platform administration. Keep these surfaces
+permission-aware and driven by the canonical backend contracts.
+
 ## Route by task
 
 - App Router and route handlers: `src/app/`
