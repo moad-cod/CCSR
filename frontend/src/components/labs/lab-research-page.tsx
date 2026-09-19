@@ -14,6 +14,8 @@ import {LoadingState} from "@/components/ui/loading-state";
 import {apiFetch} from "@/lib/api";
 import type {Document, DocumentVersion, IngestionRun, Project, ResearchStudy, ResearchStudyDetail} from "@/lib/types";
 import {relativeTime} from "@/lib/utils";
+import {ResearchAuthoring} from "@/platform/projects/research-authoring";
+import {ProjectPublications} from "@/platform/projects/project-publications";
 
 export function LabResearchPage({projectId}: {projectId: string}) {
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
@@ -63,6 +65,8 @@ export function LabResearchPage({projectId}: {projectId: string}) {
 
   return <div className="space-y-6">
     <PageHeader eyebrow={project.data?.name ?? "Research"} title="Research" description="Durable studies, questions, hypotheses, methodology, and source evidence for this Lab." actions={<Link href={`/projects/${projectId}/sources`}><Button><FileStack className="size-4" />Manage sources</Button></Link>} />
+    <ResearchAuthoring projectId={projectId} study={durableStudy} />
+    <ProjectPublications projectId={projectId} studies={studies.data ?? []} canManage={project.data?.permissions?.manage ?? false} />
     <section className="grid gap-4 lg:grid-cols-[1fr_0.95fr]">
       <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
         <div className="flex items-center gap-2">
