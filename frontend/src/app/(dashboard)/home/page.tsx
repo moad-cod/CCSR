@@ -24,7 +24,8 @@ const dateKey = (value: string) => new Date(value).toISOString().slice(0, 10);
 function ResearchActivity({runs, queries}: {runs: RAGRunSummary[]; queries: QueryHistoryItem[]}) {
   const [range, setRange] = useState<Range>("30D");
   const points = useMemo(() => {
-    const cutoff = range === "All" ? 0 : Date.now() - Number.parseInt(range) * 86_400_000;
+    const latestTimestamp = Math.max(0, ...runs.map((item) => new Date(item.created_at).getTime()), ...queries.map((item) => new Date(item.created_at).getTime()));
+    const cutoff = range === "All" ? 0 : latestTimestamp - Number.parseInt(range) * 86_400_000;
     const selectedRuns = runs.filter((item) => new Date(item.created_at).getTime() >= cutoff);
     const selectedQueries = queries.filter((item) => new Date(item.created_at).getTime() >= cutoff);
     const keys = [...new Set([...selectedRuns.map((item) => dateKey(item.created_at)), ...selectedQueries.map((item) => dateKey(item.created_at))])].sort().slice(-30);
