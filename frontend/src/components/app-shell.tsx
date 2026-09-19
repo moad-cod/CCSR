@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   Search,
+  ShieldCheck,
   Sparkles,
   UserRound,
   X,
@@ -73,6 +74,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const {data: organizations = []} = useQuery({queryKey: ["organizations"], queryFn: () => apiFetch<Organization[]>("/organizations/")});
   const project = projects.find((item) => item.project_id === projectId);
   const nav = project ? projectNavigation(project, user) : workspaceNavigation(projects);
+  if (user?.global_role === "admin") nav.push({label: "Administration", items: [{label: "Admin", href: "/admin", icon: ShieldCheck}]});
   const breadcrumbs = pathname.split("/").filter(Boolean).map((segment) => routeLabel(segment, project));
   const currentLabel = breadcrumbs.at(-1) ?? "CCSR";
   const searchResults = useMemo(() => {
@@ -206,7 +208,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
     </div>
   );
 
-  const desktopItems = workspaceNavigation(projects).flatMap((group) => group.items).filter((item) => ["Home", "Labs", "Projects", "Runs", "Observability"].includes(item.label));
+  const desktopItems = [...workspaceNavigation(projects).flatMap((group) => group.items), ...(user?.global_role === "admin" ? [{label: "Admin", href: "/admin", icon: ShieldCheck}] : [])].filter((item) => ["Home", "Labs", "Projects", "Runs", "Observability", "Admin"].includes(item.label));
 
   return <div className="app-frame text-[var(--ink)]">
     <a href="#main-content" className="skip-link">Skip to content</a>
