@@ -1,29 +1,7 @@
 import {ProjectShell as LabShell} from "@/platform/projects/project-shell";
-import {ProjectPlannedFeaturePage} from "@/components/project-planned-feature-page";
+import {NewExperiment} from "@/platform/projects/experiment-editor";
 
-export default async function NewExperimentPage({
-  params,
-}: {
-  params: Promise<{projectId: string}>;
-}) {
+export default async function NewExperimentPage({params}: {params: Promise<{projectId: string}>}) {
   const {projectId} = await params;
-  return <LabShell projectId={projectId}><ProjectPlannedFeaturePage
-    projectId={projectId}
-    eyebrow="Experiment builder"
-    title="New experiment"
-    description="The guided experiment builder is reserved for backend-supported benchmark configurations. Current UI links you to research sources, interactive tests, and artifacts needed before that contract lands."
-    primaryHref={`/projects/${projectId}/artifacts`}
-    primaryLabel="Review artifacts"
-    available={[
-      "Upload sources and evaluation documents.",
-      "Run playground queries against indexed sources.",
-      "Inspect ingestion runs before executing comparable benchmarks.",
-    ]}
-    planned={[
-      "Dataset selector and workload manifest.",
-      "Airflow versus Celery orchestrator selection.",
-      "Retrieval configuration snapshot and validation gates.",
-      "Submission to benchmark worker when backend support exists.",
-    ]}
-  /></LabShell>;
+  return <LabShell projectId={projectId}><NewExperiment projectId={projectId} /></LabShell>;
 }
